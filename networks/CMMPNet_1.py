@@ -53,8 +53,8 @@ class DEM(torch.nn.Module):  # Dual Enhancement Module
         # 就是在指定的位置插入一个维度，有两个参数，input是输入的tensor,dim是要插到的维度
         # https://blog.csdn.net/ljwwjl/article/details/115342632
         # SPP+FC+RELU+扩展成（N*c*1*1）+复制成N*c*h*w
-        rgb_global_info = self.rgb_global_message
-        add_global_info = self.add_global_message
+        rgb_global_info = self.rgb_global_message(rgb_local_info)
+        add_global_info = self.add_global_message(add_local_info)
         # add_local_gate的输出大小也为N*C*H*W
         rgb_info = rgb_info + add_local_info * self.add_local_gate(
             torch.cat((add_local_info, add_global_info), 1)) + add_global_info * self.add_global_gate(
