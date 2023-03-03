@@ -3,7 +3,8 @@ from torchvision import models
 from .basic_blocks import *
 import math
 import torch.nn.functional as F
-
+from networks.MPM import SPHead
+up_kwargs = {'mode': 'bilinear', 'align_corners': True}
 
 class SPPLayer(torch.nn.Module):
     def __init__(self, block_size=[1,2,4], pool_type='max_pool'):
