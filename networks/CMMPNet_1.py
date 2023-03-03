@@ -6,7 +6,7 @@ import torch.nn.functional as F
 from networks.MPM import SPHead
 from networks.MPM import StripPooling
 up_kwargs = {'mode': 'bilinear', 'align_corners': True}
-
+from networks.MPM import StripPooling
 
 class DEM(torch.nn.Module):  # Dual Enhancement Module
     def __init__(self, channel, block_size=[1, 2, 4]):
@@ -16,8 +16,8 @@ class DEM(torch.nn.Module):  # Dual Enhancement Module
         self.add_local_message = self.local_message_prepare(channel, 1, 1, 0)
 
 
-        self.rgb_global_message = SPHead(channel, channel, nn.BatchNorm2d, up_kwargs)
-        self.add_global_message = SPHead(channel, channel, nn.BatchNorm2d, up_kwargs)
+        self.rgb_global_message = StripPooling(channel, (4, 2), nn.BatchNorm2d, up_kwargs)
+        self.add_global_message = StripPooling(channel, (4, 2), nn.BatchNorm2d, up_kwargs)
 
         self.rgb_local_gate = self.gate_build(channel * 2, channel, 1, 1, 0)
         self.rgb_global_gate = self.gate_build(channel * 2, channel, 1, 1, 0)
