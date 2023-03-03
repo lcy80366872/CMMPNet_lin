@@ -69,8 +69,8 @@ class SPHead(nn.Module):
                 norm_layer(inter_channels),
                 nn.ReLU(True)
         )
-        self.strip_pool1 = StripPooling(inter_channels, (20, 12), norm_layer, up_kwargs)
-        self.strip_pool2 = StripPooling(inter_channels, (20, 12), norm_layer, up_kwargs)
+        self.strip_pool1 = StripPooling(inter_channels, (4, 2), norm_layer, up_kwargs)
+        self.strip_pool2 = StripPooling(inter_channels, (4, 2), norm_layer, up_kwargs)
         self.score_layer = nn.Sequential(nn.Conv2d(inter_channels, inter_channels // 2, 3, 1, 1, bias=False),
                 norm_layer(inter_channels // 2),
                 nn.ReLU(True),
