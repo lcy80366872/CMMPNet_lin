@@ -95,7 +95,7 @@ class DinkNet34_CMMPNet(nn.Module):
         filters = [64, 128, 256, 512]
         self.net_name = "CMMPnet"       
         self.block_size = [int(s) for s in block_size.split(',')]
-
+        
         # img
         resnet = models.resnet34(pretrained=True)
         self.firstconv1 = resnet.conv1
@@ -107,7 +107,8 @@ class DinkNet34_CMMPNet(nn.Module):
         self.encoder2 = resnet.layer2
         self.encoder3 = resnet.layer3
         self.encoder4 = resnet.layer4
-
+        
+        self.head = SPHead(filters[3],filters[3], nn.BatchNorm2d, up_kwargs)
         self.dblock = DBlock(filters[3])
 
         self.decoder4 = DecoderBlock(filters[3], filters[2])
@@ -132,7 +133,8 @@ class DinkNet34_CMMPNet(nn.Module):
         self.encoder2_add = resnet1.layer2
         self.encoder3_add = resnet1.layer3
         self.encoder4_add = resnet1.layer4
-
+        
+        self.head = SPHead(filters[3],filters[3], nn.BatchNorm2d, up_kwargs)
         self.dblock_add = DBlock(filters[3])
 
         self.decoder4_add = DecoderBlock(filters[3], filters[2])
@@ -188,6 +190,9 @@ class DinkNet34_CMMPNet(nn.Module):
         x_e4, add_e4 = self.dem_e4(x_e4, add_e4)
         
         # Center
+        
+        x_e4  = self.head(x_e4)
+        add_e4= self.head(add_e4)
         x_c   = self.dblock(x_e4)
         add_c = self.dblock_add(add_e4)
 
