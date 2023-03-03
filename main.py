@@ -83,7 +83,7 @@ if __name__ == "__main__":
     parser.add_argument('--use_gpu',  type=bool, default=True)
     parser.add_argument('--gpu_ids',  type=str, default='0')
     parser.add_argument('--workers',  type=int, default=4)
-    parser.add_argument('--epochs',  type=int, default=10)
+    parser.add_argument('--epochs',  type=int, default=15)
     parser.add_argument('--random_seed', type=int, default=12345)
     parser.add_argument('--dataset', type=str, default='BJRoad')
     parser.add_argument('--down_scale', type=bool, default=False)
