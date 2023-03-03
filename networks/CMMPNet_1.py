@@ -86,7 +86,7 @@ class DinkNet34_CMMPNet(nn.Module):
         self.encoder4 = resnet.layer4
 
         self.dblock = DBlock(filters[3])
-        self.head = SPHead(filters[3], filters[3], nn.BatchNorm2d, up_kwargs)
+        
 
         self.decoder4 = DecoderBlock(filters[3], filters[2])
         self.decoder3 = DecoderBlock(filters[2], filters[1])
@@ -111,7 +111,7 @@ class DinkNet34_CMMPNet(nn.Module):
         self.encoder4_add = resnet1.layer4
 
         self.dblock_add = DBlock(filters[3])
-        self.head = SPHead(filters[3], filters[3], nn.BatchNorm2d, up_kwargs)
+        
 
         self.decoder4_add = DecoderBlock(filters[3], filters[2])
         self.decoder3_add = DecoderBlock(filters[2], filters[1])
@@ -162,8 +162,7 @@ class DinkNet34_CMMPNet(nn.Module):
         x_e4, add_e4 = self.dem_e4(x_e4, add_e4)
 
         # Center
-        x_e4 = self.head(x_e4)
-        add_e4 = self.head(add_e4)
+       
         x_c = self.dblock(x_e4)
         add_c = self.dblock_add(add_e4)
         # 传递增强信息时还有跳跃连接
