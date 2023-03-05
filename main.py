@@ -49,7 +49,7 @@ def get_dataloader(args):
 def train_val_test(args):
     net = get_model(args.model)
     with torch.no_grad():  # 必须有
-        summary(net.to('cuda'), input_size=(4, 512, 512), batch_size=1)
+        summary(net.to('cuda'), input_size=(4, 512, 512), batch_size=4)
     print(net)
     print(net)
     
