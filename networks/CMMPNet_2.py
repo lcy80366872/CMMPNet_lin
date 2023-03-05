@@ -7,7 +7,37 @@ from networks.MPM import SPHead
 from networks.MPM import StripPooling
 up_kwargs = {'mode': 'bilinear', 'align_corners': True}
 
+class SPPLayer(torch.nn.Module):
+    def __init__(self, block_size=[1,2,4], pool_type='max_pool'):
+        super(SPPLayer, self).__init__()
+        self.block_size = block_size
+        self.pool_type = pool_type
+        self.spp = self.make_spp(out_pool_size=self.block_size, pool_type=self.pool_type)
 
+    def make_spp(self, out_pool_size, pool_type='maxpool'):
+        func=[]
+        for i in range(len(out_pool_size)):
+            if pool_type == 'max_pool':
+                func.append(nn.AdaptiveMaxPool2d(output_size=(out_pool_size[i],out_pool_size[i])))
+            if pool_type == 'avg_pool':
+                func.append(nn.AdaptiveAvgPool2d(output_size=(out_pool_size[i],out_pool_size[i])))
+        return func
+
+    def forward(self, x):
+        num = x.size(0)
+        for i in range(len(self.block_size)):
+            #view：返回一个有相同数据但大小不同的tensor。 返回的tensor必须有与原tensor相同的数据和相同数目的元素，但可以有不同的大小，大小可以自己选
+            #将spp每个分支展成一维向量，再拼接
+            tensor = self.spp[i](x).view(num, -1)
+            if (i == 0):
+                x_flatten = tensor.view(num, -1)
+            else:
+                #在第1维度拼接，也就是横向拼接成长条
+                x_flatten = torch.cat((x_flatten, tensor.view(num, -1)), 1)
+
+        return x_flatten
+        
+        
 class DEM(torch.nn.Module):  # Dual Enhancement Module
     def __init__(self, channel, block_size=[1, 2, 4]):
         super(DEM, self).__init__()
