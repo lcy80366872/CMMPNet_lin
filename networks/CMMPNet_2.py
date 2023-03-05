@@ -77,10 +77,10 @@ class DinkNet34_CMMPNet(nn.Module):
         self.firstlayer_add = StripConvBlock(1, filters[0], nn.BatchNorm2d)
         # img
         resnet = models.resnet34(pretrained=True)
-        self.firstconv1 = resnet.conv1
-        self.firstbn = resnet.bn1
-        self.firstrelu = resnet.relu
-        self.firstmaxpool = resnet.maxpool
+#         self.firstconv1 = resnet.conv1
+#         self.firstbn = resnet.bn1
+#         self.firstrelu = resnet.relu
+#         self.firstmaxpool = resnet.maxpool
 
         self.encoder1 = resnet.layer1
         self.encoder2 = resnet.layer2
