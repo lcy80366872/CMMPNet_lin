@@ -36,8 +36,6 @@ class SPPLayer(torch.nn.Module):
                 x_flatten = torch.cat((x_flatten, tensor.view(num, -1)), 1)
 
         return x_flatten
-        
-        
 class DEM(torch.nn.Module):  # Dual Enhancement Module
     def __init__(self, channel, block_size=[1, 2, 4]):
         super(DEM, self).__init__()
@@ -49,10 +47,6 @@ class DEM(torch.nn.Module):  # Dual Enhancement Module
         self.add_spp = StripPooling(channel, (4, 2), nn.BatchNorm2d, up_kwargs)
         self.rgb_global_message = self.rgb_spp
         self.add_global_message = self.add_spp
-#         self.rgb_spp = SPPLayer(block_size=block_size)
-#         self.add_spp = SPPLayer(block_size=block_size)
-#         self.rgb_global_message = self.global_message_prepare(block_size, channel) #文中的G
-#         self.add_global_message = self.global_message_prepare(block_size, channel)
 
         self.rgb_local_gate = self.gate_build(channel * 2, channel, 1, 1, 0)
         self.rgb_global_gate = self.gate_build(channel * 2, channel, 1, 1, 0)
@@ -90,8 +84,6 @@ class DEM(torch.nn.Module):  # Dual Enhancement Module
         # SPP+FC+RELU+扩展成（N*c*1*1）+复制成N*c*h*w
         rgb_global_info = self.rgb_global_message(rgb_local_info)
         add_global_info = self.add_global_message(add_local_info)
-#         rgb_global_info = torch.unsqueeze(torch.unsqueeze(self.rgb_global_message(self.rgb_spp(rgb_local_info)),-1),-1).expand(rgb_local_info.size())
-#         add_global_info = torch.unsqueeze(torch.unsqueeze(self.add_global_message(self.add_spp(add_local_info)),-1),-1).expand(add_local_info.size())
         # add_local_gate的输出大小也为N*C*H*W
         rgb_info = rgb_info + add_local_info * self.add_local_gate(
             torch.cat((add_local_info, add_global_info), 1)) + add_global_info * self.add_global_gate(
@@ -113,10 +105,10 @@ class DinkNet34_CMMPNet(nn.Module):
         self.firstlayer_add = StripConvBlock(1, filters[0], nn.BatchNorm2d)
         # img
         resnet = models.resnet34(pretrained=True)
-#         self.firstconv1 = resnet.conv1
-#         self.firstbn = resnet.bn1
-#         self.firstrelu = resnet.relu
-#         self.firstmaxpool = resnet.maxpool
+        self.firstconv1 = resnet.conv1
+        self.firstbn = resnet.bn1
+        self.firstrelu = resnet.relu
+        self.firstmaxpool = resnet.maxpool
 
         self.encoder1 = resnet.layer1
         self.encoder2 = resnet.layer2
@@ -254,9 +246,12 @@ class StripConvBlock(nn.Module):
 
         self.bn2 = BatchNorm(out_channels //2 )
         self.relu2 = nn.ReLU()
-        self.conv3 = nn.Conv2d(out_channels//2, out_channels, 1)
+        self.conv3 = nn.Conv2d(out_channels//2, out_channels, kernel_size=3,stride=2,padding=1)
         self.bn3 = BatchNorm(out_channels)
         self.relu3 = nn.ReLU()
+        self.conv4 = nn.Conv2d(out_channels, out_channels, kernel_size=3, stride=2, padding=1)
+        self.bn4 = BatchNorm(out_channels)
+        self.relu4 = nn.ReLU()
 
         self._init_weight()
 
@@ -277,6 +272,9 @@ class StripConvBlock(nn.Module):
         x = self.conv3(x)
         x = self.bn3(x)
         x = self.relu3(x)
+        x = self.con4(x)
+        x = self.bn4(x)
+        x = self.relu4(x)
         return x
 
     def _init_weight(self):
