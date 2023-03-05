@@ -4,7 +4,7 @@ import torch.nn as nn
 from torch.nn import init
 import os
 import sys
-
+from torchsummary import summary
 from framework import Framework
 from utils.datasets import prepare_Beijing_dataset, prepare_TLCGIS_dataset
 
@@ -48,6 +48,9 @@ def get_dataloader(args):
 
 def train_val_test(args):
     net = get_model(args.model)
+    with torch.no_grad():  # 必须有
+        summary(net.to('cuda'), input_size=(4, 512, 512), batch_size=1)
+    print(net)
     print(net)
     
     optimizer = torch.optim.Adam(params=net.parameters(), lr=args.lr)
