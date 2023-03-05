@@ -272,7 +272,7 @@ class StripConvBlock(nn.Module):
         x = self.conv3(x)
         x = self.bn3(x)
         x = self.relu3(x)
-        x = self.con4(x)
+        x = self.conv4(x)
         x = self.bn4(x)
         x = self.relu4(x)
         return x
