@@ -8,7 +8,7 @@ import sys
 from framework import Framework
 from utils.datasets import prepare_Beijing_dataset, prepare_TLCGIS_dataset
 
-from networks.CMMPNet_2 import DinkNet34_CMMPNet
+from networks.CMMPNet_1 import DinkNet34_CMMPNet
 
 
 class Logger(object):
