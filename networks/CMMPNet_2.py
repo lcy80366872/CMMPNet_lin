@@ -45,14 +45,14 @@ class DEM(torch.nn.Module):  # Dual Enhancement Module
         self.rgb_local_message = self.local_message_prepare(channel, 1, 1, 0)
         self.add_local_message = self.local_message_prepare(channel, 1, 1, 0)
 
-#         self.rgb_spp = StripPooling(channel, (4, 2), nn.BatchNorm2d, up_kwargs)
-#         self.add_spp = StripPooling(channel, (4, 2), nn.BatchNorm2d, up_kwargs)
-#         self.rgb_global_message = self.rgb_spp
-#         self.add_global_message = self.add_spp
-        self.rgb_spp = SPPLayer(block_size=block_size)
-        self.add_spp = SPPLayer(block_size=block_size)
-        self.rgb_global_message = self.global_message_prepare(block_size, channel) #文中的G
-        self.add_global_message = self.global_message_prepare(block_size, channel)
+        self.rgb_spp = StripPooling(channel, (4, 2), nn.BatchNorm2d, up_kwargs)
+        self.add_spp = StripPooling(channel, (4, 2), nn.BatchNorm2d, up_kwargs)
+        self.rgb_global_message = self.rgb_spp
+        self.add_global_message = self.add_spp
+#         self.rgb_spp = SPPLayer(block_size=block_size)
+#         self.add_spp = SPPLayer(block_size=block_size)
+#         self.rgb_global_message = self.global_message_prepare(block_size, channel) #文中的G
+#         self.add_global_message = self.global_message_prepare(block_size, channel)
 
         self.rgb_local_gate = self.gate_build(channel * 2, channel, 1, 1, 0)
         self.rgb_global_gate = self.gate_build(channel * 2, channel, 1, 1, 0)
