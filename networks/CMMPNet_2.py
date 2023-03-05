@@ -45,14 +45,14 @@ class DEM(torch.nn.Module):  # Dual Enhancement Module
         self.rgb_local_message = self.local_message_prepare(channel, 1, 1, 0)
         self.add_local_message = self.local_message_prepare(channel, 1, 1, 0)
 
-#         self.rgb_spp = StripPooling(channel, (4, 2), nn.BatchNorm2d, up_kwargs)
-#         self.add_spp = StripPooling(channel, (4, 2), nn.BatchNorm2d, up_kwargs)
-#         self.rgb_global_message = self.rgb_spp
-#         self.add_global_message = self.add_spp
-        self.rgb_spp = SPPLayer(block_size=block_size)
-        self.add_spp = SPPLayer(block_size=block_size)
-        self.rgb_global_message = self.global_message_prepare(block_size, channel) #文中的G
-        self.add_global_message = self.global_message_prepare(block_size, channel)
+        self.rgb_spp = StripPooling(channel, (4, 2), nn.BatchNorm2d, up_kwargs)
+        self.add_spp = StripPooling(channel, (4, 2), nn.BatchNorm2d, up_kwargs)
+        self.rgb_global_message = self.rgb_spp
+        self.add_global_message = self.add_spp
+#         self.rgb_spp = SPPLayer(block_size=block_size)
+#         self.add_spp = SPPLayer(block_size=block_size)
+#         self.rgb_global_message = self.global_message_prepare(block_size, channel) #文中的G
+#         self.add_global_message = self.global_message_prepare(block_size, channel)
 
         self.rgb_local_gate = self.gate_build(channel * 2, channel, 1, 1, 0)
         self.rgb_global_gate = self.gate_build(channel * 2, channel, 1, 1, 0)
@@ -88,10 +88,10 @@ class DEM(torch.nn.Module):  # Dual Enhancement Module
         # 就是在指定的位置插入一个维度，有两个参数，input是输入的tensor,dim是要插到的维度
         # https://blog.csdn.net/ljwwjl/article/details/115342632
         # SPP+FC+RELU+扩展成（N*c*1*1）+复制成N*c*h*w
-#         rgb_global_info = self.rgb_global_message(rgb_local_info)
-#         add_global_info = self.add_global_message(add_local_info)
-        rgb_global_info = torch.unsqueeze(torch.unsqueeze(self.rgb_global_message(self.rgb_spp(rgb_local_info)),-1),-1).expand(rgb_local_info.size())
-        add_global_info = torch.unsqueeze(torch.unsqueeze(self.add_global_message(self.add_spp(add_local_info)),-1),-1).expand(add_local_info.size())
+        rgb_global_info = self.rgb_global_message(rgb_local_info)
+        add_global_info = self.add_global_message(add_local_info)
+#         rgb_global_info = torch.unsqueeze(torch.unsqueeze(self.rgb_global_message(self.rgb_spp(rgb_local_info)),-1),-1).expand(rgb_local_info.size())
+#         add_global_info = torch.unsqueeze(torch.unsqueeze(self.add_global_message(self.add_spp(add_local_info)),-1),-1).expand(add_local_info.size())
         # add_local_gate的输出大小也为N*C*H*W
         rgb_info = rgb_info + add_local_info * self.add_local_gate(
             torch.cat((add_local_info, add_global_info), 1)) + add_global_info * self.add_global_gate(
