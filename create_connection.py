@@ -78,7 +78,7 @@ def batch_process(imgdir, savedir_d1, savedir_d3):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-d', '--base_dir', type=str, default='/kaggle/input/bjroad/BJRoad/train_val/l',
+    parser.add_argument('-d', '--base_dir', type=str, default='/kaggle/input/bjroad/BJRoad/train_val',
         help='Base directory for Spacenent Dataset.')
     args = parser.parse_args()
 
