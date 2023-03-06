@@ -83,8 +83,8 @@ def main():
     args = parser.parse_args()
 
     gt_path = os.path.join(args.base_dir, 'mask')
-    connect_d1_path = os.path.join(args.base_dir, 'connect_8_d1')
-    connect_d3_path = os.path.join(args.base_dir, 'connect_8_d3')
+    connect_d1_path = os.path.join('/kaggle/working/CMMPNet_lin', 'connect_8_d1')
+    connect_d3_path = os.path.join('/kaggle/working/CMMPNet_lin', 'connect_8_d3')
 
     start = time.perf_counter()
     ##  connectivity cube
