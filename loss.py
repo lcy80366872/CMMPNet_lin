@@ -98,8 +98,8 @@ class dice_bce_loss(nn.Module):
 #             print(a.ndim)
             if a.ndim == 2:
                 a=np.expand_dims(a,axis=-1)
-            print(a.shape)
                 y[id, :, :, :]=a
+            print(a.shape)
             else:
                 y[id, :, :, :]=a
 #             print(y.shape)
