@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable
 import os
+import  numpy as np
 from tqdm import tqdm
 from utils.metrics import IoU
 from loss import dice_bce_loss
@@ -62,7 +63,9 @@ class Solver:
         
     def set_input(self, img_batch, mask_batch=None):
         self.img = img_batch
-        self.mask = mask_batch[:,0,:,:]
+        self.mask = np.expand_dims(mask_batch[:,0,:,:],axis=1)
+        
+
         self.connect_label=mask_batch[:,1:10,:,:]
         self.connect_d1_label = mask_batch[:, 10:, :, :]
     def data2cuda(self, volatile=False):
