@@ -96,7 +96,11 @@ class dice_bce_loss(nn.Module):
             print(y1.shape)
             a = cv2.resize(y1, (h, w))
             print(a.shape)
-            y[id, :, :, :]=a
+            if a.dim == 2:
+                y[id, :, :, :]=a.unsqueeze(2)
+            else:
+                y[id, :, :, :]=a
+            
             y.transpose(0,2,3,1)
         return torch.Tensor(y)
         
