@@ -1,15 +1,15 @@
 import torch
+from torchsummary import summary
 import time
 import torch.nn as nn
 from torch.nn import init
 import os
 import sys
-from torchsummary import summary
-from framework import Framework
-from utils.datasets import prepare_Beijing_dataset, prepare_TLCGIS_dataset
 
-from networks.CMMPNet_3 import DinkNet34_CMMPNet
+from framework_connect import Framework
+from utils.datasets_connect import prepare_Beijing_dataset, prepare_TLCGIS_dataset
 
+from networks.CMMPNet_4 import DinkNet34_CMMPNet
 
 class Logger(object):
     def __init__(self, filename="Default.log"):
@@ -44,13 +44,15 @@ def get_dataloader(args):
     val_dl   = torch.utils.data.DataLoader(val_ds,   batch_size=BATCH_SIZE, num_workers=args.workers, shuffle=False, drop_last=False)
     test_dl  = torch.utils.data.DataLoader(test_ds,  batch_size=BATCH_SIZE, num_workers=args.workers, shuffle=False, drop_last=False)
     return train_dl, val_dl, test_dl
+def predicting_road(img):
+    net = get_model(args.model)
+
 
 
 def train_val_test(args):
     net = get_model(args.model)
     with torch.no_grad():  # 必须有
-        summary(net.to('cuda'), input_size=(4, 512, 512), batch_size=4)
-    print(net)
+        summary(net.to('cuda'), input_size=(4, 512, 512), batch_size=1)
     print(net)
     
     optimizer = torch.optim.Adam(params=net.parameters(), lr=args.lr)
@@ -73,20 +75,24 @@ if __name__ == "__main__":
     parser.add_argument('--lr',    type=float, default=2e-4)
     parser.add_argument('--name',  type=str, default='')
     parser.add_argument('--batch_size', type=int, default=4)
-    parser.add_argument('--sat_dir',  type=str, default='/kaggle/input/bjroad/BJRoad/train_val/image')
-    parser.add_argument('--mask_dir', type=str, default='/kaggle/input/bjroad/BJRoad/train_val/mask')
-    parser.add_argument('--gps_dir',  type=str, default='/kaggle/input/bjroad/BJRoad/train_val/gps')
-    parser.add_argument('--test_sat_dir',  type=str, default='/kaggle/input/bjroad/BJRoad/test/image')
-    parser.add_argument('--test_mask_dir', type=str, default='/kaggle/input/bjroad/BJRoad/test/mask')
-    parser.add_argument('--test_gps_dir',  type=str, default='/kaggle/input/bjroad/BJRoad/test/gps')
+    parser.add_argument('--sat_dir',  type=str, default=r'F:\ML_data\remote_data\BJRoad\train_val\image')
+    parser.add_argument('--mask_dir', type=str, default=r'F:\ML_data\remote_data\BJRoad\train_val\mask')
+    parser.add_argument('--gps_dir',  type=str, default=r'F:\ML_data\remote_data\BJRoad\train_val\gps')
+    parser.add_argument('--test_sat_dir',  type=str, default=r'F:\ML_data\remote_data\BJRoad\test\image')
+    parser.add_argument('--test_mask_dir', type=str, default=r'F:\ML_data\remote_data\BJRoad\test\mask')
+    parser.add_argument('--test_gps_dir',  type=str, default=r'F:\ML_data\remote_data\BJRoad\test\gps')
+    parser.add_argument('--connect_dir1',  type=str, default=r'F:\ML_data\remote_data\BJRoad\train_val\connect_8_d1')
+    parser.add_argument('--connect_dir2', type=str, default=r'F:\ML_data\remote_data\BJRoad\train_val\connect_8_d3')
+    parser.add_argument('--test_connect_dir1', type=str,default=r'F:\ML_data\remote_data\BJRoad\test\connect_8_d1')
+    parser.add_argument('--test_connect_dir2', type=str,default=r'F:\ML_data\remote_data\BJRoad\test\connect_8_d3')
     parser.add_argument('--lidar_dir',  type=str, default='')
     parser.add_argument('--split_train_val_test', type=str, default='')
-    parser.add_argument('--weight_save_dir', type=str, default='./save_model/')
+    parser.add_argument('--weight_save_dir', type=str, default='./save_model')
     parser.add_argument('--val_size', type=float, default=0.1)
     parser.add_argument('--use_gpu',  type=bool, default=True)
     parser.add_argument('--gpu_ids',  type=str, default='0')
-    parser.add_argument('--workers',  type=int, default=2)
-    parser.add_argument('--epochs',  type=int, default=15)
+    parser.add_argument('--workers',  type=int, default=0)
+    parser.add_argument('--epochs',  type=int, default=1)
     parser.add_argument('--random_seed', type=int, default=12345)
     parser.add_argument('--dataset', type=str, default='BJRoad')
     parser.add_argument('--down_scale', type=bool, default=False)
@@ -102,7 +108,7 @@ if __name__ == "__main__":
     else:
         BATCH_SIZE = args.batch_size
         
-    WEIGHT_SAVE_DIR = os.path.join(args.weight_save_dir, f"{args.model}_{args.dataset}_"+time.strftime("%Y-%m-%d_%H:%M:%S", time.localtime())+"/")
+    WEIGHT_SAVE_DIR = os.path.join(args.weight_save_dir, f"{args.model}_{args.dataset}_"+time.strftime("%Y-%m-%d_%H_%M_%S", time.localtime())+"/")
     if not os.path.exists(WEIGHT_SAVE_DIR):
         os.makedirs(WEIGHT_SAVE_DIR)
     print("Log dir: ", WEIGHT_SAVE_DIR)
