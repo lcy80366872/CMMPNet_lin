@@ -56,7 +56,7 @@ class Solver:
         self.dataset = dataset
 
         self.loss = dice_bce_loss()
-        self.criterion_con = SegmentationLosses(weight=None, cuda=True).build_loss(mode='con_ce')
+        #self.criterion_con = SegmentationLosses(weight=None, cuda=True).build_loss(mode='con_ce')
 
         self.metrics = IoU(threshold=0.5)
         self.old_lr = optimizer.param_groups[0]["lr"]
@@ -90,8 +90,8 @@ class Solver:
         self.optimizer.zero_grad()
         pred,connect,connect_d1 = self.net.forward(self.img)
         loss1 = self.loss(self.mask, pred)
-        loss2 = self.criterion_con(self.connect_label,connect)
-        loss3 = self.criterion_con(self.connect_d1_label,connect_d1 )
+        loss2 = self.loss(self.connect_label,connect)
+        loss3 = self.loss(self.connect_d1_label,connect_d1 )
         lad = 0.2
         loss = loss1 + lad * (0.6 * loss2 + 0.4 * loss3)
         loss.backward()
