@@ -34,13 +34,13 @@ class dice_bce_loss(nn.Module):
         y_true = np.array(y_true.cpu())
         for id in range(b):
             y1 = y_true[id,:,:,:].transpose(1,2,0)
-            y[id,:,:,:] = cv2.resize(y1, (h, w,3))
+            y[id,:,:,:] = cv2.resize(y1, (h, w))
         return torch.Tensor(y)
         
     def __call__(self, y_true, y_pred):
         # the ground_truth map is resized to the resolution of the predicted map during training
-        if y_true.shape[2] != y_pred.shape[2] or y_true.shape[3] != y_pred.shape[3]:
-           y_true = self.resize(y_true, y_pred.shape[2], y_pred.shape[3]).cuda()
+#         if y_true.shape[2] != y_pred.shape[2] or y_true.shape[3] != y_pred.shape[3]:
+#            y_true = self.resize(y_true, y_pred.shape[2], y_pred.shape[3]).cuda()
            
         a = self.bce_loss(y_pred, y_true)
         b = self.soft_dice_loss(y_true, y_pred)
