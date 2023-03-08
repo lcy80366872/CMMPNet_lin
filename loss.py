@@ -91,7 +91,7 @@ class dice_bce_loss(nn.Module):
         
         y_true = np.array(y_true.cpu())
         for id in range(b):
-            y1 = y_true[id,:,:,:].transpose(1,2,0)
+#             y1 = y_true[id,:,:,:].transpose(1,2,0)
 #             y[id,:,:,:] = cv2.resize(y1, (h, w))
 #             print(y1.shape)
             a = cv2.resize(y1, (h, w))
