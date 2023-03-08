@@ -5,7 +5,7 @@ import os
 from tqdm import tqdm
 from utils.metrics import IoU
 from loss import dice_bce_loss
-
+# from loss import SegmentationLosses
 import copy
 import numpy
 
@@ -62,9 +62,9 @@ class Solver:
         
     def set_input(self, img_batch, mask_batch=None):
         self.img = img_batch
-        self.mask = mask_batch[:,:3,:,:]
-        self.connect_label=mask_batch[:,3:6,:,:]
-        self.connect_d1_label = mask_batch[:, 6:, :, :]
+        self.mask = mask_batch[:,0,:,:]
+        self.connect_label=mask_batch[:,1:10,:,:]
+        self.connect_d1_label = mask_batch[:, 10:, :, :]
     def data2cuda(self, volatile=False):
         if volatile:
             with torch.no_grad():
