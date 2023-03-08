@@ -9,6 +9,44 @@ from loss import SegmentationLosses
 import copy
 import numpy
 
+
+def pre_general(output, out_connect, out_connect_d1):
+    out_connect_full = []
+    out_connect = out_connect.data.cpu().numpy()
+    out_connect_full.append(out_connect[0, ...])
+    out_connect_full.append(out_connect[1, :, ::-1, :])
+    out_connect_full.append(out_connect[2, :, :, ::-1])
+    out_connect_full.append(out_connect[3, :, ::-1, ::-1])
+    out_connect_full = np.asarray(out_connect_full).mean(axis=0)[np.newaxis, :, :, :]
+    pred_connect = np.sum(out_connect_full, axis=1)
+    pred_connect[pred_connect < 0.9] = 0
+    pred_connect[pred_connect >= 0.9] = 1
+
+    out_connect_d1_full = []
+    out_connect_d1 = out_connect_d1.data.cpu().numpy()
+    out_connect_d1_full.append(out_connect_d1[0, ...])
+    out_connect_d1_full.append(out_connect_d1[1, :, ::-1, :])
+    out_connect_d1_full.append(out_connect_d1[2, :, :, ::-1])
+    out_connect_d1_full.append(out_connect_d1[3, :, ::-1, ::-1])
+    out_connect_d1_full = np.asarray(out_connect_d1_full).mean(axis=0)[np.newaxis, :, :, :]
+    pred_connect_d1 = np.sum(out_connect_d1_full, axis=1)
+    pred_connect_d1[pred_connect_d1 < 2.0] = 0
+    pred_connect_d1[pred_connect_d1 >= 2.0] = 1
+
+    pred_full = []
+    pred = output.data.cpu().numpy()
+    pred_full.append(pred[0, ...])
+    pred_full.append(pred[1, :, ::-1, :])
+    pred_full.append(pred[2, :, :, ::-1])
+    pred_full.append(pred[3, :, ::-1, ::-1])
+    pred_full = np.asarray(pred_full).mean(axis=0)
+
+    pred_full[pred_full > 0.1] = 1
+    pred_full[pred_full < 0.1] = 0
+
+    su = pred_full + pred_connect + pred_connect_d1
+    su[su > 0] = 1
+    return su
 class Solver:
     def __init__(self, net, optimizer, dataset):
         self.net = torch.nn.DataParallel(net.cuda(), device_ids=list(range(torch.cuda.device_count())))
@@ -41,6 +79,7 @@ class Solver:
             else:
                 self.mask = Variable(self.mask.cuda())
 
+
     def optimize(self):
         self.net.train()
         self.data2cuda()
@@ -54,7 +93,7 @@ class Solver:
         loss = loss1 + lad * (0.6 * loss2 + 0.4 * loss3)
         loss.backward()
         self.optimizer.step()
-        
+        pred=pre_general(pred,connect,connect_d1)
         batch_iou, intersection, union = self.metrics(self.mask, pred)
         return pred, loss.item(), batch_iou, intersection, union
 
@@ -68,7 +107,7 @@ class Solver:
         loss3 = self.loss(connect_d1, self.connect_d1_label)
         lad = 0.2
         loss = loss1 + lad * (0.6 * loss2 + 0.4 * loss3)
-        
+        pred = pre_general(pred, connect, connect_d1)
         batch_iou, intersection, union = self.metrics(self.mask, pred)
         pred = pred.cpu().data.numpy().squeeze(1)  
         return pred, loss.item(), batch_iou, intersection, union
