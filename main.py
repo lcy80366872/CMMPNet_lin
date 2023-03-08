@@ -51,8 +51,8 @@ def predicting_road(img):
 
 def train_val_test(args):
     net = get_model(args.model)
-    with torch.no_grad():  # 必须有
-        summary(net.to('cuda'), input_size=(4, 512, 512), batch_size=1)
+#     with torch.no_grad():  # 必须有
+#         summary(net.to('cuda'), input_size=(4, 512, 512), batch_size=1)
     print(net)
     
     optimizer = torch.optim.Adam(params=net.parameters(), lr=args.lr)
