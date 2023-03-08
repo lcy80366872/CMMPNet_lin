@@ -100,8 +100,8 @@ class dice_bce_loss(nn.Module):
                 y[id, :, :, :]=np.expand_dims(a,axis=2)
             else:
                 y[id, :, :, :]=a
-            
-            y.transpose(0,2,3,1)
+            print(y.shape)
+#             y.transpose(0,2,3,1)
         return torch.Tensor(y)
         
     def __call__(self, y_true, y_pred):
