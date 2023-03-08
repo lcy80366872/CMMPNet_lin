@@ -39,8 +39,8 @@ class dice_bce_loss(nn.Module):
         
     def __call__(self, y_true, y_pred):
         # the ground_truth map is resized to the resolution of the predicted map during training
-#         if y_true.shape[2] != y_pred.shape[2] or y_true.shape[3] != y_pred.shape[3]:
-#            y_true = self.resize(y_true, y_pred.shape[2], y_pred.shape[3]).cuda()
+        if y_true.shape[2] != y_pred.shape[2] or y_true.shape[3] != y_pred.shape[3]:
+           y_true = self.resize(y_true, y_pred.shape[2], y_pred.shape[3]).cuda()
            
         a = self.bce_loss(y_pred, y_true)
         b = self.soft_dice_loss(y_true, y_pred)
