@@ -88,7 +88,7 @@ class dice_bce_loss(nn.Module):
     def resize(self, y_true, h, w):
         b = y_true.shape[0]
         y = np.zeros((b,  h,w,y_true.shape[1]))
-        
+        print(y.shape)
         y_true = np.array(y_true.cpu())
         for id in range(b):
             y1 = y_true[id,:,:,:].transpose(1,2,0)
