@@ -63,7 +63,7 @@ class Solver:
         
     def set_input(self, img_batch, mask_batch=None):
         self.img = img_batch
-        self.mask = np.expand_dims(mask_batch[:,0,:,:],axis=1)
+        self.mask = mask_batch[:,0,:,:].unsqueeze(1)
         
 
         self.connect_label=mask_batch[:,1:10,:,:]
