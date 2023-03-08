@@ -95,7 +95,7 @@ class dice_bce_loss(nn.Module):
 #             y[id,:,:,:] = cv2.resize(y1, (h, w))
             print(y1.shape)
             a = cv2.resize(y1, (h, w))
-            print(a.shape)
+            print(a.dim)
             if a.dim == 2:
                 y[id, :, :, :]=a.unsqueeze(2)
             else:
