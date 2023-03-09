@@ -190,7 +190,7 @@ class ImageGPSDataset(data.Dataset):
         # But the resolution of masks is maintained. For a fair comparison, the final predicted maps would be resized to the resolution of masks during testing.
         if self.down_scale:
             img = cv2.resize(img, (self.down_resolution, self.down_resolution))
-            mask= cv2.resize(mask,(self.down_resolution, self.down_resolution))
+#             mask= cv2.resize(mask,(self.down_resolution, self.down_resolution))
         #相应的axis轴上扩展维度
         if mask.ndim == 2:
             mask = np.expand_dims(mask, axis=2)
