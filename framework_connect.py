@@ -22,7 +22,8 @@ def pre_general(output, out_connect, out_connect_d1):
     out_connect_d1 = out_connect_d1.data.cpu().numpy()
     pred_connect_d1 = np.mean(out_connect_d1, axis=1)
     pred_connect_d1[pred_connect_d1 < 2.0] = 0
-    pred_connect_d1[pred_connect_d1 >= 2.0] = 1
+    pred_connect_d1[pred_connect_d1 >= 2.0] = 
+    print('pred_connect_shape:',pred_connect.shape)
 
     
     pred = output.data.cpu().numpy()
