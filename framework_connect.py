@@ -97,6 +97,8 @@ class Solver:
         loss = loss1 + lad * (0.6 * loss2 + 0.4 * loss3)
         loss.backward()
         self.optimizer.step()
+        print('pred_shape:',pred.shape)
+        print('con1_shape:',connect.shape)
         pred=pre_general(pred,connect,connect_d1)
         batch_iou, intersection, union = self.metrics(self.mask, pred)
         return pred, loss.item(), batch_iou, intersection, union
@@ -111,8 +113,7 @@ class Solver:
         loss3 = self.loss(connect_d1, self.connect_d1_label)
         lad = 0.2
         loss = loss1 + lad * (0.6 * loss2 + 0.4 * loss3)
-        print('pred_shape:',pred.shape)
-        print('con1_shape:',connect.shape)
+        
         pred = pre_general(pred, connect, connect_d1)
         batch_iou, intersection, union = self.metrics(self.mask, pred)
         pred = pred.cpu().data.numpy().squeeze(1)  
