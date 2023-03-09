@@ -93,6 +93,7 @@ class Solver:
     def test_batch(self):
         self.net.eval()
         self.data2cuda(volatile=True)
+        print('test')
         with torch.no_grad():
             pred,connect,connect_d1  = self.net.forward(self.img)
             loss1 = self.loss(self.mask, pred)
