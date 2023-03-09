@@ -104,7 +104,7 @@ class dice_bce_loss(nn.Module):
         if y_true.shape[2] != y_pred.shape[2] or y_true.shape[3] != y_pred.shape[3]:
             
             y_true = self.resize(y_true, y_pred.shape[2], y_pred.shape[3]).cuda()
-            print(y_true.shape)
+#             print(y_true.shape)
            
         a = self.bce_loss(y_pred, y_true)
         b = self.soft_dice_loss(y_true, y_pred)
