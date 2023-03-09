@@ -23,17 +23,17 @@ def pre_general(output, out_connect, out_connect_d1):
     pred_connect_d1 = np.mean(out_connect_d1, axis=1)[:,np.newaxis, :, :]
     pred_connect_d1[pred_connect_d1 < 2.0] = 0
     pred_connect_d1[pred_connect_d1 >= 2.0] = 1
-    print('pred_connect_shape:',pred_connect.shape)
+#     print('pred_connect_shape:',pred_connect.shape)
 
     
     pred = output.data.cpu().numpy()
-    print('pred_shape:',pred.shape)
+#     print('pred_shape:',pred.shape)
     pred[pred > 0.1] = 1
     pred[pred < 0.1] = 0
 
     su = pred + pred_connect + pred_connect_d1
     su[su > 0] = 1
-    print('pre_final_shape:',su.shape)
+#     print('pre_final_shape:',su.shape)
 
     return torch.Tensor(su)
 class Solver:
