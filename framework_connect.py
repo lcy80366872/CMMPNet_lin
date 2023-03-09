@@ -12,42 +12,28 @@ import numpy
 
 
 def pre_general(output, out_connect, out_connect_d1):
-    out_connect_full = []
+
     out_connect = out_connect.data.cpu().numpy()
-    out_connect_full.append(out_connect[0, ...])
-    out_connect_full.append(out_connect[1, :, ::-1, :])
-    out_connect_full.append(out_connect[2, :, :, ::-1])
-    out_connect_full.append(out_connect[3, :, ::-1, ::-1])
-    out_connect_full = np.asarray(out_connect_full).mean(axis=0)[np.newaxis, :, :, :]
-    pred_connect = np.sum(out_connect_full, axis=1)
+    pred_connect = np.mean(out_connect, axis=1)
     pred_connect[pred_connect < 0.9] = 0
     pred_connect[pred_connect >= 0.9] = 1
 
-    out_connect_d1_full = []
+
     out_connect_d1 = out_connect_d1.data.cpu().numpy()
-    out_connect_d1_full.append(out_connect_d1[0, ...])
-    out_connect_d1_full.append(out_connect_d1[1, :, ::-1, :])
-    out_connect_d1_full.append(out_connect_d1[2, :, :, ::-1])
-    out_connect_d1_full.append(out_connect_d1[3, :, ::-1, ::-1])
-    out_connect_d1_full = np.asarray(out_connect_d1_full).mean(axis=0)[np.newaxis, :, :, :]
-    pred_connect_d1 = np.sum(out_connect_d1_full, axis=1)
+    pred_connect_d1 = np.mean(out_connect_d1, axis=1)
     pred_connect_d1[pred_connect_d1 < 2.0] = 0
     pred_connect_d1[pred_connect_d1 >= 2.0] = 1
 
-    pred_full = []
+    
     pred = output.data.cpu().numpy()
-    pred_full.append(pred[0, ...])
-    pred_full.append(pred[1, :, ::-1, :])
-    pred_full.append(pred[2, :, :, ::-1])
-    pred_full.append(pred[3, :, ::-1, ::-1])
-    pred_full = np.asarray(pred_full).mean(axis=0)
+    print('pred_shape:',pred.shape)
+    pred[pred > 0.1] = 1
+    pred[pred < 0.1] = 0
 
-    pred_full[pred_full > 0.1] = 1
-    pred_full[pred_full < 0.1] = 0
-
-    su = pred_full + pred_connect + pred_connect_d1
+    su = pred + pred_connect + pred_connect_d1
     su[su > 0] = 1
     print('pre_final_shape:',su.shape)
+
     return torch.Tensor(su)
 class Solver:
     def __init__(self, net, optimizer, dataset):
