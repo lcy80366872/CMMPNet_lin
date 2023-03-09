@@ -12,10 +12,14 @@ class IoU(nn.Module):
     def resize(self,x, h, w):
         b = x.shape[0]
         x = x.cpu().detach().numpy() 
-        y = np.zeros((b, x.shape[1], h, w))
+        y = np.zeros((b, h, w,x.shape[1]))
         for id in range(b):
             x1 = x[id,:,:,:].transpose(1,2,0)
-            y[id,:,:,:] = cv2.resize(x1, (h, w))
+            a = cv2.resize(x1, (h, w))
+            if a.ndim == 2:
+                a = np.expand_dims(a, axis=-1)
+            y[id, :, :, :]=a
+        y = y.transpose(0, 2, 3, 1)
         return torch.Tensor(y)
 
     def forward(self, target, inputs):
