@@ -19,7 +19,7 @@ class IoU(nn.Module):
             if a.ndim == 2:
                 a = np.expand_dims(a, axis=-1)
             y[id, :, :, :]=a
-        y = y.transpose(0, 2, 3, 1)
+        y = y.transpose(0, 3, 1,2)
         return torch.Tensor(y)
 
     def forward(self, target, inputs):
