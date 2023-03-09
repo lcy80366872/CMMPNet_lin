@@ -47,7 +47,8 @@ def pre_general(output, out_connect, out_connect_d1):
 
     su = pred_full + pred_connect + pred_connect_d1
     su[su > 0] = 1
-    return su
+    print(su.shape)
+    return torch.Tensor(su)
 class Solver:
     def __init__(self, net, optimizer, dataset):
         self.net = torch.nn.DataParallel(net.cuda(), device_ids=list(range(torch.cuda.device_count())))
