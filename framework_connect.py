@@ -93,17 +93,17 @@ class Solver:
     def test_batch(self):
         self.net.eval()
         self.data2cuda(volatile=True)
-        
-        pred,connect,connect_d1  = self.net.forward(self.img)
-        loss1 = self.loss(self.mask, pred)
-        loss2 = self.loss(connect, self.connect_label)
-        loss3 = self.loss(connect_d1, self.connect_d1_label)
-        lad = 0.2
-        loss = loss1 + lad * (0.6 * loss2 + 0.4 * loss3)
-        
-        pred = pre_general(pred, connect, connect_d1)
-        batch_iou, intersection, union = self.metrics(self.mask, pred)
-        pred = pred.cpu().data.numpy().squeeze(1)  
+        with torch.no_grad():
+            pred,connect,connect_d1  = self.net.forward(self.img)
+            loss1 = self.loss(self.mask, pred)
+            loss2 = self.loss(connect, self.connect_label)
+            loss3 = self.loss(connect_d1, self.connect_d1_label)
+            lad = 0.2
+            loss = loss1 + lad * (0.6 * loss2 + 0.4 * loss3)
+
+            pred = pre_general(pred, connect, connect_d1)
+            batch_iou, intersection, union = self.metrics(self.mask, pred)
+            pred = pred.cpu().data.numpy().squeeze(1)  
         return pred, loss.item(), batch_iou, intersection, union
         
         
