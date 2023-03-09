@@ -62,13 +62,17 @@ class Solver:
                 self.img = Variable(self.img.cuda())
         else:
             self.img = Variable(self.img.cuda())
-
+ 
         if self.mask is not None:
             if volatile:
                 with torch.no_grad():
                     self.mask = Variable(self.mask.cuda())
+                    self.connect_label=Variable(self.connect_label.cuda())
+                    self.connect_d1_label = Variable(self.connect_d1_label.cuda())
             else:
                 self.mask = Variable(self.mask.cuda())
+                self.connect_label = Variable(self.connect_label.cuda())
+                self.connect_d1_label = Variable(self.connect_d1_label.cuda())
 
 
     def optimize(self):
@@ -93,18 +97,18 @@ class Solver:
     def test_batch(self):
         self.net.eval()
         self.data2cuda(volatile=True)
-        print('test')
-        with torch.no_grad():
-            pred,connect,connect_d1  = self.net.forward(self.img)
-            loss1 = self.loss(self.mask, pred)
-            loss2 = self.loss(self.connect_label,connect )
-            loss3 = self.loss( self.connect_d1_label,connect_d1)
-            lad = 0.2
-            loss = loss1 + lad * (0.6 * loss2 + 0.4 * loss3)
+#         print('test')
+        
+        pred,connect,connect_d1  = self.net.forward(self.img)
+        loss1 = self.loss(self.mask, pred)
+        loss2 = self.loss(self.connect_label,connect )
+        loss3 = self.loss( self.connect_d1_label,connect_d1)
+        lad = 0.2
+        loss = loss1 + lad * (0.6 * loss2 + 0.4 * loss3)
 
-            pred = pre_general(pred, connect, connect_d1)
-            batch_iou, intersection, union = self.metrics(self.mask, pred)
-            pred = pred.cpu().data.numpy().squeeze(1)  
+        pred = pre_general(pred, connect, connect_d1)
+        batch_iou, intersection, union = self.metrics(self.mask, pred)
+        pred = pred.cpu().data.numpy().squeeze(1)  
         return pred, loss.item(), batch_iou, intersection, union
         
         
@@ -187,7 +191,7 @@ class Framework:
         for i, (img, mask) in progress_bar:
             self.solver.set_input(img, mask)
             if mode=='training':
-                pred_map, iter_loss, batch_iou, samples_intersection, samples_union = self.solver.test_batch()
+                pred_map, iter_loss, batch_iou, samples_intersection, samples_union = self.solver.optimize()
             else:
                 pred_map, iter_loss, batch_iou, samples_intersection, samples_union = self.solver.test_batch()
                 
