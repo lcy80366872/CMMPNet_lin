@@ -47,7 +47,7 @@ def pre_general(output, out_connect, out_connect_d1):
 
     su = pred_full + pred_connect + pred_connect_d1
     su[su > 0] = 1
-    print(su.shape)
+    print('pre_final_shape:',su.shape)
     return torch.Tensor(su)
 class Solver:
     def __init__(self, net, optimizer, dataset):
@@ -111,8 +111,8 @@ class Solver:
         loss3 = self.loss(connect_d1, self.connect_d1_label)
         lad = 0.2
         loss = loss1 + lad * (0.6 * loss2 + 0.4 * loss3)
-        print('pred_shape',pred.shape)
-        print('con1_shape',connect.shape)
+        print('pred_shape:',pred.shape)
+        print('con1_shape:',connect.shape)
         pred = pre_general(pred, connect, connect_d1)
         batch_iou, intersection, union = self.metrics(self.mask, pred)
         pred = pred.cpu().data.numpy().squeeze(1)  
