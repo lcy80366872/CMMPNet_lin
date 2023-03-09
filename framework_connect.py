@@ -186,7 +186,7 @@ class Framework:
         for i, (img, mask) in progress_bar:
             self.solver.set_input(img, mask)
             if mode=='training':
-                pred_map, iter_loss, batch_iou, samples_intersection, samples_union = self.solver.optimize()
+                pred_map, iter_loss, batch_iou, samples_intersection, samples_union = self.solver.test_batch()
             else:
                 pred_map, iter_loss, batch_iou, samples_intersection, samples_union = self.solver.test_batch()
                 
