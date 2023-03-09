@@ -96,8 +96,8 @@ class Solver:
         with torch.no_grad():
             pred,connect,connect_d1  = self.net.forward(self.img)
             loss1 = self.loss(self.mask, pred)
-            loss2 = self.loss(connect, self.connect_label)
-            loss3 = self.loss(connect_d1, self.connect_d1_label)
+            loss2 = self.loss(self.connect_label,connect )
+            loss3 = self.loss( self.connect_d1_label,connect_d1)
             lad = 0.2
             loss = loss1 + lad * (0.6 * loss2 + 0.4 * loss3)
 
