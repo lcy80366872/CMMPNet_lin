@@ -105,7 +105,7 @@ class dice_bce_loss(nn.Module):
             
 
 #             print(y.shape)
-            y=y.transpose(0,2,3,1)
+        y=y.transpose(0,3,1,2)
         return torch.Tensor(y)
         
     def __call__(self, y_true, y_pred):
