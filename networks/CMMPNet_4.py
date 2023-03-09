@@ -226,5 +226,5 @@ class DinkNet34_CMMPNet(nn.Module):
 
         x_out, connect, connect_d1 = self.connect(x_out)
         out = self.finalconv(torch.cat((x_out, add_out), 1))  # b*1*h*w
-        return torch.sigmoid(out),connect, connect_d1
+        return torch.sigmoid(out),torch.sigmoid(connect), torch.sigmoid(connect_d1)
 
