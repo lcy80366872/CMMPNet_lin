@@ -167,15 +167,16 @@ class ImageGPSDataset(data.Dataset):
             gps = np.expand_dims(sample['gps'], axis=2)
         if sample['mask'].ndim == 2:
             mask = np.expand_dims(sample['mask'], axis=2)
+        mask= self._concat_images(mask, sample['connect0'])
+        mask = self._concat_images(mask, sample['connect1'])
+        mask = self._concat_images(mask, sample['connect2'])
+        mask = self._concat_images(mask, sample['connect_d1_0'])
+        mask = self._concat_images(mask, sample['connect_d1_1'])
+        mask = self._concat_images(mask, sample['connect_d1_2'])
         if self.randomize:
             sat = randomHueSaturationValue(sample['image'])
             img = self._concat_images(sat, gps)
-            mask= self._concat_images(mask, sample['connect0'])
-            mask = self._concat_images(mask, sample['connect1'])
-            mask = self._concat_images(mask, sample['connect2'])
-            mask = self._concat_images(mask, sample['connect_d1_0'])
-            mask = self._concat_images(mask, sample['connect_d1_1'])
-            mask = self._concat_images(mask, sample['connect_d1_2'])
+            
             img, mask = randomShiftScaleRotate(img, mask)
             img, mask = randomRotate180(img, mask)
             img, mask = randomHorizontalFlip(img, mask)
