@@ -29,9 +29,9 @@ def prepare_Beijing_dataset(args):
     image_list = [x[:-9] for x in os.listdir(args.mask_dir)      if x.find('mask.png') != -1]
     test_list  = [x[:-9] for x in os.listdir(args.test_mask_dir) if x.find('mask.png') != -1]
     train_list, val_list = train_test_split(image_list, test_size=args.val_size, random_state=args.random_seed)
-    print('train_list:',train_list)
-    print('val_list:',val_list)
-    print('test_list:',test_list)
+#     print('train_list:',train_list)
+#     print('val_list:',val_list)
+#     print('test_list:',test_list)
     train_dataset = ImageGPSDataset(train_list, args.sat_dir,      args.mask_dir,      args.gps_dir,  args.connect_dir1 ,  args.connect_dir2, randomize=True,  down_scale=args.down_scale)
     val_dataset   = ImageGPSDataset(val_list,   args.sat_dir,      args.mask_dir,      args.gps_dir,  args.connect_dir1 ,  args.connect_dir2,   randomize=False, down_scale=args.down_scale)
     test_dataset  = ImageGPSDataset(test_list,  args.test_sat_dir, args.test_mask_dir, args.test_gps_dir,  args.test_connect_dir1,args.test_connect_dir2,randomize=False, down_scale=args.down_scale)
