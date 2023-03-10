@@ -126,7 +126,7 @@ class ImageGPSDataset(data.Dataset):
         connect0 = os.path.join(self.connect_root_1,"{0}_mask_0.{1}").format(image_id, self.mask_suffix)
         connect1 = os.path.join(self.connect_root_1, "{0}_mask_1.{1}").format(image_id, self.mask_suffix)
         connect2 = os.path.join(self.connect_root_1, "{0}_mask_2.{1}").format(image_id, self.mask_suffix)
-        print('con_path:',connect0)
+       
         connect_d1_0 = os.path.join(self.connect_root_2, "{0}_mask_0.{1}").format(image_id, self.mask_suffix)
         connect_d1_1 = os.path.join(self.connect_root_2, "{0}_mask_1.{1}").format(image_id, self.mask_suffix)
         connect_d1_2 = os.path.join(self.connect_root_2, "{0}_mask_2.{1}").format(image_id, self.mask_suffix)
