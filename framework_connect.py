@@ -62,7 +62,7 @@ class Solver:
                 self.img = Variable(self.img.cuda())
         else:
             self.img = Variable(self.img.cuda())
-        print('connect_label_original:',self.connect_label.shape)
+#         print('connect_label_original:',self.connect_label.shape)
         if self.mask is not None:
             if volatile:
                 with torch.no_grad():
@@ -82,7 +82,7 @@ class Solver:
         
         self.optimizer.zero_grad()
         pred,connect,connect_d1 = self.net.forward(self.img)
-        print('connect_pred:',connect.shape)
+#         print('connect_pred:',connect.shape)
         loss1 = self.loss(self.mask, pred)
         loss2 = self.loss(self.connect_label,connect)
         loss3 = self.loss(self.connect_d1_label,connect_d1 )
@@ -188,11 +188,11 @@ class Framework:
         
         dataloader_iter = iter(dataloader) 
         iter_num = len(dataloader_iter)
-        print('iter_num:',iter_num)
+#         print('iter_num:',iter_num)
         progress_bar = tqdm(enumerate(dataloader_iter), total=iter_num)
         
         for i, (img, mask) in progress_bar:
-            print('mask:',mask.shape)
+#             print('mask:',mask.shape)
             self.solver.set_input(img, mask)
             if mode=='training':
                 pred_map, iter_loss, batch_iou, samples_intersection, samples_union = self.solver.optimize()
