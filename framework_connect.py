@@ -73,6 +73,7 @@ class Solver:
                 self.mask = Variable(self.mask.cuda())
                 self.connect_label = Variable(self.connect_label.cuda())
                 self.connect_d1_label = Variable(self.connect_d1_label.cuda())
+                print('connect_label:',self.connect_label.shape)
 
 
     def optimize(self):
@@ -81,6 +82,7 @@ class Solver:
         
         self.optimizer.zero_grad()
         pred,connect,connect_d1 = self.net.forward(self.img)
+        print('connect_pred:',connect.shape)
         loss1 = self.loss(self.mask, pred)
         loss2 = self.loss(self.connect_label,connect)
         loss3 = self.loss(self.connect_d1_label,connect_d1 )
