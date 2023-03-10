@@ -191,6 +191,7 @@ class Framework:
         progress_bar = tqdm(enumerate(dataloader_iter), total=iter_num)
         
         for i, (img, mask) in progress_bar:
+            print('mask:',mask.shape)
             self.solver.set_input(img, mask)
             if mode=='training':
                 pred_map, iter_loss, batch_iou, samples_intersection, samples_union = self.solver.optimize()
