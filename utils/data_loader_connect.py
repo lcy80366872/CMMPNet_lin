@@ -122,9 +122,11 @@ class ImageGPSDataset(data.Dataset):
         img_path = os.path.join(self.sat_root, "{0}_sat.{1}").format(image_id, self.sat_suffix)
         mask_path = os.path.join(self.mask_root, "{0}_mask.{1}").format(image_id, self.mask_suffix)
         gps_path = os.path.join(self.gps_root, "{0}_gps.{1}").format(image_id, self.gps_suffix)
+
         connect0 = os.path.join(self.connect_root_1,"{0}_mask_0.{1}").format(image_id, self.mask_suffix)
         connect1 = os.path.join(self.connect_root_1, "{0}_mask_1.{1}").format(image_id, self.mask_suffix)
         connect2 = os.path.join(self.connect_root_1, "{0}_mask_2.{1}").format(image_id, self.mask_suffix)
+        print('con_path:',connect0)
         connect_d1_0 = os.path.join(self.connect_root_2, "{0}_mask_0.{1}").format(image_id, self.mask_suffix)
         connect_d1_1 = os.path.join(self.connect_root_2, "{0}_mask_1.{1}").format(image_id, self.mask_suffix)
         connect_d1_2 = os.path.join(self.connect_root_2, "{0}_mask_2.{1}").format(image_id, self.mask_suffix)
@@ -167,15 +169,16 @@ class ImageGPSDataset(data.Dataset):
             gps = np.expand_dims(sample['gps'], axis=2)
         if sample['mask'].ndim == 2:
             mask = np.expand_dims(sample['mask'], axis=2)
+        mask = self._concat_images(mask, sample['connect0'])
+        mask = self._concat_images(mask, sample['connect1'])
+        mask = self._concat_images(mask, sample['connect2'])
+        mask = self._concat_images(mask, sample['connect_d1_0'])
+        mask = self._concat_images(mask, sample['connect_d1_1'])
+        mask = self._concat_images(mask, sample['connect_d1_2'])
         if self.randomize:
             sat = randomHueSaturationValue(sample['image'])
             img = self._concat_images(sat, gps)
-            mask= self._concat_images(mask, sample['connect0'])
-            mask = self._concat_images(mask, sample['connect1'])
-            mask = self._concat_images(mask, sample['connect2'])
-            mask = self._concat_images(mask, sample['connect_d1_0'])
-            mask = self._concat_images(mask, sample['connect_d1_1'])
-            mask = self._concat_images(mask, sample['connect_d1_2'])
+
             img, mask = randomShiftScaleRotate(img, mask)
             img, mask = randomRotate180(img, mask)
             img, mask = randomHorizontalFlip(img, mask)
@@ -190,6 +193,7 @@ class ImageGPSDataset(data.Dataset):
         # But the resolution of masks is maintained. For a fair comparison, the final predicted maps would be resized to the resolution of masks during testing.
         if self.down_scale:
             img = cv2.resize(img, (self.down_resolution, self.down_resolution))
+            # mask=cv2.resize(mask,(self.down_resolution,self.down_resolution))
         #相应的axis轴上扩展维度
         if mask.ndim == 2:
             mask = np.expand_dims(mask, axis=2)
