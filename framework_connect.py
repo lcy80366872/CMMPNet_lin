@@ -21,19 +21,18 @@ def pre_general(output, out_connect, out_connect_d1):
 
     out_connect_d1 = out_connect_d1.data.cpu().numpy()
     pred_connect_d1 = np.mean(out_connect_d1, axis=1)[:,np.newaxis, :, :]
+
     pred_connect_d1[pred_connect_d1 < 2.0] = 0
     pred_connect_d1[pred_connect_d1 >= 2.0] = 1
-#     print('pred_connect_shape:',pred_connect.shape)
 
-    
+
     pred = output.data.cpu().numpy()
-#     print('pred_shape:',pred.shape)
+
     pred[pred > 0.1] = 1
     pred[pred < 0.1] = 0
 
     su = pred + pred_connect + pred_connect_d1
     su[su > 0] = 1
-#     print('pre_final_shape:',su.shape)
 
     return torch.Tensor(su)
 class Solver:
@@ -44,7 +43,7 @@ class Solver:
         self.dataset = dataset
 
         self.loss = dice_bce_loss()
-        #self.criterion_con = SegmentationLosses(weight=None, cuda=True).build_loss(mode='con_ce')
+        self.criterion_con = SegmentationLosses(weight=None, cuda=True).build_loss(mode='con_ce')
 
         self.metrics = IoU(threshold=0.5)
         self.old_lr = optimizer.param_groups[0]["lr"]
@@ -62,7 +61,7 @@ class Solver:
                 self.img = Variable(self.img.cuda())
         else:
             self.img = Variable(self.img.cuda())
-#         print('connect_label_original:',self.connect_label.shape)
+
         if self.mask is not None:
             if volatile:
                 with torch.no_grad():
@@ -73,7 +72,6 @@ class Solver:
                 self.mask = Variable(self.mask.cuda())
                 self.connect_label = Variable(self.connect_label.cuda())
                 self.connect_d1_label = Variable(self.connect_d1_label.cuda())
-                print('connect_label:',self.connect_label.shape)
 
 
     def optimize(self):
@@ -82,7 +80,6 @@ class Solver:
         
         self.optimizer.zero_grad()
         pred,connect,connect_d1 = self.net.forward(self.img)
-#         print('connect_pred:',connect.shape)
         loss1 = self.loss(self.mask, pred)
         loss2 = self.loss(self.connect_label,connect)
         loss3 = self.loss(self.connect_d1_label,connect_d1 )
@@ -90,8 +87,6 @@ class Solver:
         loss = loss1 + lad * (0.6 * loss2 + 0.4 * loss3)
         loss.backward()
         self.optimizer.step()
-#         print('pred_shape:',pred.shape)
-#         print('con1_shape:',connect.shape)
         pred=pre_general(pred,connect,connect_d1)
         batch_iou, intersection, union = self.metrics(self.mask, pred)
         return pred, loss.item(), batch_iou, intersection, union
@@ -99,18 +94,15 @@ class Solver:
     def test_batch(self):
         self.net.eval()
         self.data2cuda(volatile=True)
-#         print('test')
-        
         pred,connect,connect_d1  = self.net.forward(self.img)
         loss1 = self.loss(self.mask, pred)
         loss2 = self.loss(self.connect_label,connect )
         loss3 = self.loss( self.connect_d1_label,connect_d1)
         lad = 0.2
         loss = loss1 + lad * (0.6 * loss2 + 0.4 * loss3)
-
         pred = pre_general(pred, connect, connect_d1)
         batch_iou, intersection, union = self.metrics(self.mask, pred)
-        pred = pred.cpu().data.numpy().squeeze(1)  
+        pred = pred.cpu().data.numpy().squeeze(1)
         return pred, loss.item(), batch_iou, intersection, union
         
         
@@ -188,11 +180,11 @@ class Framework:
         
         dataloader_iter = iter(dataloader) 
         iter_num = len(dataloader_iter)
-#         print('iter_num:',iter_num)
+        print('iter_num:',iter_num)
         progress_bar = tqdm(enumerate(dataloader_iter), total=iter_num)
         
         for i, (img, mask) in progress_bar:
-#             print('mask:',mask.shape)
+            print('mask:',mask.shape)
             self.solver.set_input(img, mask)
             if mode=='training':
                 pred_map, iter_loss, batch_iou, samples_intersection, samples_union = self.solver.optimize()
