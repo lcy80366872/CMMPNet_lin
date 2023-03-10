@@ -62,7 +62,7 @@ class Solver:
                 self.img = Variable(self.img.cuda())
         else:
             self.img = Variable(self.img.cuda())
- 
+        print('connect_label_original:',self.connect_label.shape)
         if self.mask is not None:
             if volatile:
                 with torch.no_grad():
