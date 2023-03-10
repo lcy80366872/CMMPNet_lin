@@ -92,12 +92,12 @@ class dice_bce_loss(nn.Module):
         y_true = np.array(y_true.cpu())
         for id in range(b):
             y1 = y_true[id,:,:,:].transpose(1,2,0)
-            print('y1:',y1.shape)
+#             print('y1:',y1.shape)
             a = cv2.resize(y1, (h, w))
             if a.ndim == 2:
                 a=np.expand_dims(a,axis=-1)
-            print('a:',a.shape)
-            print('y:',y.shape)
+#             print('a:',a.shape)
+#             print('y:',y.shape)
             y[id, :, :, :]=a
         y=y.transpose(0,3,1,2)
         return torch.Tensor(y)
