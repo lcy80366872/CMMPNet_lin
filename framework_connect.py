@@ -37,6 +37,8 @@ def pre_general(output, out_connect, out_connect_d1):
     return torch.Tensor(su)
 
 def pre_general_test(output, out_connect, out_connect_d1):
+    print('out_connect:',out_connect.shape)
+    print('output:',output.shape)
     out_connect_full = []
     out_connect = out_connect.data.cpu().numpy()
     out_connect_full.append(out_connect[0, ...])
@@ -47,6 +49,7 @@ def pre_general_test(output, out_connect, out_connect_d1):
     pred_connect = np.sum(out_connect_full, axis=1)
     pred_connect[pred_connect < 0.9] = 0
     pred_connect[pred_connect >= 0.9] = 1
+    print('pred_connect:',pred_connect.shape)
 
     out_connect_d1_full = []
     out_connect_d1 = out_connect_d1.data.cpu().numpy()
