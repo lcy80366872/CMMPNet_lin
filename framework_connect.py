@@ -127,7 +127,7 @@ class Solver:
         loss = loss1 + lad * (0.6 * loss2 + 0.4 * loss3)
         loss.backward()
         self.optimizer.step()
-        pred=pre_general(pred,connect,connect_d1)
+#         pred=pre_general(pred,connect,connect_d1)
         batch_iou, intersection, union = self.metrics(self.mask, pred)
         return pred, loss.item(), batch_iou, intersection, union
 
@@ -178,7 +178,7 @@ class Framework:
         for epoch in range(1, epochs + 1):
             print(f"epoch {epoch}/{epochs}")
             
-            train_loss, train_metrics = self.fit_one_epoch(self.train_dl,      mode='training')
+            train_loss, train_metrics = self.fit_one_epoch(self.train_dl,      mode='val')
             val_loss, val_metrics     = self.fit_one_epoch(self.validation_dl, mode='val')
             test_loss, test_metrics   = self.fit_one_epoch(self.test_dl,       mode='testing')
 
