@@ -73,7 +73,9 @@ def pre_general_test(output, out_connect, out_connect_d1):
 
     su = pred_full + pred_connect + pred_connect_d1
     su[su > 0] = 1
+    su=su.astype(int)
     print('su_shape:',su.shape)
+    
     return torch.Tensor(su)
 class Solver:
     def __init__(self, net, optimizer, dataset):
