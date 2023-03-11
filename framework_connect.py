@@ -37,8 +37,8 @@ def pre_general(output, out_connect, out_connect_d1):
     return torch.Tensor(su)
 ##这个瞎写的代码必须是测试时batch——size=1才能用
 def pre_general_test(output, out_connect, out_connect_d1):
-    print('out_connect:',out_connect.shape)
-    print('output:',output.shape)
+#     print('out_connect:',out_connect.shape)
+#     print('output:',output.shape)
     out_connect_full = []
     out_connect = out_connect.data.cpu().numpy()
     out_connect_full.append(out_connect[0, ...])
@@ -46,11 +46,11 @@ def pre_general_test(output, out_connect, out_connect_d1):
     out_connect_full.append(out_connect[2, :, :, ::-1])
     out_connect_full.append(out_connect[3, :, ::-1, ::-1])
     out_connect_full = np.asarray(out_connect_full).mean(axis=0)[np.newaxis, :, :, :]
-    print('out_connect_full:',out_connect_full.shape)
+#     print('out_connect_full:',out_connect_full.shape)
     pred_connect = np.sum(out_connect_full, axis=1)
     pred_connect[pred_connect < 0.9] = 0
     pred_connect[pred_connect >= 0.9] = 1
-    print('pred_connect:',pred_connect.shape)
+#     print('pred_connect:',pred_connect.shape)
 
     out_connect_d1_full = []
     out_connect_d1 = out_connect_d1.data.cpu().numpy()
@@ -191,7 +191,7 @@ class Framework:
         for epoch in range(1, epochs + 1):
             print(f"epoch {epoch}/{epochs}")
             
-            train_loss, train_metrics = self.fit_one_epoch(self.train_dl,      mode='val')
+            train_loss, train_metrics = self.fit_one_epoch(self.train_dl,      mode='training')
             val_loss, val_metrics     = self.fit_one_epoch(self.validation_dl, mode='val')
             test_loss, test_metrics   = self.fit_one_epoch(self.test_dl,       mode='testing')
 
