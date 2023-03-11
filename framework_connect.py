@@ -191,7 +191,7 @@ class Framework:
         for epoch in range(1, epochs + 1):
             print(f"epoch {epoch}/{epochs}")
             
-            train_loss, train_metrics = self.fit_one_epoch(self.test_dl,      mode='testing')
+            train_loss, train_metrics = self.fit_one_epoch(self.train_dl,      mode='training')
             val_loss, val_metrics     = self.fit_one_epoch(self.validation_dl, mode='val')
             test_loss, test_metrics   = self.fit_one_epoch(self.test_dl,       mode='testing')
 
