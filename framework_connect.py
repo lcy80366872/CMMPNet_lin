@@ -142,6 +142,13 @@ class Solver:
         loss3 = self.loss( self.connect_d1_label,connect_d1)
         lad = 0.2
         loss = loss1 + lad * (0.6 * loss2 + 0.4 * loss3)
+        img = self.img.cpu().numpy()
+        image1 = img[:, :, ::-1, :]
+        image2 = img[:, :, :, ::-1]
+        image3 = img[:, :, ::-1, ::-1]
+        img = np.concatenate((img, image1, image2, image3), axis=0)
+        img = torch.from_numpy(img).float()
+        pred, connect, connect_d1 = self.net.forward(img)
         pred = pre_general_test(pred, connect, connect_d1)
         batch_iou, intersection, union = self.metrics(self.mask, pred)
         pred = pred.cpu().data.numpy().squeeze(1)
@@ -230,13 +237,7 @@ class Framework:
             if mode=='training':
                 pred_map, iter_loss, batch_iou, samples_intersection, samples_union = self.solver.optimize()
             else:
-                img = img.cpu().numpy()
-                image1 = img[:, :, ::-1, :]
-                image2 = img[:, :, :, ::-1]
-                image3 = img[:, :, ::-1, ::-1]
-                img = np.concatenate((img, image1, image2, image3), axis=0)
-                img = torch.from_numpy(img).float()
-                self.solver.set_input(img, mask)
+                
                 pred_map, iter_loss, batch_iou, samples_intersection, samples_union = self.solver.test_batch()
                 
             epoch_loss += iter_loss
