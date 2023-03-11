@@ -78,7 +78,7 @@ def pre_general_test(output, out_connect, out_connect_d1):
     su[su > 0] = 1
     su=su[np.newaxis, :, :, :]
     su=su.astype(int)
-    print('su_shape:',su.shape)
+#     print('su_shape:',su.shape)
     
     return torch.Tensor(su)
 class Solver:
