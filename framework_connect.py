@@ -61,7 +61,6 @@ def pre_general_test(output, out_connect, out_connect_d1):
 
     pred_full = []
     pred = output.data.cpu().numpy()
-    target_n = target.cpu().numpy()
     pred_full.append(pred[0, ...])
     pred_full.append(pred[1, :, ::-1, :])
     pred_full.append(pred[2, :, :, ::-1])
