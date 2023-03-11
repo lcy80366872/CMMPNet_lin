@@ -35,7 +35,7 @@ def pre_general(output, out_connect, out_connect_d1):
     su[su > 0] = 1
 
     return torch.Tensor(su)
-
+##这个瞎写的代码必须是测试时batch——size=1才能用
 def pre_general_test(output, out_connect, out_connect_d1):
     print('out_connect:',out_connect.shape)
     print('output:',output.shape)
@@ -76,6 +76,7 @@ def pre_general_test(output, out_connect, out_connect_d1):
 
     su = pred_full + pred_connect + pred_connect_d1
     su[su > 0] = 1
+    su=su[np.newaxis, :, :, :]
     su=su.astype(int)
     print('su_shape:',su.shape)
     
