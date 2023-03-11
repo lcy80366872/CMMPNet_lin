@@ -46,7 +46,7 @@ class Solver:
         loss = self.loss(self.mask, pred)
         loss.backward()
         self.optimizer.step()
-        print('pred_shape:',pred.shape)
+#         print('pred_shape:',pred.shape)
         batch_iou, intersection, union = self.metrics(self.mask, pred)
         return pred, loss.item(), batch_iou, intersection, union
 
