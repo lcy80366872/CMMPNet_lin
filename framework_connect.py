@@ -46,6 +46,7 @@ def pre_general_test(output, out_connect, out_connect_d1):
     out_connect_full.append(out_connect[2, :, :, ::-1])
     out_connect_full.append(out_connect[3, :, ::-1, ::-1])
     out_connect_full = np.asarray(out_connect_full).mean(axis=0)[np.newaxis, :, :, :]
+    print('out_connect_full:',out_connect_full.shape)
     pred_connect = np.sum(out_connect_full, axis=1)
     pred_connect[pred_connect < 0.9] = 0
     pred_connect[pred_connect >= 0.9] = 1
