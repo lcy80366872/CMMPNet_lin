@@ -46,7 +46,28 @@ def get_dataloader(args):
     return train_dl, val_dl, test_dl
 def predicting_road(img):
     net = get_model(args.model)
-
+def pre_image(net):
+    net.eval()
+    img = cv2.imread('/kaggle/input/bjroad-connect/BJRoad/test/image/11_0_sat.png')
+    img1 = cv2.imread('/kaggle/input/bjroad-connect/BJRoad/test/mask/11_0_mask.png', cv2.IMREAD_GRAYSCALE)
+    img1 = np.expand_dims(img1, axis=2)
+    print('img_shape', img.shape)
+    print('img1_shape', img1.shape)
+    img = np.concatenate([img, img1], axis=2)
+    img = cv2.resize(img, (512, 512))
+    img = np.array(img, np.float32).transpose(2, 0, 1) / 255.0 * 3.2 - 1.6
+    img = img[np.newaxis, :, :, :]
+    img = torch.tensor(img)
+    print('img_cat_shape', img.shape)
+    with torch.no_grad():
+        pred, connect, connect_d1 = net.forward(img)
+    pred=pred.numpy()
+    pred=np.squeeze(pred,axis=0).transpose(1,2,0)
+    connect=connect.numpy()
+    connect_d1 = connect_d1.numpy()
+    print(pred.shape)
+    # cv2.namedWindow("pred_img")
+    cv2.imshow('img',pred)
 
 
 def train_val_test(args):
@@ -62,6 +83,7 @@ def train_val_test(args):
     for key, value in state_dict.items():
         new_state[key.replace('module.', '')] = value
     net.load_state_dict(new_state)
+    pre_image(net)
     framework = Framework(net, optimizer, dataset=args.dataset)
     
     train_dl, val_dl, test_dl = get_dataloader(args)
