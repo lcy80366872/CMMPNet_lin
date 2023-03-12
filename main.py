@@ -61,6 +61,7 @@ def pre_image(net):
     img = img[np.newaxis, :, :, :]
     img = torch.tensor(img)
     print('img_cat_shape', img.shape)
+    img=img.cuda()
     with torch.no_grad():
         pred, connect, connect_d1 = net.forward(img)
     pred=pred.numpy()
