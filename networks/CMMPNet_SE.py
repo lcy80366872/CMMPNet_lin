@@ -91,6 +91,8 @@ class DinkNet34_CMMPNet(nn.Module):
         filters = [64, 128, 256, 512]
         self.net_name = "CMMPnet"
         self.block_size = [int(s) for s in block_size.split(',')]
+        self.connect = build_connect(1, 9, nn.BatchNorm2d)   #1和9分别代表类别，和生成连接图的层数（mask8个方向生成的连接图+mask自己本身）
+        
 
         # img
         resnet = models.resnet34(pretrained=True)
