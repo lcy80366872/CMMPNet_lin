@@ -4,6 +4,7 @@ from .basic_blocks import *
 import math
 import torch.nn.functional as F
 from networks.MPM import SPHead
+from networks.connect import build_connect
 
 up_kwargs = {'mode': 'bilinear', 'align_corners': True}
 
@@ -207,6 +208,7 @@ class DinkNet34_CMMPNet(nn.Module):
         x_out = self.finalrelu2(self.finalconv2(x_out))
         add_out = self.finalrelu2_add(self.finalconv2_add(add_out))
 
+        x_out, connect, connect_d1 = self.connect(x_out)
         out = self.finalconv(torch.cat((x_out, add_out), 1))  # b*1*h*w
-        return torch.sigmoid(out)
+        return torch.sigmoid(out),torch.sigmoid(connect), torch.sigmoid(connect_d1)
 
