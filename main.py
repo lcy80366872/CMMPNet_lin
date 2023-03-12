@@ -5,6 +5,7 @@ import torch.nn as nn
 from torch.nn import init
 import os
 import sys
+import cv2
 # from framework import Framework
 from framework_connect import Framework
 from utils.datasets_connect import prepare_Beijing_dataset, prepare_TLCGIS_dataset
