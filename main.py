@@ -64,10 +64,10 @@ def pre_image(net):
     img=img.cuda()
     with torch.no_grad():
         pred, connect, connect_d1 = net.forward(img)
-    pred=pred.numpy()
+    pred=pred.cpu().numpy()
     pred=np.squeeze(pred,axis=0).transpose(1,2,0)
-    connect=connect.numpy()
-    connect_d1 = connect_d1.numpy()
+    connect=connect.cpu().numpy()
+    connect_d1 = connect_d1.cpu().numpy()
     print(pred.shape)
     # cv2.namedWindow("pred_img")
     cv2.imshow('img',pred)
