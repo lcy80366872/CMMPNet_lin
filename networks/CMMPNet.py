@@ -191,8 +191,8 @@ class DinkNet34_CMMPNet(nn.Module):
         
         # Center
         
-        x_e4  = self.head(x_e4)
-        add_e4= self.head(add_e4)
+#         x_e4  = self.head(x_e4)
+#         add_e4= self.head(add_e4)
         x_c   = self.dblock(x_e4)
         add_c = self.dblock_add(add_e4)
 
