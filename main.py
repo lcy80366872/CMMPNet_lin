@@ -7,10 +7,10 @@ from torch.nn import init
 import os
 import sys
 import cv2
-# from framework import Framework
-from framework_connect import Framework
-from utils.datasets_connect import prepare_Beijing_dataset, prepare_TLCGIS_dataset
-# from utils.datasets import prepare_Beijing_dataset, prepare_TLCGIS_dataset
+from framework import Framework
+# from framework_connect import Framework
+# from utils.datasets_connect import prepare_Beijing_dataset, prepare_TLCGIS_dataset
+from utils.datasets import prepare_Beijing_dataset, prepare_TLCGIS_dataset
 from networks.CMMPNet_SE import DinkNet34_CMMPNet
 
 class Logger(object):
@@ -43,8 +43,8 @@ def get_dataloader(args):
         assert(False)  
 
     train_dl = torch.utils.data.DataLoader(train_ds, batch_size=BATCH_SIZE, num_workers=args.workers, shuffle=True,  drop_last=False)
-    val_dl   = torch.utils.data.DataLoader(val_ds,   batch_size=1, num_workers=args.workers, shuffle=False, drop_last=False)
-    test_dl  = torch.utils.data.DataLoader(test_ds,  batch_size=1, num_workers=args.workers, shuffle=False, drop_last=False)
+    val_dl   = torch.utils.data.DataLoader(val_ds,   batch_size=BATCH_SIZE, num_workers=args.workers, shuffle=False, drop_last=False)
+    test_dl  = torch.utils.data.DataLoader(test_ds,  batch_size=BATCH_SIZE, num_workers=args.workers, shuffle=False, drop_last=False)
     return train_dl, val_dl, test_dl
 def predicting_road(img):
     net = get_model(args.model)
