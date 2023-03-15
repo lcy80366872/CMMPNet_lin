@@ -79,7 +79,7 @@ def train_val_test(args):
 #         summary(net.to('cuda'), input_size=(4, 512, 512), batch_size=4)
     print(net)
     
-    optimizer = torch.optim.Adam(params=net.parameters(), lr=args.lr)
+    optimizer = torch.optim.AdamW(params=net.parameters(), lr=args.lr)
 #     # 多gpu得到的模型dict前面会加module
 #     new_state = {}
 #     state_dict = torch.load('/kaggle/input/cmmpnet-connect-model/epoch12_val0.6504_test0.6306.pth', map_location=torch.device('cpu'))
