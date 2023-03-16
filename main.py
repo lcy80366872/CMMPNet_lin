@@ -80,13 +80,13 @@ def train_val_test(args):
     print(net)
     
     optimizer = torch.optim.AdamW(params=net.parameters(), lr=args.lr)
-#     # 多gpu得到的模型dict前面会加module
-#     new_state = {}
-#     state_dict = torch.load('/kaggle/input/cmmpnet-connect-model/epoch12_val0.6504_test0.6306.pth', map_location=torch.device('cpu'))
-#     for key, value in state_dict.items():
-#         new_state[key.replace('module.', '')] = value
-#     net.load_state_dict(new_state)
-#     pre_image(net)
+    # 多gpu得到的模型dict前面会加module
+    new_state = {}
+    state_dict = torch.load('/kaggle/input/model-msca/msca_epoch8_val0.5569_test0.5917.pth', map_location=torch.device('cpu'))
+    for key, value in state_dict.items():
+        new_state[key.replace('module.', '')] = value
+    net.load_state_dict(new_state)
+    pre_image(net)
     framework = Framework(net, optimizer, dataset=args.dataset)
     
     train_dl, val_dl, test_dl = get_dataloader(args)
