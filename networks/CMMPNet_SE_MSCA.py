@@ -85,7 +85,7 @@ class DEM(torch.nn.Module):  # Dual Enhancement Module
 
 
 class DinkNet34_CMMPNet(nn.Module):
-    def __init__(self, block_size='1,2,4'):
+    def __init__(self, block_size='1,2,4',block_num=[2,2,4,2]):
         super(DinkNet34_CMMPNet, self).__init__()
         filters = [64, 128, 256, 512]
         self.net_name = "CMMPnet"
@@ -99,10 +99,10 @@ class DinkNet34_CMMPNet(nn.Module):
         self.firstrelu = resnet.relu
         self.firstmaxpool = resnet.maxpool
 
-        self.encoder1 = encoderblock(3, filters[0])
-        self.encoder2 = encoderblock(filters[0], filters[1])
-        self.encoder3 = encoderblock(filters[1], filters[2])
-        self.encoder4 = encoderblock(filters[2], filters[3])
+        self.encoder1 = encoderblock(3, filters[0],inter_block_num=block_num[0],stage=1)
+        self.encoder2 = encoderblock(filters[0], filters[1],inter_block_num=block_num[1],stage=2)
+        self.encoder3 = encoderblock(filters[1], filters[2],inter_block_num=block_num[2],stage=3)
+        self.encoder4 = encoderblock(filters[2], filters[3],inter_block_num=block_num[3],stage=4)
 
         self.dblock = DBlock(filters[3])
         # self.head = SPHead(filters[3], filters[3], nn.BatchNorm2d, up_kwargs)
@@ -124,10 +124,10 @@ class DinkNet34_CMMPNet(nn.Module):
         self.firstrelu_add = resnet1.relu
         self.firstmaxpool_add = resnet1.maxpool
 
-        self.encoder1_add = encoderblock(1, filters[0])
-        self.encoder2_add = encoderblock(filters[0], filters[1])
-        self.encoder3_add = encoderblock(filters[1], filters[2])
-        self.encoder4_add = encoderblock(filters[2], filters[3])
+        self.encoder1_add = encoderblock(1, filters[0],inter_block_num=block_num[0],stage=1)
+        self.encoder2_add = encoderblock(filters[0], filters[1],inter_block_num=block_num[1],stage=2)
+        self.encoder3_add = encoderblock(filters[1], filters[2],inter_block_num=block_num[2],stage=3)
+        self.encoder4_add = encoderblock(filters[2], filters[3],inter_block_num=block_num[3],stage=4)
 
         self.dblock_add = DBlock(filters[3])
         # self.head = SPHead(filters[3], filters[3], nn.BatchNorm2d, up_kwargs)
