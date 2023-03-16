@@ -86,7 +86,10 @@ def train_val_test(args):
     for key, value in state_dict.items():
         new_state[key.replace('module.', '')] = value
     net.load_state_dict(new_state)
-    pre_image(net)
+    
+    
+#     pre_image(net)
+    
     framework = Framework(net, optimizer, dataset=args.dataset)
     
     train_dl, val_dl, test_dl = get_dataloader(args)
