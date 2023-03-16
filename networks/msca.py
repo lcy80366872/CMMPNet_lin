@@ -58,17 +58,20 @@ class Attention(nn.Module):
         out=self.conv2(msca)
         return out+shorcut
 class FFN(nn.Module):
-    def __init__(self, chanel):
+    def __init__(self, chanel,drop=0):
         super(FFN,self).__init__()
         self.activate = nn.GELU()
-        self.conv1 = nn.Conv2d(chanel, chanel, 1)
-        self.dwconv = DWConv(chanel)
-        self.conv2 = nn.Conv2d(chanel, chanel, 1)
+        self.conv1 = nn.Conv2d(chanel,4*chanel, 1)
+        self.dwconv = DWConv(4*chanel)
+        self.drop = nn.Dropout(drop)
+        self.conv2 = nn.Conv2d(4*chanel, chanel, 1)
     def forward(self,x):
         con1=self.conv1(x)
         dw=self.dwconv(con1)
         activate=self.activate(dw)
+        activate=self.drop(activate)
         out = self.conv2(activate)
+        out = self.drop(out)
         return  out
 
 class MSCAN(nn.Module):
@@ -79,35 +82,57 @@ class MSCAN(nn.Module):
         self.ffn=FFN(chanel)
     def forward(self,x):
         shortcut1=x.clone()
-        bn1=self.BN(x)
-        atten=self.atten(bn1)
-        out_middle=shortcut1+atten
-        shortcut2=out_middle.clone()
-        bn2=self.BN(out_middle)
-        ffn=self.ffn(bn2)
-        out=shortcut2+ffn
-        return out
+        x=self.BN(x)
+        x=self.atten(x)
+        x=shortcut1+x
+        shortcut2=x.clone()
+        x=self.BN(x)
+        x=self.ffn(x)
+        return shortcut2+x
 
-class down_sampling(nn.Module):
+
+class down_sampling_stage1(nn.Module):
     def __init__(self, in_chanel,out_chanel):
-        super(down_sampling,self).__init__()
-        self.conv=nn.Conv2d(in_chanel,out_chanel,kernel_size=3,stride=2,padding=1)
-        self.norm=nn.BatchNorm2d(out_chanel)
+        super(down_sampling_stage1,self).__init__()
+        self.conv1=nn.Conv2d(in_chanel,out_chanel//2,kernel_size=(3,3),stride=(2,2),padding=(1,1))
+        self.norm1=nn.BatchNorm2d(out_chanel//2)
+        self.conv2 = nn.Conv2d(out_chanel//2, out_chanel, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+        self.norm2 = nn.BatchNorm2d(out_chanel)
     def forward(self,x):
-        conv=self.conv(x)
-        norm=self.norm(conv)
-        return  norm
+        x=self.conv1(x)
+        x=self.norm1(x)
+        x=self.conv2(x)
+        x=self.norm2(x)
+        return x
+class down_sampling_stage234(nn.Module):
+    def __init__(self, in_chanel,out_chanel):
+        super(down_sampling_stage234,self).__init__()
+        self.conv1=nn.Conv2d(in_chanel,out_chanel,kernel_size=(3,3),stride=(2,2),padding=(1,1))
+        self.norm1=nn.BatchNorm2d(out_chanel)
+
+    def forward(self,x):
+        x=self.conv1(x)
+        x=self.norm1(x)
+
+        return  x
 class encoderblock(nn.Module):
-    def __init__(self, in_chanel,out_chanel):
+    def __init__(self, in_chanel,out_chanel,inter_block_num,stage=1):
         super(encoderblock,self).__init__()
-        self.down_sampling=down_sampling(in_chanel,out_chanel)
-        self.mscan=MSCAN(out_chanel)
+        if stage==1:
+            self.down_sampling=down_sampling_stage1(in_chanel,out_chanel)
+        else:
+            self.down_sampling=down_sampling_stage234(in_chanel,out_chanel)
+        self.num = inter_block_num
+        self.mscan=nn.ModuleList([MSCAN(out_chanel)for i in range(self.num)])
+
+
     def forward(self,x):
 
-        down=self.down_sampling(x)
-        mscan=self.mscan(down)
-        out=mscan
-        return out
+        x=self.down_sampling(x)
+        for mscan in self.mscan:
+            x = mscan(x)
+
+        return x
 
 
 
