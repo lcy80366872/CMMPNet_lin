@@ -197,7 +197,7 @@ class DinkNet34_CMMPNet(nn.Module):
         # Decoder
         x_add_d4 = self.decoder4(x_add) + merge3
         x_add_d3 = self.decoder3(x_add_d4) + merge2
-        x_add_d2 = self.decoder2(x_add_d3) + merge1
+        x_add_d2 = self.decoder2(x_add_d3) 
         x_add_d1 = self.decoder1(x_add_d2)
         x_out = self.finalrelu1(self.finaldeconv1(x_add_d1))
         x_out = self.finalrelu2(self.finalconv2(x_out))
