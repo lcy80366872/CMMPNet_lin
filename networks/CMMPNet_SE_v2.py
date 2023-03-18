@@ -113,10 +113,10 @@ class DinkNet34_CMMPNet(nn.Module):
         self.dblock = DBlock(filters[3])
         # self.head = SPHead(filters[3], filters[3], nn.BatchNorm2d, up_kwargs)
 
-        self.decoder4 = DecoderBlock(filters[3], filters[2])
-        self.decoder3 = DecoderBlock(filters[2], filters[1])
-        self.decoder2 = DecoderBlock(filters[1], filters[0])
-        self.decoder1 = DecoderBlock(filters[0], filters[0])
+        self.decoder4 = DecoderBlock1DConv4(filters[3], filters[2])
+        self.decoder3 = DecoderBlock1DConv4(filters[2], filters[1])
+        self.decoder2 = DecoderBlock1DConv4(filters[1], filters[0])
+        self.decoder1 = DecoderBlock1DConv4(filters[0], filters[0])
 
         self.finaldeconv1 = nn.ConvTranspose2d(filters[0], filters[0] // 2, 4, 2, 1)
         self.finalrelu1 = nonlinearity
@@ -135,18 +135,18 @@ class DinkNet34_CMMPNet(nn.Module):
         self.encoder3_add = resnet1.layer3
         self.encoder4_add = resnet1.layer4
 
-        self.dblock_add = DBlock(filters[3])
+#         self.dblock_add = DBlock(filters[3])
         # self.head = SPHead(filters[3], filters[3], nn.BatchNorm2d, up_kwargs)
 
-        self.decoder4_add = DecoderBlock1DConv4(filters[3], filters[2])
-        self.decoder3_add = DecoderBlock1DConv4(filters[2], filters[1])
-        self.decoder2_add = DecoderBlock1DConv4(filters[1], filters[0])
-        self.decoder1_add = DecoderBlock1DConv4(filters[0], filters[0])
+#         self.decoder4_add = DecoderBlock1DConv4(filters[3], filters[2])
+#         self.decoder3_add = DecoderBlock1DConv4(filters[2], filters[1])
+#         self.decoder2_add = DecoderBlock1DConv4(filters[1], filters[0])
+#         self.decoder1_add = DecoderBlock1DConv4(filters[0], filters[0])
 
-        self.finaldeconv1_add = nn.ConvTranspose2d(filters[0], filters[0] // 2, 4, 2, 1)
-        self.finalrelu1_add = nonlinearity
-        self.finalconv2_add = nn.Conv2d(filters[0] // 2, filters[0] // 2, 3, padding=1)
-        self.finalrelu2_add = nonlinearity
+#         self.finaldeconv1_add = nn.ConvTranspose2d(filters[0], filters[0] // 2, 4, 2, 1)
+#         self.finalrelu1_add = nonlinearity
+#         self.finalconv2_add = nn.Conv2d(filters[0] // 2, filters[0] // 2, 3, padding=1)
+#         self.finalrelu2_add = nonlinearity
 
         ### DEM
         self.dem_e1 = DEM(filters[0], filters[0])
@@ -154,10 +154,10 @@ class DinkNet34_CMMPNet(nn.Module):
         self.dem_e3 = DEM(filters[2], filters[2])
         self.dem_e4 = DEM(filters[3], filters[3])
 
-        self.dem_d4 = DEM(filters[2], filters[2])
-        self.dem_d3 = DEM(filters[1], filters[1])
-        self.dem_d2 = DEM(filters[0], filters[0])
-        self.dem_d1 = DEM(filters[0], filters[0])
+#         self.dem_d4 = DEM(filters[2], filters[2])
+#         self.dem_d3 = DEM(filters[1], filters[1])
+#         self.dem_d2 = DEM(filters[0], filters[0])
+#         self.dem_d1 = DEM(filters[0], filters[0])
 
         self.finalconv = nn.Conv2d(filters[0]//2, 1, 3, padding=1)
 
