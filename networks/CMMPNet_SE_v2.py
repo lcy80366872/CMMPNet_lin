@@ -138,10 +138,10 @@ class DinkNet34_CMMPNet(nn.Module):
         self.dblock_add = DBlock(filters[3])
         # self.head = SPHead(filters[3], filters[3], nn.BatchNorm2d, up_kwargs)
 
-        self.decoder4_add = DecoderBlock(filters[3], filters[2])
-        self.decoder3_add = DecoderBlock(filters[2], filters[1])
-        self.decoder2_add = DecoderBlock(filters[1], filters[0])
-        self.decoder1_add = DecoderBlock(filters[0], filters[0])
+        self.decoder4_add = DecoderBlock1DConv4(filters[3], filters[2])
+        self.decoder3_add = DecoderBlock1DConv4(filters[2], filters[1])
+        self.decoder2_add = DecoderBlock1DConv4(filters[1], filters[0])
+        self.decoder1_add = DecoderBlock1DConv4(filters[0], filters[0])
 
         self.finaldeconv1_add = nn.ConvTranspose2d(filters[0], filters[0] // 2, 4, 2, 1)
         self.finalrelu1_add = nonlinearity
@@ -195,9 +195,9 @@ class DinkNet34_CMMPNet(nn.Module):
 
         # 传递增强信息时还有跳跃连接
         # Decoder
-        x_add_d4 = self.decoder4(x_add) + merge3
+        x_add_d4 = self.decoder4(x_add)
         x_add_d3 = self.decoder3(x_add_d4) + merge2
-        x_add_d2 = self.decoder2(x_add_d3) 
+        x_add_d2 = self.decoder2(x_add_d3) + merge1
         x_add_d1 = self.decoder1(x_add_d2)
         x_out = self.finalrelu1(self.finaldeconv1(x_add_d1))
         x_out = self.finalrelu2(self.finalconv2(x_out))
