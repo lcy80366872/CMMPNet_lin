@@ -11,7 +11,7 @@ from framework import Framework
 # from framework_connect import Framework
 # from utils.datasets_connect import prepare_Beijing_dataset, prepare_TLCGIS_dataset
 from utils.datasets import prepare_Beijing_dataset, prepare_TLCGIS_dataset
-from networks.CMMPNet_SE_v2 import DinkNet34_CMMPNet
+from networks.CMMPNet_spin import DinkNet34_CMMPNet
 
 class Logger(object):
     def __init__(self, filename="Default.log"):
@@ -79,7 +79,7 @@ def train_val_test(args):
 #         summary(net.to('cuda'), input_size=(4, 512, 512), batch_size=4)
     print(net)
     
-    optimizer = torch.optim.AdamW(params=net.parameters(), lr=args.lr)
+    optimizer = torch.optim.Adam(params=net.parameters(), lr=args.lr)
     # 多gpu得到的模型dict前面会加module
 #     new_state = {} 
 #     state_dict = torch.load(' /kaggle/input/msca-bjroad/msca_epoch29_val0.6070_test0.6034.pth', map_location=torch.device('cpu'))
