@@ -97,7 +97,7 @@ class DinkNet34_CMMPNet(nn.Module):
         self.block_size = [int(s) for s in block_size.split(',')]
         
         # img
-        resnet = models.resnet34(pretrained=False)
+        resnet = models.resnet34(pretrained=True)
         self.firstconv1 = resnet.conv1
         self.firstbn = resnet.bn1
         self.firstrelu = resnet.relu
