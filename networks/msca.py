@@ -115,24 +115,35 @@ class down_sampling_stage234(nn.Module):
         x=self.norm1(x)
 
         return  x
+# class encoderblock(nn.Module):
+#     def __init__(self, in_chanel,out_chanel,inter_block_num,stage=1):
+#         super(encoderblock,self).__init__()
+#         if stage==1:
+#             self.down_sampling=down_sampling_stage1(in_chanel,out_chanel)
+#         else:
+#             self.down_sampling=down_sampling_stage234(in_chanel,out_chanel)
+#         self.num = inter_block_num
+#         self.mscan=nn.ModuleList([MSCAN(out_chanel)for i in range(self.num)])
+#
+#
+#     def forward(self,x):
+#
+#         x=self.down_sampling(x)
+#         for mscan in self.mscan:
+#             x = mscan(x)
+
+#         return x
 class encoderblock(nn.Module):
-    def __init__(self, in_chanel,out_chanel,inter_block_num,stage=1):
+    def __init__(self, chanel,inter_block_num):
         super(encoderblock,self).__init__()
-        if stage==1:
-            self.down_sampling=down_sampling_stage1(in_chanel,out_chanel)
-        else:
-            self.down_sampling=down_sampling_stage234(in_chanel,out_chanel)
         self.num = inter_block_num
-        self.mscan=nn.ModuleList([MSCAN(out_chanel)for i in range(self.num)])
+        self.mscan=nn.ModuleList([MSCAN(chanel)for i in range(self.num)])
 
 
     def forward(self,x):
-
-        x=self.down_sampling(x)
         for mscan in self.mscan:
             x = mscan(x)
 
         return x
-
 
 
