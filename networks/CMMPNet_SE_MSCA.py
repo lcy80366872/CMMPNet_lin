@@ -85,7 +85,7 @@ class DEM(torch.nn.Module):  # Dual Enhancement Module
 
 
 class DinkNet34_CMMPNet(nn.Module):
-    def __init__(self, block_size='1,2,4',block_num=[2,2,4,2]):
+    def __init__(self, block_size='1,2,4',block_num=[1,1,1,1]):
         super(DinkNet34_CMMPNet, self).__init__()
         filters = [64, 128, 256, 512]
         self.net_name = "CMMPnet"
@@ -99,10 +99,19 @@ class DinkNet34_CMMPNet(nn.Module):
         self.firstrelu = resnet.relu
         self.firstmaxpool = resnet.maxpool
 
-        self.encoder1 = encoderblock(3, filters[0],inter_block_num=block_num[0],stage=1)
-        self.encoder2 = encoderblock(filters[0], filters[1],inter_block_num=block_num[1],stage=2)
-        self.encoder3 = encoderblock(filters[1], filters[2],inter_block_num=block_num[2],stage=3)
-        self.encoder4 = encoderblock(filters[2], filters[3],inter_block_num=block_num[3],stage=4)
+        self.encoder1 = resnet.layer1
+        self.encoder1p =encoderblock(filters[0],block_num[0])
+        self.encoder2 = resnet.layer2
+        self.encoder2p = encoderblock(filters[1], block_num[1])
+        self.encoder3 = resnet.layer3
+        self.encoder3p = encoderblock(filters[2], block_num[2])
+        self.encoder4 = resnet.layer4
+        self.encoder4p = encoderblock(filters[3], block_num[3])
+
+        # self.encoder1 = encoderblock(3, filters[0],inter_block_num=block_num[0],stage=1)
+        # self.encoder2 = encoderblock(filters[0], filters[1],inter_block_num=block_num[1],stage=2)
+        # self.encoder3 = encoderblock(filters[1], filters[2],inter_block_num=block_num[2],stage=3)
+        # self.encoder4 = encoderblock(filters[2], filters[3],inter_block_num=block_num[3],stage=4)
 
         self.dblock = DBlock(filters[3])
         # self.head = SPHead(filters[3], filters[3], nn.BatchNorm2d, up_kwargs)
@@ -124,10 +133,19 @@ class DinkNet34_CMMPNet(nn.Module):
         self.firstrelu_add = resnet1.relu
         self.firstmaxpool_add = resnet1.maxpool
 
-        self.encoder1_add = encoderblock(1, filters[0],inter_block_num=block_num[0],stage=1)
-        self.encoder2_add = encoderblock(filters[0], filters[1],inter_block_num=block_num[1],stage=2)
-        self.encoder3_add = encoderblock(filters[1], filters[2],inter_block_num=block_num[2],stage=3)
-        self.encoder4_add = encoderblock(filters[2], filters[3],inter_block_num=block_num[3],stage=4)
+        self.encoder1_add = resnet.layer1
+        self.encoder1p_add = encoderblock(filters[0], block_num[0])
+        self.encoder2_add = resnet.layer2
+        self.encoder2p_add = encoderblock(filters[1], block_num[1])
+        self.encoder3_add = resnet.layer3
+        self.encoder3p_add = encoderblock(filters[2], block_num[2])
+        self.encoder4_add = resnet.layer4
+        self.encoder4p_add = encoderblock(filters[3], block_num[3])
+
+        # self.encoder1_add = encoderblock(1, filters[0],inter_block_num=block_num[0],stage=1)
+        # self.encoder2_add = encoderblock(filters[0], filters[1],inter_block_num=block_num[1],stage=2)
+        # self.encoder3_add = encoderblock(filters[1], filters[2],inter_block_num=block_num[2],stage=3)
+        # self.encoder4_add = encoderblock(filters[2], filters[3],inter_block_num=block_num[3],stage=4)
 
         self.dblock_add = DBlock(filters[3])
         # self.head = SPHead(filters[3], filters[3], nn.BatchNorm2d, up_kwargs)
@@ -159,25 +177,33 @@ class DinkNet34_CMMPNet(nn.Module):
         x = inputs[:, :3, :, :]  # image
         add = inputs[:, 3:, :, :]  # gps_map or lidar_map
         # 进入编码-解码结构前有个将原图像做卷积步骤
-        # x = self.firstconv1(x)
-        # add = self.firstconv1_add(add)
-        # x = self.firstmaxpool(self.firstrelu(self.firstbn(x)))
-        # add = self.firstmaxpool_add(self.firstrelu_add(self.firstbn_add(add)))
+        x = self.firstconv1(x)
+        add = self.firstconv1_add(add)
+        x = self.firstmaxpool(self.firstrelu(self.firstbn(x)))
+        add = self.firstmaxpool_add(self.firstrelu_add(self.firstbn_add(add)))
         # 每一层的图像和adding的额外信息例如gps都输入DEM模块，输出增强的图像和adding特征信息，然后再输入下一层以此循环
         x_e1 = self.encoder1(x)
+        x_e1 = self.encoder1p(x_e1)
         add_e1 = self.encoder1_add(add)
+        add_e1 = self.encoder1p_add(add_e1)
         x_e1, add_e1 = self.dem_e1(x_e1, add_e1)
 
         x_e2 = self.encoder2(x_e1)
+        x_e2 = self.encoder2p(x_e2)
         add_e2 = self.encoder2_add(add_e1)
+        add_e2 = self.encoder2p_add(add_e2)
         x_e2, add_e2 = self.dem_e2(x_e2, add_e2)
 
         x_e3 = self.encoder3(x_e2)
+        x_e3 = self.encoder3p(x_e3)
         add_e3 = self.encoder3_add(add_e2)
+        add_e3 = self.encoder3p_add(add_e3)
         x_e3, add_e3 = self.dem_e3(x_e3, add_e3)
 
         x_e4 = self.encoder4(x_e3)
+        x_e4 = self.encoder4p(x_e4)
         add_e4 = self.encoder4_add(add_e3)
+        add_e4 = self.encoder4p_add(add_e4)
         x_e4, add_e4 = self.dem_e4(x_e4, add_e4)
 
         # Center
