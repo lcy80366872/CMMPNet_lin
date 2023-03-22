@@ -377,7 +377,7 @@ class DinkNet34_CMMPNet(nn.Module):
         # SPIN Pyramid
         spin257 = self.dgcn_seg1(x_out)  # SPIN at 257x257 scale
         f1_128 = self.maxpool(x_out)
-        print('f1_128:',f1_128.shape)
+
         spin128 = self.dgcn_seg2(f1_128)  # SPIN at 128*128 scale
         f1_64 = self.maxpool(f1_128)
         spin64 = self.dgcn_seg3(f1_64)  # SPIN at 64*64 scale
