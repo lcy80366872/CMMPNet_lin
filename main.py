@@ -11,7 +11,7 @@ from framework import Framework
 # from framework_connect import Framework
 # from utils.datasets_connect import prepare_Beijing_dataset, prepare_TLCGIS_dataset
 from utils.datasets import prepare_Beijing_dataset, prepare_TLCGIS_dataset
-from networks.CMMPNet_SE_spin import DinkNet34_CMMPNet
+from networks.CMMPNet import DinkNet34_CMMPNet
 
 class Logger(object):
     def __init__(self, filename="Default.log"):
