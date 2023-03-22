@@ -6,7 +6,8 @@ import torch.nn.functional as F
 # from networks.MPM import SPHead
 from networks.connect import build_connect
 up_kwargs = {'mode': 'bilinear', 'align_corners': True}
-
+BatchNorm2d = nn.BatchNorm2d
+BatchNorm1d = nn.BatchNorm1d
 
 class SpatialGCN(nn.Module):
     """
@@ -250,7 +251,7 @@ class DinkNet34_CMMPNet(nn.Module):
         self.decoder2 = DecoderBlock(filters[1], filters[0])
         self.decoder1 = DecoderBlock(filters[0], filters[0])
         
-        
+        self.maxpool = nn.MaxPool2d(2, stride=2, ceil_mode=True)
 
         self.finaldeconv1 = nn.ConvTranspose2d(filters[0], filters[0] // 2, 4, 2, 1)
         self.finalrelu1 = nonlinearity
