@@ -196,10 +196,10 @@ class DinkNet34_CMMPNet(nn.Module):
         x_e4, add_e4 = self.dem_e4(x_e4, add_e4)
         
         # Center
-        x_c  = self.head(x_e4)
-        add_c = self.head(add_e4)
-        # x_c   = self.dblock(x_e4)
-        # add_c = self.dblock_add(add_e4)
+#         x_c  = self.head(x_e4)
+#         add_c = self.head(add_e4)
+        x_c   = self.dblock(x_e4)
+        add_c = self.dblock_add(add_e4)
         #传递增强信息时还有跳跃连接
         # Decoder
         x_d4   = self.decoder4(x_c) + x_e3
