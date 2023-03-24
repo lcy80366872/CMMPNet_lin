@@ -115,7 +115,7 @@ class DinkNet34_CMMPNet(nn.Module):
         self.encoder4 = resnet.layer4
 
         self.dblock = DBlock(filters[3])
-        self.head = SPHead(filters[3], filters[3], nn.BatchNorm2d, up_kwargs)
+#         self.head = SPHead(filters[3], filters[3], nn.BatchNorm2d, up_kwargs)
 
         self.decoder4 = DecoderBlock(filters[3], filters[2])
         self.decoder3 = DecoderBlock(filters[2], filters[1])
@@ -140,7 +140,7 @@ class DinkNet34_CMMPNet(nn.Module):
         self.encoder3_add = resnet1.layer3
         self.encoder4_add = resnet1.layer4
 
-        # self.dblock_add = DBlock(filters[3])
+        self.dblock_add = DBlock(filters[3])
         # self.head = SPHead(filters[3], filters[3], nn.BatchNorm2d, up_kwargs)
 
         self.decoder4_add = DecoderBlock(filters[3], filters[2])
