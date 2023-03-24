@@ -126,10 +126,10 @@ class ImageGPSDataset(data.Dataset):
         connect0 = os.path.join(self.connect_root_1,"{0}_mask_0.{1}").format(image_id, self.mask_suffix)
         connect1 = os.path.join(self.connect_root_1, "{0}_mask_1.{1}").format(image_id, self.mask_suffix)
         connect2 = os.path.join(self.connect_root_1, "{0}_mask_2.{1}").format(image_id, self.mask_suffix)
-       
-        connect_d1_0 = os.path.join(self.connect_root_2, "{0}_mask_0.{1}").format(image_id, self.mask_suffix)
-        connect_d1_1 = os.path.join(self.connect_root_2, "{0}_mask_1.{1}").format(image_id, self.mask_suffix)
-        connect_d1_2 = os.path.join(self.connect_root_2, "{0}_mask_2.{1}").format(image_id, self.mask_suffix)
+        # print('con_path:',connect0)
+        # connect_d1_0 = os.path.join(self.connect_root_2, "{0}_mask_0.{1}").format(image_id, self.mask_suffix)
+        # connect_d1_1 = os.path.join(self.connect_root_2, "{0}_mask_1.{1}").format(image_id, self.mask_suffix)
+        # connect_d1_2 = os.path.join(self.connect_root_2, "{0}_mask_2.{1}").format(image_id, self.mask_suffix)
 
         img = cv2.imread(img_path)
         mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
@@ -137,16 +137,17 @@ class ImageGPSDataset(data.Dataset):
         con0= cv2.imread(connect0)
         con1 = cv2.imread(connect1)
         con2 = cv2.imread(connect2)
-        con_d1_0=cv2.imread(connect_d1_0)
-        con_d1_1 = cv2.imread(connect_d1_1)
-        con_d1_2 = cv2.imread(connect_d1_2)
+        print('con2')
+        # con_d1_0=cv2.imread(connect_d1_0)
+        # con_d1_1 = cv2.imread(connect_d1_1)
+        # con_d1_2 = cv2.imread(connect_d1_2)
 
         #用来检验，如果img is none ，则输出img_path
         assert (img is not None), img_path
         assert (mask is not None), mask_path
         assert (gps is not None), gps_path
-        sample = {'image': img, 'mask': mask, 'gps':gps,'connect0': con0, 'connect1': con1, 'connect2': con2,
-                  'connect_d1_0': con_d1_0, 'connect_d1_1': con_d1_1, 'connect_d1_2': con_d1_2}
+        sample = {'image': img, 'mask': mask, 'gps':gps,'connect0': con0, 'connect1': con1, 'connect2': con2}
+                  #'connect_d1_0': con_d1_0, 'connect_d1_1': con_d1_1, 'connect_d1_2': con_d1_2}
 
         return sample
 
@@ -172,9 +173,9 @@ class ImageGPSDataset(data.Dataset):
         mask = self._concat_images(mask, sample['connect0'])
         mask = self._concat_images(mask, sample['connect1'])
         mask = self._concat_images(mask, sample['connect2'])
-        mask = self._concat_images(mask, sample['connect_d1_0'])
-        mask = self._concat_images(mask, sample['connect_d1_1'])
-        mask = self._concat_images(mask, sample['connect_d1_2'])
+        # mask = self._concat_images(mask, sample['connect_d1_0'])
+        # mask = self._concat_images(mask, sample['connect_d1_1'])
+        # mask = self._concat_images(mask, sample['connect_d1_2'])
         if self.randomize:
             sat = randomHueSaturationValue(sample['image'])
             img = self._concat_images(sat, gps)
@@ -200,6 +201,7 @@ class ImageGPSDataset(data.Dataset):
 
         try:
             img = np.array(img, np.float32).transpose(2, 0, 1) / 255.0 * 3.2 - 1.6
+            #读到的mask 255代表1，0代表0
             mask = np.array(mask, np.float32).transpose(2, 0, 1) / 255.0
         except Exception as e:
             print(e)
