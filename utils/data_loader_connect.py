@@ -137,7 +137,7 @@ class ImageGPSDataset(data.Dataset):
         con0= cv2.imread(connect0)
         con1 = cv2.imread(connect1)
         con2 = cv2.imread(connect2)
-        print('con2')
+       
         # con_d1_0=cv2.imread(connect_d1_0)
         # con_d1_1 = cv2.imread(connect_d1_1)
         # con_d1_2 = cv2.imread(connect_d1_2)
