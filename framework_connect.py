@@ -82,7 +82,8 @@ def direction_process(general_mask):
     shp = img.shape   #n*c*h*w
     # print('shap:',shp)
     # print('img:',img)
-
+    if img.ndim == 3:
+        img = np.expand_dims(img, axis=1)
     img_pad = torch.zeros([shp[0],shp[1],shp[2] + 2, shp[3] + 2])
     # print('img:', img_pad.shape)
     img_pad[:,:,1:-1, 1:-1] = img
