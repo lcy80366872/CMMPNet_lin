@@ -91,7 +91,7 @@ def direction_process(general_mask):
     # print('img:',img_pad.shape)
     connect = torch.zeros([shp[0],9,shp[2], shp[3]])
     #roll参数分别为输入、滚动距离和滚动维度
-    print('connect:',connect.shape)
+    print('connect:',connect[:,0,:,:].shape)
     c1=torch.roll(img_pad,[1,1] ,[2,3])[:,:,1:-1,1:-1]
     c2=torch.roll(img_pad,[1,0] ,[2,3])[:,:,1:-1,1:-1]
     c3=torch.roll(img_pad,[1,-1] ,[2,3])[:,:,1:-1,1:-1]
