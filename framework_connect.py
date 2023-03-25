@@ -83,7 +83,7 @@ def direction_process(general_mask):
     # print('shap:',shp)
     # print('img:',img)
     img_pad = torch.zeros([shp[0],shp[1],shp[2] + 2, shp[3] + 2])
-    print('img:', img.shape)
+#     print('img:', img.shape)
     img_pad[:,:,1:-1, 1:-1] = img
     # print('img:',img_pad.shape)
     #roll参数分别为输入、滚动距离和滚动维度
