@@ -108,15 +108,16 @@ def direction_process(general_mask):
     c6 = c6.cuda()
     c7 = c7.cuda()
     c8 = c8.cuda()
-    connect[:, 0, :, :] = img
-    connect[:, 1, :, :] = torch.where(img > 0, c1, img)
-    connect[:, 2, :, :] = torch.where(img > 0, c2, img)
-    connect[:, 3, :, :] = torch.where(img > 0, c3, img)
-    connect[:, 4, :, :] = torch.where(img > 0, c4, img)
-    connect[:, 5, :, :] = torch.where(img > 0, c5, img)
-    connect[:, 6, :, :] = torch.where(img > 0, c6, img)
-    connect[:, 7, :, :] = torch.where(img > 0, c7, img)
-    connect[:, 8, :, :] = torch.where(img > 0, c8, img)
+    
+    connect = torch.cat((img,torch.where(img > 0, c1, img)),1)
+    connect =  torch.cat((connect,torch.where(img > 0, c2, img)),1)
+    connect =  torch.cat((connect,torch.where(img > 0, c3, img)),1)
+    connect = torch.cat((connect,torch.where(img > 0, c4, img)),1)
+    connect= torch.cat((connect,torch.where(img > 0, c5, img)),1)
+    connect = torch.cat((connect,torch.where(img > 0, c6, img)),1)
+    connect = torch.cat((connect,torch.where(img > 0, c7, img)),1)
+    connect = torch.cat((connect,torch.where(img > 0, c8, img)),1)
+    print("connect:", connect.shape)
 
     return connect
 class Solver:
