@@ -91,6 +91,7 @@ def direction_process(general_mask):
     # print('img:',img_pad.shape)
     connect = torch.zeros([shp[0],9,shp[2], shp[3]])
     #roll参数分别为输入、滚动距离和滚动维度
+    print('connect:',connect,shape)
     c1=torch.roll(img_pad,[1,1] ,[2,3])[:,:,1:-1,1:-1]
     c2=torch.roll(img_pad,[1,0] ,[2,3])[:,:,1:-1,1:-1]
     c3=torch.roll(img_pad,[1,-1] ,[2,3])[:,:,1:-1,1:-1]
@@ -107,7 +108,7 @@ def direction_process(general_mask):
     c6 = c6.cuda()
     c7 = c7.cuda()
     c8 = c8.cuda()
-#     connect[:, 0, :, :] = img
+    connect[:, 0, :, :] = img
     connect[:, 1, :, :] = torch.where(img > 0, c1, img)
     connect[:, 2, :, :] = torch.where(img > 0, c2, img)
     connect[:, 3, :, :] = torch.where(img > 0, c3, img)
