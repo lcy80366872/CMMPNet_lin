@@ -11,7 +11,7 @@ import cv2
 from framework_connect import Framework
 from utils.datasets_connect import prepare_Beijing_dataset, prepare_TLCGIS_dataset
 # from utils.datasets import prepare_Beijing_dataset, prepare_TLCGIS_dataset
-from networks.CMMPNet import DinkNet34_CMMPNet
+from networks.CMMPNet_SE import DinkNet34_CMMPNet
 
 class Logger(object):
     def __init__(self, filename="Default.log"):
@@ -81,11 +81,11 @@ def train_val_test(args):
     
     optimizer = torch.optim.Adam(params=net.parameters(), lr=args.lr)
     # 多gpu得到的模型dict前面会加module
-    new_state = {} 
-    state_dict = torch.load('/kaggle/input/cmmpnet-conncetloss/cmmp_connect_epoch20_val0.6730_test0.6277.pth', map_location=torch.device('cpu'))
-    for key, value in state_dict.items():
-        new_state[key.replace('module.', '')] = value
-    net.load_state_dict(new_state)
+#     new_state = {} 
+#     state_dict = torch.load('/kaggle/input/cmmpnet-conncetloss/cmmp_connect_epoch20_val0.6730_test0.6277.pth', map_location=torch.device('cpu'))
+#     for key, value in state_dict.items():
+#         new_state[key.replace('module.', '')] = value
+#     net.load_state_dict(new_state)
     
     
 #     pre_image(net)
