@@ -105,7 +105,7 @@ def direction_process(general_mask):
     c7 = c7.cuda()
     c8 = c8.cuda()
     
-     connect = torch.cat((img , c1 * img), 1)
+    connect = torch.cat((img , c1 * img), 1)
     connect =  torch.cat((connect,c2*img),1)
     connect =  torch.cat((connect,c3*img),1)
     connect = torch.cat((connect,c4*img),1)
