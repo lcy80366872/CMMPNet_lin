@@ -107,7 +107,7 @@ def direction_process(general_mask):
     c6 = c6.cuda()
     c7 = c7.cuda()
     c8 = c8.cuda()
-    connect[:, 0, :, :] = img
+#     connect[:, 0, :, :] = img
     connect[:, 1, :, :] = torch.where(img > 0, c1, img)
     connect[:, 2, :, :] = torch.where(img > 0, c2, img)
     connect[:, 3, :, :] = torch.where(img > 0, c3, img)
