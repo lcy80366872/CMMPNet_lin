@@ -82,16 +82,12 @@ def direction_process(general_mask):
     shp = img.shape   #n*c*h*w
     # print('shap:',shp)
     # print('img:',img)
-    print('img:', img.shape)
-    if img.ndim == 3:
-        img = np.expand_dims(img, axis=1)
     img_pad = torch.zeros([shp[0],shp[1],shp[2] + 2, shp[3] + 2])
     print('img:', img.shape)
     img_pad[:,:,1:-1, 1:-1] = img
     # print('img:',img_pad.shape)
-    connect = torch.zeros([shp[0],9,shp[2], shp[3]])
     #roll参数分别为输入、滚动距离和滚动维度
-    print('connect:',connect[:,0,:,:].shape)
+    
     c1=torch.roll(img_pad,[1,1] ,[2,3])[:,:,1:-1,1:-1]
     c2=torch.roll(img_pad,[1,0] ,[2,3])[:,:,1:-1,1:-1]
     c3=torch.roll(img_pad,[1,-1] ,[2,3])[:,:,1:-1,1:-1]
@@ -117,7 +113,7 @@ def direction_process(general_mask):
     connect = torch.cat((connect,torch.where(img > 0, c6, img)),1)
     connect = torch.cat((connect,torch.where(img > 0, c7, img)),1)
     connect = torch.cat((connect,torch.where(img > 0, c8, img)),1)
-    print("connect:", connect.shape)
+#     print("connect:", connect.shape)
 
     return connect
 class Solver:
