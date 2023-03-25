@@ -77,8 +77,8 @@ def pre_general_test(output, out_connect, out_connect_d1):
 def direction_process(general_mask):
 
     img = general_mask
-    img[img >= 0.5] = 1
-    img[img < 0.5] = 0
+#     img[img >= 0.5] = 1
+#     img[img < 0.5] = 0
     shp = img.shape   #n*c*h*w
     # print('shap:',shp)
     # print('img:',img)
@@ -105,14 +105,23 @@ def direction_process(general_mask):
     c7 = c7.cuda()
     c8 = c8.cuda()
     
-    connect = torch.cat((img,torch.where(img > 0, c1, img)),1)
-    connect =  torch.cat((connect,torch.where(img > 0, c2, img)),1)
-    connect =  torch.cat((connect,torch.where(img > 0, c3, img)),1)
-    connect = torch.cat((connect,torch.where(img > 0, c4, img)),1)
-    connect= torch.cat((connect,torch.where(img > 0, c5, img)),1)
-    connect = torch.cat((connect,torch.where(img > 0, c6, img)),1)
-    connect = torch.cat((connect,torch.where(img > 0, c7, img)),1)
-    connect = torch.cat((connect,torch.where(img > 0, c8, img)),1)
+     connect = torch.cat((img , c1 * img), 1)
+    connect =  torch.cat((connect,c2*img),1)
+    connect =  torch.cat((connect,c3*img),1)
+    connect = torch.cat((connect,c4*img),1)
+    connect =  torch.cat((connect,c5*img),1)
+    connect = torch.cat((connect,c6*img),1)
+    connect = torch.cat((connect,c7*img),1)
+    connect = torch.cat((connect,c8*img),1)
+    
+#     connect = torch.cat((img,torch.where(img > 0, c1, img)),1)
+#     connect =  torch.cat((connect,torch.where(img > 0, c2, img)),1)
+#     connect =  torch.cat((connect,torch.where(img > 0, c3, img)),1)
+#     connect = torch.cat((connect,torch.where(img > 0, c4, img)),1)
+#     connect= torch.cat((connect,torch.where(img > 0, c5, img)),1)
+#     connect = torch.cat((connect,torch.where(img > 0, c6, img)),1)
+#     connect = torch.cat((connect,torch.where(img > 0, c7, img)),1)
+#     connect = torch.cat((connect,torch.where(img > 0, c8, img)),1)
 #     print("connect:", connect.shape)
 
     return connect
