@@ -177,7 +177,7 @@ class Solver:
         # print('connect:', connect.shape)
         loss2 = self.loss(self.connect_label,connect)
         # loss3 = self.loss(self.connect_d1_label,connect_d1 )
-        lad = 0.2
+        lad = 1
         loss=loss1+lad*loss2
         # loss = loss1 + lad * (0.6 * loss2 + 0.4 * loss3)
         loss.backward()
@@ -195,7 +195,7 @@ class Solver:
         pred1 = pred.clone()
         connect = direction_process(pred1).cuda()
         loss2 = self.loss(self.connect_label,connect)
-        lad = 0.2
+        lad = 1
         loss = loss1 + lad * loss2
 
         batch_iou, intersection, union = self.metrics(self.mask, pred)
