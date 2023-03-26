@@ -247,7 +247,7 @@ class Framework:
         self.save_path = save_path
 
     def fit(self, epochs, no_optim_epochs=5):
-        val_best_metrics = test_best_metrics = [0, 0]
+        val_best_metrics = test_best_metrics = [0.6518428836550031,0.65877527]
         no_optim = 0
 
         for epoch in range(1, epochs + 1):
