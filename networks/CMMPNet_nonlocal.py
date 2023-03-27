@@ -115,11 +115,11 @@ class DinkNet34_CMMPNet(nn.Module):
         self.firstrelu = resnet.relu
         self.firstmaxpool = resnet.maxpool
 
-        self.non_local0 = NLBlockND(filters[0], mode='embedded', dimension=2)
+#         self.non_local0 = NLBlockND(filters[0], mode='embedded', dimension=2)
         self.encoder1 = resnet.layer1
         self.non_local1 = NLBlockND(filters[0], mode='embedded', dimension=2)
         self.encoder2 = resnet.layer2
-#         self.non_local2= NLBlockND(filters[1], mode='embedded', dimension=2)
+        self.non_local2= NLBlockND(filters[1], mode='embedded', dimension=2)
         self.encoder3 = resnet.layer3
         self.encoder4 = resnet.layer4
 
@@ -183,8 +183,8 @@ class DinkNet34_CMMPNet(nn.Module):
         x = self.firstmaxpool(self.firstrelu(self.firstbn(x)))
         add = self.firstmaxpool_add(self.firstrelu_add(self.firstbn_add(add)))
 
-        x=self.non_local0(x)
-        add=self.non_local0(add)
+#         x=self.non_local0(x)
+#         add=self.non_local0(add)
         # 每一层的图像和adding的额外信息例如gps都输入DEM模块，输出增强的图像和adding特征信息，然后再输入下一层以此循环
         x_e1 = self.encoder1(x)
         add_e1 = self.encoder1_add(add)
@@ -195,8 +195,8 @@ class DinkNet34_CMMPNet(nn.Module):
 
         x_e2 = self.encoder2(x_e1)
         add_e2 = self.encoder2_add(add_e1)
-#         x_e2 =self.non_local2(x_e2)
-#         add_e2=self.non_local2(add_e2)
+        x_e2 =self.non_local2(x_e2)
+        add_e2=self.non_local2(add_e2)
         x_e2, add_e2 = self.dem_e2(x_e2, add_e2)
 
 
