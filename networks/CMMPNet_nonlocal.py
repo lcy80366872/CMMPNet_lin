@@ -115,9 +115,11 @@ class DinkNet34_CMMPNet(nn.Module):
         self.firstrelu = resnet.relu
         self.firstmaxpool = resnet.maxpool
 
+        self.non_local0 = NLBlockND(filters[0], mode='embedded', dimension=2)
         self.encoder1 = resnet.layer1
+        self.non_local1 = NLBlockND(filters[0], mode='embedded', dimension=2)
         self.encoder2 = resnet.layer2
-        self.non_local= NLBlockND(filters[1], mode='embedded', dimension=2)
+        self.non_local2= NLBlockND(filters[1], mode='embedded', dimension=2)
         self.encoder3 = resnet.layer3
         self.encoder4 = resnet.layer4
 
@@ -180,16 +182,21 @@ class DinkNet34_CMMPNet(nn.Module):
         add = self.firstconv1_add(add)
         x = self.firstmaxpool(self.firstrelu(self.firstbn(x)))
         add = self.firstmaxpool_add(self.firstrelu_add(self.firstbn_add(add)))
+
+        x=self.non_local0(x)
+        add=self.non_local0(add)
         # 每一层的图像和adding的额外信息例如gps都输入DEM模块，输出增强的图像和adding特征信息，然后再输入下一层以此循环
         x_e1 = self.encoder1(x)
         add_e1 = self.encoder1_add(add)
+        x_e1 = self.non_local1(x_e1)
+        add_e1 = self.non_local1(add_e1)
         x_e1, add_e1 = self.dem_e1(x_e1, add_e1)
 
 
         x_e2 = self.encoder2(x_e1)
         add_e2 = self.encoder2_add(add_e1)
-        x_e2 =self.non_local(x_e2)
-        add_e2=self.non_local(add_e2)
+        x_e2 =self.non_local2(x_e2)
+        add_e2=self.non_local2(add_e2)
         x_e2, add_e2 = self.dem_e2(x_e2, add_e2)
 
 
@@ -208,18 +215,26 @@ class DinkNet34_CMMPNet(nn.Module):
         # Decoder
         x_d4 = self.decoder4(x_c) + x_e3
         add_d4 = self.decoder4_add(add_c) + add_e3
+        # out_1=x_d4
+        # out_add_1=add_d4
         x_d4, add_d4 = self.dem_d4(x_d4, add_d4)
 
         x_d3 = self.decoder3(x_d4) + x_e2
         add_d3 = self.decoder3_add(add_d4) + add_e2
+        # out_2=x_d3
+        # out_add_2=add_d3
         x_d3, add_d3 = self.dem_d3(x_d3, add_d3)
 
         x_d2 = self.decoder2(x_d3) + x_e1
         add_d2 = self.decoder2_add(add_d3) + add_e1
+        # out_3 = x_d2
+        # out_add_3 = add_d2
         x_d2, add_d2 = self.dem_d2(x_d2, add_d2)
 
         x_d1 = self.decoder1(x_d2)
         add_d1 = self.decoder1_add(add_d2)
+        # out_4 = x_d1
+        # out_add_4 = add_d1
         x_d1, add_d1 = self.dem_d1(x_d1, add_d1)
 
         x_out = self.finalrelu1(self.finaldeconv1(x_d1))
