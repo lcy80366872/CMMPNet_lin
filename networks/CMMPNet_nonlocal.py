@@ -119,7 +119,7 @@ class DinkNet34_CMMPNet(nn.Module):
         self.encoder1 = resnet.layer1
         self.non_local1 = NLBlockND(filters[0], mode='embedded', dimension=2)
         self.encoder2 = resnet.layer2
-        self.non_local2= NLBlockND(filters[1], mode='embedded', dimension=2)
+#         self.non_local2= NLBlockND(filters[1], mode='embedded', dimension=2)
         self.encoder3 = resnet.layer3
         self.encoder4 = resnet.layer4
 
@@ -195,8 +195,8 @@ class DinkNet34_CMMPNet(nn.Module):
 
         x_e2 = self.encoder2(x_e1)
         add_e2 = self.encoder2_add(add_e1)
-        x_e2 =self.non_local2(x_e2)
-        add_e2=self.non_local2(add_e2)
+#         x_e2 =self.non_local2(x_e2)
+#         add_e2=self.non_local2(add_e2)
         x_e2, add_e2 = self.dem_e2(x_e2, add_e2)
 
 
