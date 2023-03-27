@@ -74,20 +74,35 @@ def pre_general_test(output, out_connect, out_connect_d1):
     su[su > 0] = 1
     print('su_shape:',su.shape)
     return torch.Tensor(su)
+def replace_direction_value(a,b):
+    c=torch.min(a,b)
+    a1=a>0.5
+    b1=b>0.5
+    c1=(a1==b1)
+    a2=a<0.5
+    b2=b<0.5
+    c2=(a2==b2)
+    c=torch.where(c1,a*b,c)
+    c = torch.where(c2, a * b, c)
+    return c
+   
 def direction_process(general_mask):
 
     img = general_mask
-#     img[img >= 0.5] = 1
-#     img[img < 0.5] = 0
+    # img[img >= 0.5] = 1
+    # img[img < 0.5] = 0
     shp = img.shape   #n*c*h*w
     # print('shap:',shp)
     # print('img:',img)
+    # if img.ndim == 3:
+    #     img = np.expand_dims(img, axis=1)
+
     img_pad = torch.zeros([shp[0],shp[1],shp[2] + 2, shp[3] + 2])
-#     print('img:', img.shape)
+    # print('img:', img_pad.shape)
     img_pad[:,:,1:-1, 1:-1] = img
     # print('img:',img_pad.shape)
+    # connect = torch.zeros([shp[0],9,shp[2], shp[3]])
     #roll参数分别为输入、滚动距离和滚动维度
-    
     c1=torch.roll(img_pad,[1,1] ,[2,3])[:,:,1:-1,1:-1]
     c2=torch.roll(img_pad,[1,0] ,[2,3])[:,:,1:-1,1:-1]
     c3=torch.roll(img_pad,[1,-1] ,[2,3])[:,:,1:-1,1:-1]
@@ -104,26 +119,24 @@ def direction_process(general_mask):
     c6 = c6.cuda()
     c7 = c7.cuda()
     c8 = c8.cuda()
-    
-    connect = torch.cat((img , c1 * img), 1)
-    connect =  torch.cat((connect,c2*img),1)
-    connect =  torch.cat((connect,c3*img),1)
-    connect = torch.cat((connect,c4*img),1)
-    connect =  torch.cat((connect,c5*img),1)
-    connect = torch.cat((connect,c6*img),1)
-    connect = torch.cat((connect,c7*img),1)
-    connect = torch.cat((connect,c8*img),1)
-    
-#     connect = torch.cat((img,torch.where(img > 0, c1, img)),1)
-#     connect =  torch.cat((connect,torch.where(img > 0, c2, img)),1)
-#     connect =  torch.cat((connect,torch.where(img > 0, c3, img)),1)
-#     connect = torch.cat((connect,torch.where(img > 0, c4, img)),1)
-#     connect= torch.cat((connect,torch.where(img > 0, c5, img)),1)
-#     connect = torch.cat((connect,torch.where(img > 0, c6, img)),1)
-#     connect = torch.cat((connect,torch.where(img > 0, c7, img)),1)
-#     connect = torch.cat((connect,torch.where(img > 0, c8, img)),1)
-#     print("connect:", connect.shape)
+    connect = torch.cat((img , replace_direction_value(c1,img)), 1)
+    connect = torch.cat((connect , replace_direction_value(c2,img)), 1)
+    connect = torch.cat((connect, replace_direction_value(c3, img)), 1)
+    connect = torch.cat((connect, replace_direction_value(c4, img)), 1)
+    connect = torch.cat((connect, replace_direction_value(c5, img)), 1)
+    connect = torch.cat((connect, replace_direction_value(c6, img)), 1)
+    connect = torch.cat((connect, replace_direction_value(c7, img)), 1)
+    connect = torch.cat((connect, replace_direction_value(c8, img)), 1)
 
+    # connect = torch.cat((img,torch.where(img > 0.5, c1*img, img)),1)
+    # connect =  torch.cat((connect,torch.where(img > 0.5, c2*img, img)),1)
+    # connect =  torch.cat((connect,torch.where(img > 0.5, c3*img, img)),1)
+    # connect = torch.cat((connect,torch.where(img > 0.5, c4*img, img)),1)
+    # connect= torch.cat((connect,torch.where(img > 0.5, c5*img, img)),1)
+    # connect = torch.cat((connect,torch.where(img > 0.5, c6*img, img)),1)
+    # connect = torch.cat((connect,torch.where(img > 0.5, c7*img, img)),1)
+    # connect = torch.cat((connect,torch.where(img > 0.5, c8*img, img)),1)
+    # print("connect:", connect.shape)
     return connect
 class Solver:
     def __init__(self, net, optimizer, dataset):
@@ -177,7 +190,7 @@ class Solver:
         # print('connect:', connect.shape)
         loss2 = self.loss(self.connect_label,connect)
         # loss3 = self.loss(self.connect_d1_label,connect_d1 )
-        lad = 1
+        lad = 0.2
         loss=loss1+lad*loss2
         # loss = loss1 + lad * (0.6 * loss2 + 0.4 * loss3)
         loss.backward()
@@ -195,7 +208,7 @@ class Solver:
         pred1 = pred.clone()
         connect = direction_process(pred1).cuda()
         loss2 = self.loss(self.connect_label,connect)
-        lad = 1
+        lad = 0.2
         loss = loss1 + lad * loss2
 
         batch_iou, intersection, union = self.metrics(self.mask, pred)
@@ -247,7 +260,7 @@ class Framework:
         self.save_path = save_path
 
     def fit(self, epochs, no_optim_epochs=5):
-        val_best_metrics = test_best_metrics = [0,0]
+        val_best_metrics = test_best_metrics = [0, 0]
         no_optim = 0
 
         for epoch in range(1, epochs + 1):
