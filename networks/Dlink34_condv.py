@@ -1,6 +1,6 @@
 import torch.nn as nn
 import torch
-from networks.CondConv import CondConv
+from networks.CondConv import CondConv,DynamicConv
 from .basic_blocks import *
 class BasicBlock(nn.Module):
     expansion = 1
@@ -12,7 +12,7 @@ class BasicBlock(nn.Module):
             self.conv1 = nn.Conv2d(in_channels=in_channel, out_channels=out_channel,
                                kernel_size=3, stride=stride, padding=1, bias=False)
         else:
-            self.conv1 = CondConv(in_channel, out_channel, kernel_size=3, stride=stride,
+            self.conv1 = DynamicConv(in_channel, out_channel, kernel_size=3, stride=stride,
                                   padding=1, bias=False)
         self.bn1 = nn.BatchNorm2d(out_channel)
         self.relu = nn.ReLU()
