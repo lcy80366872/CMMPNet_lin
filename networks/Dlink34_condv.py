@@ -144,9 +144,9 @@ class ResNet(nn.Module):
         self.decoder2 = DecoderBlock(filters[1], filters[0])
         self.decoder1 = DecoderBlock(filters[0], filters[0])
 
-        self.finaldeconv1 = nn.ConvTranspose2d(filters[0], filters[0], 4, 2, 1)
+        self.finaldeconv1 = nn.ConvTranspose2d(filters[0], filters[0]//2, 4, 2, 1)
         self.finalrelu1 = nonlinearity
-        self.finalconv2 = nn.Conv2d(filters[0], filters[0], 3, padding=1)
+        self.finalconv2 = nn.Conv2d(filters[0]//2, filters[0]//2, 3, padding=1)
         self.finalrelu2 = nonlinearity
         self.finalconv = nn.Conv2d(filters[0], num_classes, 3, padding=1)
 
@@ -203,6 +203,7 @@ class ResNet(nn.Module):
         x_e3, g_e3 = x_e3
         x_e4, g_e4 = x_e4
 
+        g_c = self.dblock(g_e4)
         x_c = self.dblock(x_e4)
         # decoder
         x_d4 = self.decoder4(x_c) + x_e3
@@ -210,9 +211,16 @@ class ResNet(nn.Module):
         x_d2 = self.decoder2(x_d3) + x_e1
         x_d1 = self.decoder1(x_d2)
 
+        g_d4 = self.decoder4(g_c) + g_e3
+        g_d3 = self.decoder3(g_d4) + g_e2
+        g_d2 = self.decoder2(g_d3) + g_e1
+        g_d1 = self.decoder1(g_d2)
+
         x_out = self.finalrelu1(self.finaldeconv1(x_d1))
         x_out = self.finalrelu2(self.finalconv2(x_out))
-        out = self.finalconv(x_out)
+        g_out = self.finalrelu1(self.finaldeconv1(g_d1))
+        g_out = self.finalrelu2(self.finalconv2(g_out))
+        out = self.finalconv(torch.cat((x_out, g_out),1))
         out =torch.sigmoid(out)
 
         return out
