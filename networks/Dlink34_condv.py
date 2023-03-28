@@ -213,6 +213,7 @@ class ResNet(nn.Module):
         x_out = self.finalrelu1(self.finaldeconv1(x_d1))
         x_out = self.finalrelu2(self.finalconv2(x_out))
         out = self.finalconv(x_out)
+        out =torch.sigmoid(out)
 
         return out
 def DinkNet34_CMMPNet(num_classes=1):
