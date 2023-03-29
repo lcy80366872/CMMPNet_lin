@@ -58,7 +58,7 @@ class DinkNet34_CMMPNet(nn.Module):
         x_d2 = self.decoder2(x_d3) + x_e1
         x_d1 = self.decoder1(x_d2)
         x_out = self.finalrelu1(self.finaldeconv1(x_d1))
-        x_out = self.finalrelu2(self.finalconv2(x_out))
+        x_out = self.finalconv2(x_out)
 
         return torch.sigmoid(x_out)
 
