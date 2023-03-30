@@ -36,8 +36,8 @@ class BasicBlock(nn.Module):
         g = self.conv1(g)
         g = self.bn1(g)
         g = self.relu(g)
-        # print('out:',out.shape)
-        # print('g:', g.shape)
+        print('out:',out.shape)
+        print('g:', g.shape)
         if self.condconv == False:
             out = self.conv2(out)
         else:
@@ -219,17 +219,17 @@ class ResNet(nn.Module):
         x_d2 = self.decoder2(x_d3) + x_e1
         x_d1 = self.decoder1(x_d2)
 
-        # g_d4 = self.decoder4(g_c) + g_e3
-        # g_d3 = self.decoder3(g_d4) + g_e2
-        # g_d2 = self.decoder2(g_d3) + g_e1
-        # g_d1 = self.decoder1(g_d2)
+        g_d4 = self.decoder4(g_c) + g_e3
+        g_d3 = self.decoder3(g_d4) + g_e2
+        g_d2 = self.decoder2(g_d3) + g_e1
+        g_d1 = self.decoder1(g_d2)
 
         x_out = self.finalrelu1(self.finaldeconv1(x_d1))
-        # x_out = self.finalrelu2(self.finalconv2(x_out))
-        # g_out = self.finalrelu1(self.finaldeconv1(g_d1))
-        # g_out = self.finalrelu2(self.finalconv2(g_out))
-        # out = self.finalconv(torch.cat((x_out, g_out),1))
-        out=self.finalconv(x_out)
+        x_out = self.finalrelu2(self.finalconv2(x_out))
+        g_out = self.finalrelu1(self.finaldeconv1(g_d1))
+        g_out = self.finalrelu2(self.finalconv2(g_out))
+        out = self.finalconv(torch.cat((x_out, g_out),1))
+        # out=self.finalconv(x_out)
         out =torch.sigmoid(out)
 
         return out
