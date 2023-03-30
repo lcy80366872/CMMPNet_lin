@@ -129,6 +129,7 @@ class FSP(nn.Module):
         self.filter = FilterLayer(2*in_planes, out_planes, reduction)
 
     def forward(self, guidePath, mainPath):
+        
         combined = torch.cat((guidePath, mainPath), dim=1)
         channel_weight = self.filter(combined)
         out = mainPath + channel_weight * guidePath
@@ -201,8 +202,8 @@ class DinkNet34_CMMPNet(nn.Module):
 
         self.finaldeconv1 = nn.ConvTranspose2d(filters[0], filters[0] // 2, 4, 2, 1)
         self.finalrelu1 = nonlinearity
-        self.finalconv2 = nn.Conv2d(filters[0] // 2, filters[0] // 2, 3, padding=1)
-        self.finalrelu2 = nonlinearity
+        # self.finalconv2 = nn.Conv2d(filters[0] // 2, filters[0] // 2, 3, padding=1)
+        # self.finalrelu2 = nonlinearity
 
         ## addinfo, e.g, gps_map, lidar_map
         resnet1 = models.resnet34(pretrained=True)
@@ -240,8 +241,8 @@ class DinkNet34_CMMPNet(nn.Module):
         self.dem_d2 = DEM(filters[0], self.block_size)
         self.dem_d1 = DEM(filters[0], self.block_size)
 
-        self.OUT_SE = SE_OUT(filters[0]//2, filters[0])
-        self.finalconv = nn.Conv2d(filters[0], 1, 3, padding=1)
+        self.OUT_SE = SE_OUT(filters[0]//2, filters[0]//2)
+        self.finalconv = nn.Conv2d(filters[0]//2, 1, 3, padding=1)
 
     def forward(self, inputs):
         x = inputs[:, :3, :, :]  # image
@@ -293,9 +294,8 @@ class DinkNet34_CMMPNet(nn.Module):
 
         x_out = self.finalrelu1(self.finaldeconv1(x_d1))
         add_out = self.finalrelu1_add(self.finaldeconv1_add(add_d1))
-        x_out = self.finalrelu2(self.finalconv2(x_out))
-        add_out = self.finalrelu2_add(self.finalconv2_add(add_out))
-
+        # x_out = self.finalrelu2(self.finalconv2(x_out))
+        # add_out = self.finalrelu2_add(self.finalconv2_add(add_out))
         out = self.OUT_SE(x_out,add_out)
         out = self.finalconv(out)  # b*1*h*w
         return torch.sigmoid(out)
