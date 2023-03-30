@@ -153,7 +153,7 @@ class ResNet(nn.Module):
         self.finalrelu1 = nonlinearity
         self.finalconv2 = nn.Conv2d(filters[0]//2, filters[0]//2, 3, padding=1)
         self.finalrelu2 = nonlinearity
-        self.finalconv = nn.Conv2d(filters[0]//2, num_classes, 3, padding=1)
+        self.finalconv = nn.Conv2d(filters[0], num_classes, 3, padding=1)
 #         self.finalconv = nn.Conv2d(filters[0] // 2, num_classes, 3, padding=1)
 
         if self.include_top:
