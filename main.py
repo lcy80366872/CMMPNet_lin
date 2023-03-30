@@ -78,7 +78,7 @@ def train_val_test(args):
 #     with torch.no_grad():  # 必须有
 #         summary(net.to('cuda'), input_size=(4, 512, 512), batch_size=4)
     print(net)
-    
+    print('lr:',args.lr)
     optimizer = torch.optim.Adam(params=net.parameters(), lr=args.lr)
     # 多gpu得到的模型dict前面会加module
 #     new_state = {} 
