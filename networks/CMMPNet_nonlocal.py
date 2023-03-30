@@ -117,13 +117,14 @@ class DinkNet34_CMMPNet(nn.Module):
 
 #         self.non_local0 = NLBlockND(filters[0], mode='embedded', dimension=2)
         self.encoder1 = resnet.layer1
-        self.non_local1 = NLBlockND(filters[0], mode='embedded', dimension=2)
+        
         self.encoder2 = resnet.layer2
         self.non_local2= NLBlockND(filters[1], mode='embedded', dimension=2)
         self.encoder3 = resnet.layer3
+        self.non_local3 = NLBlockND(filters[2], mode='embedded', dimension=2)
         self.encoder4 = resnet.layer4
 
-        self.dblock = DBlock(filters[3])
+#         self.dblock = DBlock(filters[3])
         # self.head = SPHead(filters[3], filters[3], nn.BatchNorm2d, up_kwargs)
 
         self.decoder4 = DecoderBlock(filters[3], filters[2])
@@ -148,7 +149,7 @@ class DinkNet34_CMMPNet(nn.Module):
         self.encoder3_add = resnet1.layer3
         self.encoder4_add = resnet1.layer4
 
-        self.dblock_add = DBlock(filters[3])
+#         self.dblock_add = DBlock(filters[3])
         # self.head = SPHead(filters[3], filters[3], nn.BatchNorm2d, up_kwargs)
 
         self.decoder4_add = DecoderBlock(filters[3], filters[2])
@@ -188,8 +189,7 @@ class DinkNet34_CMMPNet(nn.Module):
         # 每一层的图像和adding的额外信息例如gps都输入DEM模块，输出增强的图像和adding特征信息，然后再输入下一层以此循环
         x_e1 = self.encoder1(x)
         add_e1 = self.encoder1_add(add)
-        x_e1 = self.non_local1(x_e1)
-        add_e1 = self.non_local1(add_e1)
+        
         x_e1, add_e1 = self.dem_e1(x_e1, add_e1)
 
 
@@ -202,6 +202,8 @@ class DinkNet34_CMMPNet(nn.Module):
 
         x_e3 = self.encoder3(x_e2)
         add_e3 = self.encoder3_add(add_e2)
+        x_e3 = self.non_local1(x_e3)
+        add_e3 = self.non_local1(add_e3)
         x_e3, add_e3 = self.dem_e3(x_e3, add_e3)
 
         x_e4 = self.encoder4(x_e3)
@@ -209,8 +211,10 @@ class DinkNet34_CMMPNet(nn.Module):
         x_e4, add_e4 = self.dem_e4(x_e4, add_e4)
 
         # Center
-        x_c = self.dblock(x_e4)
-        add_c = self.dblock_add(add_e4)
+#         x_c = self.dblock(x_e4)
+#         add_c = self.dblock_add(add_e4)
+        x_c=x_e4
+        add_c=add_e4
         # 传递增强信息时还有跳跃连接
         # Decoder
         x_d4 = self.decoder4(x_c) + x_e3
