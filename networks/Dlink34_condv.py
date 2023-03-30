@@ -36,8 +36,8 @@ class BasicBlock(nn.Module):
         g = self.conv1(g)
         g = self.bn1(g)
         g = self.relu(g)
-        print('out:',out.shape)
-        print('g:', g.shape)
+#         print('out:',out.shape)
+#         print('g:', g.shape)
         if self.condconv == False:
             out = self.conv2(out)
         else:
@@ -151,10 +151,10 @@ class ResNet(nn.Module):
 
         self.finaldeconv1 = nn.ConvTranspose2d(filters[0], filters[0]//2, 4, 2, 1)
         self.finalrelu1 = nonlinearity
-        # self.finalconv2 = nn.Conv2d(filters[0]//2, filters[0]//2, 3, padding=1)
-        # self.finalrelu2 = nonlinearity
-        # self.finalconv = nn.Conv2d(filters[0]/, num_classes, 3, padding=1)
-        self.finalconv = nn.Conv2d(filters[0] // 2, num_classes, 3, padding=1)
+        self.finalconv2 = nn.Conv2d(filters[0]//2, filters[0]//2, 3, padding=1)
+        self.finalrelu2 = nonlinearity
+        self.finalconv = nn.Conv2d(filters[0]//2, num_classes, 3, padding=1)
+#         self.finalconv = nn.Conv2d(filters[0] // 2, num_classes, 3, padding=1)
 
         if self.include_top:
             self.avgpool = nn.AdaptiveAvgPool2d((1, 1))  # output size = (1, 1)
