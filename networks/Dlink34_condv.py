@@ -12,7 +12,7 @@ class BasicBlock(nn.Module):
             self.conv1 = nn.Conv2d(in_channels=in_channel, out_channels=out_channel,
                                kernel_size=3, stride=stride, padding=1, bias=False)
         else:
-            self.conv1 = DynamicConv(in_channel, out_channel, kernel_size=3, stride=stride,
+            self.conv1 = CondConv(in_channel, out_channel, kernel_size=3, stride=stride,
                                   padding=1, bias=False)
         self.bn1 = nn.BatchNorm2d(out_channel)
         self.relu = nn.ReLU()
@@ -132,10 +132,10 @@ class ResNet(nn.Module):
         self.bn1 = nn.BatchNorm2d(self.in_channel)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
-        self.layer1 = self._make_layer(block, 64, blocks_num[0])
-        self.layer2 = self._make_layer(block, 128, blocks_num[1], stride=2)
-        self.layer3 = self._make_layer(block, 256, blocks_num[2], stride=2)
-        self.layer4 = self._make_layer(block, 512, blocks_num[3], stride=2)
+        self.layer1 = self._make_layer(block, 64, blocks_num[0],condconv=True)
+        self.layer2 = self._make_layer(block, 128, blocks_num[1], stride=2,condconv=True)
+        self.layer3 = self._make_layer(block, 256, blocks_num[2], stride=2,condconv=True)
+        self.layer4 = self._make_layer(block, 512, blocks_num[3], stride=2,condconv=True)
 
         self.dblock = DBlock(filters[3])
         # decoder
@@ -158,7 +158,7 @@ class ResNet(nn.Module):
             if isinstance(m, nn.Conv2d):
                 nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
 
-    def _make_layer(self, block, channel, block_num, stride=1):
+    def _make_layer(self, block, channel, block_num, stride=1,condconv=False):
         downsample = None
         if stride != 1 or self.in_channel != channel * block.expansion:
             downsample = nn.Sequential(
@@ -171,14 +171,16 @@ class ResNet(nn.Module):
                             downsample=downsample,
                             stride=stride,
                             groups=self.groups,
-                            width_per_group=self.width_per_group))
+                            width_per_group=self.width_per_group,
+                            condconv=condconv))
         self.in_channel = channel * block.expansion
 
         for _ in range(1, block_num):
             layers.append(block(self.in_channel,
                                 channel,
                                 groups=self.groups,
-                                width_per_group=self.width_per_group))
+                                width_per_group=self.width_per_group,
+                                condconv=condconv))
 
         return nn.Sequential(*layers)
 
