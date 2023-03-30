@@ -285,7 +285,7 @@ class Framework:
                     break
                 else:
                     no_optim = 0
-                    self.solver.update_lr(ratio=10.0)
+                    self.solver.update_lr(ratio=5.0)
                     
             print(f'train_loss: {train_loss:.4f} train_metrics: {train_metrics}')
             print(f'  val_loss: {val_loss:.4f}   val_metrics:   {val_metrics}')
