@@ -202,8 +202,8 @@ class DinkNet34_CMMPNet(nn.Module):
 
         x_e3 = self.encoder3(x_e2)
         add_e3 = self.encoder3_add(add_e2)
-        x_e3 = self.non_local1(x_e3)
-        add_e3 = self.non_local1(add_e3)
+        x_e3 = self.non_local3(x_e3)
+        add_e3 = self.non_local3(add_e3)
         x_e3, add_e3 = self.dem_e3(x_e3, add_e3)
 
         x_e4 = self.encoder4(x_e3)
