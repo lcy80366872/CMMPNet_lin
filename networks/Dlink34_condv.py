@@ -143,10 +143,10 @@ class ResNet(nn.Module):
         self.bn1 = nn.BatchNorm2d(self.in_channel)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
-        self.layer1 = self._make_layer(block, 64, blocks_num[0],condconv=False)
-        self.layer2 = self._make_layer(block, 128, blocks_num[1], stride=2,condconv=False)
-        self.layer3 = self._make_layer(block, 256, blocks_num[2], stride=2,condconv=False)
-        self.layer4 = self._make_layer(block, 512, blocks_num[3], stride=2,condconv=False)
+        self.layer1 = self._make_layer(block, 64, blocks_num[0],condconv=True)
+        self.layer2 = self._make_layer(block, 128, blocks_num[1], stride=2,condconv=True)
+        self.layer3 = self._make_layer(block, 256, blocks_num[2], stride=2,condconv=True)
+        self.layer4 = self._make_layer(block, 512, blocks_num[3], stride=2,condconv=True)
 
         self.dblock = DBlock(filters[3])
         # decoder
