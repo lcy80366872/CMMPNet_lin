@@ -5,13 +5,17 @@ from .basic_blocks import *
 class BasicBlock(nn.Module):
     expansion = 1
 
-    def __init__(self, in_channel, out_channel, stride=1, downsample=None,condconv = False, **kwargs):
+    def __init__(self, in_channel, out_channel, stride=1, downsample=None,downsample1=None,condconv = False, **kwargs):
         super(BasicBlock, self).__init__()
         self.condconv=condconv
         self.conv1 = nn.Conv2d(in_channels=in_channel, out_channels=out_channel,
                                kernel_size=3, stride=stride, padding=1, bias=False)
         self.bn1 = nn.BatchNorm2d(out_channel)
         self.relu = nn.ReLU()
+        self.conv1_g = nn.Conv2d(in_channels=in_channel, out_channels=out_channel,
+                               kernel_size=3, stride=stride, padding=1, bias=False)
+        self.bn1_g = nn.BatchNorm2d(out_channel)
+
         if condconv == False:
             self.conv2 = nn.Conv2d(in_channels=out_channel, out_channels=out_channel,
                                    kernel_size=3, stride=1, padding=1, bias=False)
@@ -21,7 +25,9 @@ class BasicBlock(nn.Module):
         self.conv2_g =nn.Conv2d(in_channels=out_channel, out_channels=out_channel,
                                    kernel_size=3, stride=1, padding=1, bias=False)
         self.bn2 = nn.BatchNorm2d(out_channel)
+        self.bn2_g = nn.BatchNorm2d(out_channel)
         self.downsample = downsample
+        self.downsample1 = downsample1
 
     def forward(self, input):
 
@@ -33,11 +39,11 @@ class BasicBlock(nn.Module):
         out = self.bn1(out)
         out = self.relu(out)
 
-        g = self.conv1(g)
-        g = self.bn1(g)
+        g = self.conv1_g(g)
+        g = self.bn1_g(g)
         g = self.relu(g)
-#         print('out:',out.shape)
-#         print('g:', g.shape)
+        # print('out:',out.shape)
+        # print('g:', g.shape)
         if self.condconv == False:
             out = self.conv2(out)
         else:
@@ -50,9 +56,9 @@ class BasicBlock(nn.Module):
 
 
         out_g = self.conv2_g(g)
-        out_g = self.bn2(out_g)
-        if self.downsample is not None:
-            residual_g = self.downsample(residual_g)
+        out_g = self.bn2_g(out_g)
+        if self.downsample1 is not None:
+            residual_g = self.downsample1(residual_g)
         out_g += residual_g
         out_g = self.relu(out_g)
 
@@ -137,10 +143,10 @@ class ResNet(nn.Module):
         self.bn1 = nn.BatchNorm2d(self.in_channel)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
-        self.layer1 = self._make_layer(block, 64, blocks_num[0],condconv=True)
-        self.layer2 = self._make_layer(block, 128, blocks_num[1], stride=2,condconv=True)
-        self.layer3 = self._make_layer(block, 256, blocks_num[2], stride=2,condconv=True)
-        self.layer4 = self._make_layer(block, 512, blocks_num[3], stride=2,condconv=True)
+        self.layer1 = self._make_layer(block, 64, blocks_num[0],condconv=False)
+        self.layer2 = self._make_layer(block, 128, blocks_num[1], stride=2,condconv=False)
+        self.layer3 = self._make_layer(block, 256, blocks_num[2], stride=2,condconv=False)
+        self.layer4 = self._make_layer(block, 512, blocks_num[3], stride=2,condconv=False)
 
         self.dblock = DBlock(filters[3])
         # decoder
@@ -151,10 +157,10 @@ class ResNet(nn.Module):
 
         self.finaldeconv1 = nn.ConvTranspose2d(filters[0], filters[0]//2, 4, 2, 1)
         self.finalrelu1 = nonlinearity
-        self.finalconv2 = nn.Conv2d(filters[0]//2, filters[0]//2, 3, padding=1)
-        self.finalrelu2 = nonlinearity
-        self.finalconv = nn.Conv2d(filters[0], num_classes, 3, padding=1)
-#         self.finalconv = nn.Conv2d(filters[0] // 2, num_classes, 3, padding=1)
+        # self.finalconv2 = nn.Conv2d(filters[0]//2, filters[0]//2, 3, padding=1)
+        # self.finalrelu2 = nonlinearity
+        # self.finalconv = nn.Conv2d(filters[0]/, num_classes, 3, padding=1)
+        self.finalconv = nn.Conv2d(filters[0] // 2, num_classes, 3, padding=1)
 
         if self.include_top:
             self.avgpool = nn.AdaptiveAvgPool2d((1, 1))  # output size = (1, 1)
@@ -166,8 +172,12 @@ class ResNet(nn.Module):
 
     def _make_layer(self, block, channel, block_num, stride=1,condconv=False):
         downsample = None
+        downsample1=None
         if stride != 1 or self.in_channel != channel * block.expansion:
             downsample = nn.Sequential(
+                nn.Conv2d(self.in_channel, channel * block.expansion, kernel_size=1, stride=stride, bias=False),
+                nn.BatchNorm2d(channel * block.expansion))
+            downsample1 = nn.Sequential(
                 nn.Conv2d(self.in_channel, channel * block.expansion, kernel_size=1, stride=stride, bias=False),
                 nn.BatchNorm2d(channel * block.expansion))
 
@@ -175,6 +185,7 @@ class ResNet(nn.Module):
         layers.append(block(self.in_channel,
                             channel,
                             downsample=downsample,
+                            downsample1=downsample1,
                             stride=stride,
                             groups=self.groups,
                             width_per_group=self.width_per_group,
@@ -211,7 +222,7 @@ class ResNet(nn.Module):
         x_e3, g_e3 = x_e3
         x_e4, g_e4 = x_e4
 
-        g_c = self.dblock(g_e4)
+        # g_c = self.dblock(g_e4)
         x_c = self.dblock(x_e4)
         # decoder
         x_d4 = self.decoder4(x_c) + x_e3
@@ -219,17 +230,17 @@ class ResNet(nn.Module):
         x_d2 = self.decoder2(x_d3) + x_e1
         x_d1 = self.decoder1(x_d2)
 
-        g_d4 = self.decoder4(g_c) + g_e3
-        g_d3 = self.decoder3(g_d4) + g_e2
-        g_d2 = self.decoder2(g_d3) + g_e1
-        g_d1 = self.decoder1(g_d2)
+        # g_d4 = self.decoder4(g_c) + g_e3
+        # g_d3 = self.decoder3(g_d4) + g_e2
+        # g_d2 = self.decoder2(g_d3) + g_e1
+        # g_d1 = self.decoder1(g_d2)
 
         x_out = self.finalrelu1(self.finaldeconv1(x_d1))
-        x_out = self.finalrelu2(self.finalconv2(x_out))
-        g_out = self.finalrelu1(self.finaldeconv1(g_d1))
-        g_out = self.finalrelu2(self.finalconv2(g_out))
-        out = self.finalconv(torch.cat((x_out, g_out),1))
-        # out=self.finalconv(x_out)
+        # x_out = self.finalrelu2(self.finalconv2(x_out))
+        # g_out = self.finalrelu1(self.finaldeconv1(g_d1))
+        # g_out = self.finalrelu2(self.finalconv2(g_out))
+        # out = self.finalconv(torch.cat((x_out, g_out),1))
+        out=self.finalconv(x_out)
         out =torch.sigmoid(out)
 
         return out
