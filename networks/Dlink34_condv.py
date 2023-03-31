@@ -244,8 +244,8 @@ class ResNet(nn.Module):
         out =torch.sigmoid(out)
 
         return out
-def DinkNet34_CMMPNet(num_classes=1):
-    model = ResNet(BasicBlock, [3, 4, 6, 3], num_classes)
+def DinkNet34_CMMPNet():
+    model = ResNet(BasicBlock, [3, 4, 6, 3], 1)
     return model
 
 def resnet34(num_classes=1000, include_top=True):
