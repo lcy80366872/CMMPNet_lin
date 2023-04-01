@@ -156,6 +156,7 @@ class CondConv(nn.Module):
         softmax_att=self.attention(x) #bs,K
         # 把输入特征由 [N, C_in, H, W] 转化为 [1, N*C_in, H, W]
         x=x.view(1,-1,h,w)
+        input=input.view(1,-1,h,w)
         # 生成随机 weight [K, C_out, C_in/groups, 3, 3] (卷积核一般为3*3)
         # 注意添加了 requires_grad=True，这样里面的参数是可以优化的
         # 改变 weight 形状为 [K, C_out*(C_in/groups)*3*3]
@@ -171,7 +172,9 @@ class CondConv(nn.Module):
         else:
             output=F.conv2d(input,weight=aggregate_weight,bias=None,stride=self.stride,padding=self.padding,groups=self.groups*bs,dilation=self.dilation)
         # 形状恢复为 [N, C_out, H, W]
+        # print('out:',output.shape)
         output=output.view(bs,self.out_planes,h,w)
+        # print('out:', output.shape)
         return output
 
 if __name__ == '__main__':
