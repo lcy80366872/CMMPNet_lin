@@ -154,6 +154,77 @@ class Bottleneck(nn.Module):
         return out
 
 
+class FilterLayer(nn.Module):
+    def __init__(self, in_planes, out_planes, reduction=16):
+        super(FilterLayer, self).__init__()
+        self.avg_pool = nn.AdaptiveAvgPool2d(1)
+        self.fc = nn.Sequential(
+            nn.Linear(in_planes, out_planes // reduction),
+            nn.ReLU(inplace=True),
+            nn.Linear(out_planes // reduction, out_planes),
+            nn.Sigmoid()
+        )
+        self.out_planes = out_planes
+
+    def forward(self, x):
+        b, c, _, _ = x.size()
+        y = self.avg_pool(x).view(b, c)
+        y = self.fc(y).view(b, self.out_planes, 1, 1)
+        return y
+
+'''
+Feature Separation Part
+'''
+class FSP(nn.Module):
+    def __init__(self, in_planes, out_planes, reduction=16):
+        super(FSP, self).__init__()
+        self.filter = FilterLayer(2*in_planes, out_planes, reduction)
+
+    def forward(self, guidePath, mainPath):
+
+        combined = torch.cat((guidePath, mainPath), dim=1)
+        channel_weight = self.filter(combined)
+        out = mainPath + channel_weight * guidePath
+        return out
+
+
+
+class SE_OUT(torch.nn.Module):  # Dual Enhancement Module
+    def __init__(self, in_planes, out_planes, reduction=16, bn_momentum=0.0003):
+        self.init__ = super(SE_OUT, self).__init__()
+        self.in_planes = in_planes
+        self.bn_momentum = bn_momentum
+
+        self.fsp_rgb = FSP(in_planes, out_planes, reduction)
+        self.fsp_hha = FSP(in_planes, out_planes, reduction)
+
+        self.gate_rgb = nn.Conv2d(in_planes*2, 1, kernel_size=1, bias=True)
+        self.gate_hha = nn.Conv2d(in_planes*2, 1, kernel_size=1, bias=True)
+
+        self.relu1 = nn.ReLU()
+        self.relu2 = nn.ReLU()
+        self.softmax = nn.Softmax(dim=1)
+
+    def forward(self, x,y):
+        rgb, hha = x,y
+        b, c, h, w = rgb.size()
+
+        rec_rgb = self.fsp_rgb(hha, rgb)
+        rec_hha = self.fsp_hha(rgb, hha)
+
+        cat_fea = torch.cat([rec_rgb, rec_hha], dim=1)
+
+        attention_vector_l = self.gate_rgb(cat_fea)
+        attention_vector_r = self.gate_hha(cat_fea)
+
+        attention_vector = torch.cat([attention_vector_l, attention_vector_r], dim=1)
+        attention_vector = self.softmax(attention_vector)
+        attention_vector_l, attention_vector_r = attention_vector[:, 0:1, :, :], attention_vector[:, 1:2, :, :]
+        merge_feature = rgb*attention_vector_l + hha*attention_vector_r
+        merge = self.relu1(merge_feature)
+
+        return merge
+
 class ResNet(nn.Module):
 
     def __init__(self,
@@ -191,29 +262,30 @@ class ResNet(nn.Module):
         # self.layer4_add = self._make_layer(block, 512, blocks_num[3], stride=2, condconv=False)
 
         self.dblock = DBlock(filters[3])
-        self.dblock_add = DBlock(filters[3])
+        self.OUT_SE = SE_OUT(filters[3], filters[3])
+        # self.dblock_add = DBlock(filters[3])
         # decoder
         self.decoder4 = DecoderBlock(filters[3], filters[2])
         self.decoder3 = DecoderBlock(filters[2], filters[1])
         self.decoder2 = DecoderBlock(filters[1], filters[0])
         self.decoder1 = DecoderBlock(filters[0], filters[0])
 
-        self.decoder4_add = DecoderBlock(filters[3], filters[2])
-        self.decoder3_add = DecoderBlock(filters[2], filters[1])
-        self.decoder2_add = DecoderBlock(filters[1], filters[0])
-        self.decoder1_add = DecoderBlock(filters[0], filters[0])
+        # self.decoder4_add = DecoderBlock(filters[3], filters[2])
+        # self.decoder3_add = DecoderBlock(filters[2], filters[1])
+        # self.decoder2_add = DecoderBlock(filters[1], filters[0])
+        # self.decoder1_add = DecoderBlock(filters[0], filters[0])
 
-        self.finaldeconv1_add = nn.ConvTranspose2d(filters[0], filters[0] // 2, 4, 2, 1)
-        self.finalrelu1_add = nonlinearity
-        self.finalconv2_add = nn.Conv2d(filters[0] // 2, filters[0] // 2, 3, padding=1)
-        self.finalrelu2_add = nonlinearity
+        # self.finaldeconv1_add = nn.ConvTranspose2d(filters[0], filters[0] // 2, 4, 2, 1)
+        # self.finalrelu1_add = nonlinearity
+        # self.finalconv2_add = nn.Conv2d(filters[0] // 2, filters[0] // 2, 3, padding=1)
+        # self.finalrelu2_add = nonlinearity
 
         self.finaldeconv1 = nn.ConvTranspose2d(filters[0], filters[0] // 2, 4, 2, 1)
         self.finalrelu1 = nonlinearity
-        self.finalconv2 = nn.Conv2d(filters[0] // 2, filters[0] // 2, 3, padding=1)
-        self.finalrelu2 = nonlinearity
-        self.finalconv = nn.Conv2d(filters[0], num_classes, 3, padding=1)
-        # self.finalconv = nn.Conv2d(filters[0] // 2, num_classes, 3, padding=1)
+        # self.finalconv2 = nn.Conv2d(filters[0] // 2, filters[0] // 2, 3, padding=1)
+        # self.finalrelu2 = nonlinearity
+        # self.finalconv = nn.Conv2d(filters[0], num_classes, 3, padding=1)
+        self.finalconv = nn.Conv2d(filters[0] // 2, num_classes, 3, padding=1)
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
@@ -283,7 +355,7 @@ class ResNet(nn.Module):
         x_e4 = x_4[:, :512, :, :]
         g_e4 = x_4[:, 512:, :, :]
 
-        g_c = self.dblock(g_e4)
+        # g_c = self.dblock(g_e4)
         x_c = self.dblock(x_e4)
         # decoder
         x_d4 = self.decoder4(x_c) + x_e3
@@ -291,17 +363,17 @@ class ResNet(nn.Module):
         x_d2 = self.decoder2(x_d3) + x_e1
         x_d1 = self.decoder1(x_d2)
 
-        g_d4 = self.decoder4_add(g_c) + g_e3
-        g_d3 = self.decoder3_add(g_d4) + g_e2
-        g_d2 = self.decoder2_add(g_d3) + g_e1
-        g_d1 = self.decoder1_add(g_d2)
+        # g_d4 = self.decoder4_add(g_c) + g_e3
+        # g_d3 = self.decoder3_add(g_d4) + g_e2
+        # g_d2 = self.decoder2_add(g_d3) + g_e1
+        # g_d1 = self.decoder1_add(g_d2)
 
         x_out = self.finalrelu1(self.finaldeconv1(x_d1))
-        x_out = self.finalrelu2(self.finalconv2(x_out))
-        g_out = self.finalrelu1(self.finaldeconv1(g_d1))
-        g_out = self.finalrelu2(self.finalconv2(g_out))
-        out = self.finalconv(torch.cat((x_out, g_out), 1))
-        # out=self.finalconv(x_out)
+        # x_out = self.finalrelu2(self.finalconv2(x_out))
+        # g_out = self.finalrelu1(self.finaldeconv1(g_d1))
+        # g_out = self.finalrelu2(self.finalconv2(g_out))
+        # out = self.finalconv(torch.cat((x_out, g_out), 1))
+        out=self.finalconv(x_out)
         out = torch.sigmoid(out)
 
         return out
