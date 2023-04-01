@@ -75,10 +75,11 @@ class DynamicConv(nn.Module):
         for i in range(self.K):
             nn.init.kaiming_uniform_(self.weight[i])
 
-    def forward(self, x):
+    def forward(self, input,x):
         bs, in_planels, h, w = x.shape
         softmax_att = self.attention(x)  # bs,K
-        x = x.view(1, -1, h, w)
+        # x = x.view(1, -1, h, w)
+        input = input.view(1, -1, h, w)
         weight = self.weight.view(self.K, -1)  # K,-1
         aggregate_weight = torch.mm(softmax_att, weight).view(bs * self.out_planes, self.in_planes // self.groups,
                                                               self.kernel_size, self.kernel_size)  # bs*out_p,in_p,k,k
@@ -86,10 +87,10 @@ class DynamicConv(nn.Module):
         if (self.bias is not None):
             bias = self.bias.view(self.K, -1)  # K,out_p
             aggregate_bias = torch.mm(softmax_att, bias).view(-1)  # bs,out_p
-            output = F.conv2d(x, weight=aggregate_weight, bias=aggregate_bias, stride=self.stride, padding=self.padding,
+            output = F.conv2d(input, weight=aggregate_weight, bias=aggregate_bias, stride=self.stride, padding=self.padding,
                               groups=self.groups * bs, dilation=self.dilation)
         else:
-            output = F.conv2d(x, weight=aggregate_weight, bias=None, stride=self.stride, padding=self.padding,
+            output = F.conv2d(input, weight=aggregate_weight, bias=None, stride=self.stride, padding=self.padding,
                               groups=self.groups * bs, dilation=self.dilation)
 
         output = output.view(bs, self.out_planes, h, w)
@@ -155,7 +156,7 @@ class CondConv(nn.Module):
 
         softmax_att=self.attention(x) #bs,K
         # 把输入特征由 [N, C_in, H, W] 转化为 [1, N*C_in, H, W]
-        x=x.view(1,-1,h,w)
+        # x=x.view(1,-1,h,w)
         input=input.view(1,-1,h,w)
         # 生成随机 weight [K, C_out, C_in/groups, 3, 3] (卷积核一般为3*3)
         # 注意添加了 requires_grad=True，这样里面的参数是可以优化的
