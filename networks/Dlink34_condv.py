@@ -149,10 +149,10 @@ class ResNet(nn.Module):
         self.bn1 = nn.BatchNorm2d(self.in_channel)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
-        self.layer1 = self._make_layer(block, 64, blocks_num[0],condconv=False)
-        self.layer2 = self._make_layer(block, 128, blocks_num[1], stride=2,condconv=False)
-        self.layer3 = self._make_layer(block, 256, blocks_num[2], stride=2,condconv=False)
-        self.layer4 = self._make_layer(block, 512, blocks_num[3], stride=2,condconv=False)
+        self.layer1 = self._make_layer(block, 64, blocks_num[0],condconv=True)
+        self.layer2 = self._make_layer(block, 128, blocks_num[1], stride=2,condconv=True)
+        self.layer3 = self._make_layer(block, 256, blocks_num[2], stride=2,condconv=True)
+        self.layer4 = self._make_layer(block, 512, blocks_num[3], stride=2,condconv=True)
 
         self.dblock = DBlock(filters[3])
         self.dblock_add = DBlock(filters[3])
@@ -214,7 +214,7 @@ class ResNet(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, inputs):
-        print('input:',inputs.shape)
+
         x = inputs[:, :3, :, :]
         g = inputs[:, 3:, :, :]
         # print('img:',x.shape)
@@ -227,7 +227,7 @@ class ResNet(nn.Module):
 
         # out = out, out_g
         out =torch.cat((out, out_g),1)
-        print('out:', out.shape)
+        
         ##layers:
         x_1 = self.layer1(out)
         x_2 = self.layer2(x_1)
