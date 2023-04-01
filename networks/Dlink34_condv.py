@@ -23,7 +23,7 @@ class BasicBlock(nn.Module):
             self.conv2 = nn.Conv2d(in_channels=out_channel, out_channels=out_channel,
                                    kernel_size=3, stride=1, padding=1, bias=False)
         else:
-            self.conv2 = CondConv(out_channel, out_channel, kernel_size=3, stride=1,
+            self.conv2 =DynamicConv(out_channel, out_channel, kernel_size=3, stride=1,
                                   padding=1, bias=False)
         self.conv2_g = nn.Conv2d(in_channels=out_channel, out_channels=out_channel,
                                  kernel_size=3, stride=1, padding=1, bias=False)
