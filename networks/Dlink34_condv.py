@@ -8,6 +8,7 @@ class BasicBlock(nn.Module):
     def __init__(self, in_channel, out_channel, stride=1, downsample=None,downsample1=None,condconv = False, **kwargs):
         super(BasicBlock, self).__init__()
         self.condconv=condconv
+        self.in_chanel=in_channel
         self.conv1 = nn.Conv2d(in_channels=in_channel, out_channels=out_channel,
                                kernel_size=3, stride=stride, padding=1, bias=False)
         self.bn1 = nn.BatchNorm2d(out_channel)
@@ -31,8 +32,11 @@ class BasicBlock(nn.Module):
 
     def forward(self, input):
 
-        x, g = input
-
+        a=self.in_chanel
+        x=input[:,:a,:,:]
+        g=input[:,a:,:,:]
+        # print('x:',x.shape)
+        # print('g:', g.shape)
         residual = x
         residual_g = g
         out = self.conv1(x)
@@ -62,7 +66,9 @@ class BasicBlock(nn.Module):
         out_g += residual_g
         out_g = self.relu(out_g)
 
-        return [out, out_g]
+        out = torch.cat((out, out_g), 1)
+
+        return out
 
 
 
@@ -208,6 +214,7 @@ class ResNet(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, inputs):
+        print('input:',inputs.shape)
         x = inputs[:, :3, :, :]
         g = inputs[:, 3:, :, :]
         # print('img:',x.shape)
@@ -218,16 +225,24 @@ class ResNet(nn.Module):
         out_g = self.relu(self.bn1(self.conv1_g(g)))
         out_g = self.maxpool(out_g)
 
-        out = [out, out_g]
+        # out = out, out_g
+        out =torch.cat((out, out_g),1)
+        print('out:', out.shape)
         ##layers:
-        x_e1 = self.layer1(out)
-        x_e2 = self.layer2(x_e1)
-        x_e3 = self.layer3(x_e2)
-        x_e4 = self.layer4(x_e3)
-        x_e1, g_e1 = x_e1
-        x_e2, g_e2 = x_e2
-        x_e3, g_e3 = x_e3
-        x_e4, g_e4 = x_e4
+        x_1 = self.layer1(out)
+        x_2 = self.layer2(x_1)
+        x_3 = self.layer3(x_2)
+        x_4 = self.layer4(x_3)
+        x_e1 = x_1[:,:64,:,:]
+        g_e1 =x_1[:,64:,:,:]
+        x_e2 = x_2[:, :128, :, :]
+        g_e2 = x_2[:, 128:, :, :]
+
+        x_e3 = x_3[:, :256, :, :]
+        g_e3 = x_3[:, 256:, :, :]
+
+        x_e4 = x_4[:, :512, :, :]
+        g_e4 = x_4[:, 512:, :, :]
 
         g_c = self.dblock(g_e4)
         x_c = self.dblock(x_e4)
