@@ -1,0 +1,278 @@
+import torch.nn as nn
+import torch
+from networks.CondConv import CondConv, DynamicConv
+from .basic_blocks import *
+
+
+class Exchange(nn.Module):
+    def __init__(self):
+        super(Exchange, self).__init__()
+
+    def forward(self, x, bn, bn_threshold):
+        bn1, bn2 = bn[0].weight.abs(), bn[1].weight.abs()
+        x1, x2 = torch.zeros_like(x[0]), torch.zeros_like(x[1])
+        x1[:, bn1 >= bn_threshold] = x[0][:, bn1 >= bn_threshold]
+        x1[:, bn1 < bn_threshold] = x[1][:, bn1 < bn_threshold]
+        x2[:, bn2 >= bn_threshold] = x[1][:, bn2 >= bn_threshold]
+        x2[:, bn2 < bn_threshold] = x[0][:, bn2 < bn_threshold]
+        return [x1, x2]
+
+
+class ModuleParallel(nn.Module):
+    def __init__(self, module):
+        super(ModuleParallel, self).__init__()
+        self.module = module
+
+    def forward(self, x_parallel):
+        return [self.module(x) for x in x_parallel]
+
+
+class BatchNorm2dParallel(nn.Module):
+    def __init__(self, num_features, num_parallel=2):
+        super(BatchNorm2dParallel, self).__init__()
+        for i in range(int(num_parallel)):
+
+            setattr(self, 'bn_' + str(i), nn.BatchNorm2d(num_features))
+
+    def forward(self, x_parallel):
+        return [getattr(self, 'bn_' + str(i))(x) for i, x in enumerate(x_parallel)]
+
+
+def conv3x3(in_planes, out_planes, stride=1, bias=False):
+    "3x3 convolution with padding"
+    return ModuleParallel(nn.Conv2d(in_planes, out_planes, kernel_size=3,
+                                    stride=stride, padding=1, bias=bias))
+
+
+def conv1x1(in_planes, out_planes, stride=1, bias=False):
+    "1x1 convolution"
+    return ModuleParallel(nn.Conv2d(in_planes, out_planes, kernel_size=1,
+                                    stride=stride, padding=0, bias=bias))
+
+class BasicBlock(nn.Module):
+    expansion = 1
+    def __init__(self, inplanes, planes, num_parallel, bn_threshold,stride=1, downsample=None):
+        super(BasicBlock, self).__init__()
+
+        self.conv1 = conv3x3(inplanes, planes, stride)
+        self.bn1 = BatchNorm2dParallel(planes, num_parallel)
+        self.relu = ModuleParallel(nn.ReLU(inplace=True))
+        self.conv2 = conv3x3(planes, planes)
+        self.bn2 = BatchNorm2dParallel(planes, num_parallel)
+        self.num_parallel = num_parallel
+        self.downsample = downsample
+        self.stride = stride
+
+        self.exchange = Exchange()
+        self.bn_threshold = bn_threshold
+        self.bn2_list = []
+        for module in self.bn2.modules():
+            if isinstance(module, nn.BatchNorm2d):
+                self.bn2_list.append(module)
+
+    def forward(self, x):
+        residual = x
+
+        out = self.conv1(x)
+        # print('conv1',out[1].shape)
+        out = self.bn1(out)
+        out = self.relu(out)
+
+        out = self.conv2(out)
+        out = self.bn2(out)
+        if len(x) > 1:
+            out = self.exchange(out, self.bn2_list, self.bn_threshold)
+
+        if self.downsample is not None:
+            residual = self.downsample(x)
+
+        out = [out[l] + residual[l] for l in range(self.num_parallel)]
+        out = self.relu(out)
+
+        return out
+
+class Bottleneck(nn.Module):
+    expansion = 4
+    def __init__(self, inplanes, planes, num_parallel, bn_threshold, stride=1, downsample=None):
+        super(Bottleneck, self).__init__()
+        self.conv1 = conv1x1(inplanes, planes)
+        self.bn1 = BatchNorm2dParallel(planes, num_parallel)
+        self.conv2 = conv3x3(planes, planes, stride=stride)
+        self.bn2 = BatchNorm2dParallel(planes, num_parallel)
+        self.conv3 = conv1x1(planes, planes * 4)
+        self.bn3 = BatchNorm2dParallel(planes * 4, num_parallel)
+        self.relu = ModuleParallel(nn.ReLU(inplace=True))
+        self.num_parallel = num_parallel
+        self.downsample = downsample
+        self.stride = stride
+
+        self.exchange = Exchange()
+        self.bn_threshold = bn_threshold
+        self.bn2_list = []
+        for module in self.bn2.modules():
+            if isinstance(module, nn.BatchNorm2d):
+                self.bn2_list.append(module)
+
+    def forward(self, x):
+        residual = x
+        out = x
+
+        out = self.conv1(out)
+        out = self.bn1(out)
+        out = self.relu(out)
+
+        out = self.conv2(out)
+        out = self.bn2(out)
+        if len(x) > 1:
+            out = self.exchange(out, self.bn2_list, self.bn_threshold)
+        out = self.relu(out)
+
+        out = self.conv3(out)
+        out = self.bn3(out)
+
+        if self.downsample is not None:
+            residual = self.downsample(x)
+
+        out = [out[l] + residual[l] for l in range(self.num_parallel)]
+        out = self.relu(out)
+
+        return out
+
+
+class ResNet(nn.Module):
+
+    def __init__(self,
+                 block,
+                 blocks_num,
+                 num_parallel=2,
+                 num_classes=1,
+                 bn_threshold=2e-2):
+        super(ResNet, self).__init__()
+        self.inplanes = 64
+        self.num_parallel=num_parallel
+
+        filters = [64, 128, 256, 512]
+        self.conv1 = nn.Conv2d(3, self.inplanes, kernel_size=7, stride=2,
+                               padding=3, bias=False)
+        self.conv1_g = nn.Conv2d(1, self.inplanes, kernel_size=7, stride=2,
+                                 padding=3, bias=False)
+        self.bn1 = nn.BatchNorm2d(self.inplanes)#BatchNorm2dParallel(self.inplanes, num_parallel)
+        self.bn1_g = nn.BatchNorm2d(self.inplanes)
+        self.relu = nn.ReLU(inplace=True)
+        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+        self.layer1 = self._make_layer(block, 64, blocks_num[0], bn_threshold)
+        self.layer2 = self._make_layer(block, 128, blocks_num[1], bn_threshold, stride=2)
+        self.layer3 = self._make_layer(block, 256, blocks_num[2], bn_threshold, stride=2)
+        self.layer4 = self._make_layer(block, 512, blocks_num[3], bn_threshold, stride=2)
+
+        # self.layer1_add = self._make_layer(block, 64, blocks_num[0], condconv=False)
+        # self.layer2_add = self._make_layer(block, 128, blocks_num[1], stride=2, condconv=False)
+        # self.layer3_add = self._make_layer(block, 256, blocks_num[2], stride=2, condconv=False)
+        # self.layer4_add = self._make_layer(block, 512, blocks_num[3], stride=2, condconv=False)
+
+        self.dblock = DBlock_parallel(filters[3],2)
+        # self.dblock_add = DBlock(filters[3])
+        # decoder
+        self.decoder4 = DecoderBlock_parallel(filters[3], filters[2],2)
+        self.decoder3 = DecoderBlock_parallel(filters[2], filters[1],2)
+        self.decoder2 = DecoderBlock_parallel(filters[1], filters[0],2)
+        self.decoder1 = DecoderBlock_parallel(filters[0], filters[0],2)
+
+        # self.decoder4_add = DecoderBlock(filters[3], filters[2])
+        # self.decoder3_add = DecoderBlock(filters[2], filters[1])
+        # self.decoder2_add = DecoderBlock(filters[1], filters[0])
+        # self.decoder1_add = DecoderBlock(filters[0], filters[0])
+
+        # self.finaldeconv1_add = nn.ConvTranspose2d(filters[0], filters[0] // 2, 4, 2, 1)
+        # self.finalrelu1_add = nonlinearity
+        # self.finalconv2_add = nn.Conv2d(filters[0] // 2, filters[0] // 2, 3, padding=1)
+        # self.finalrelu2_add = nonlinearity
+
+        self.finaldeconv1 = ModuleParallel(nn.ConvTranspose2d(filters[0], filters[0] // 2, 4, 2, 1))
+        self.finalrelu1 =  ModuleParallel(nn.ReLU(inplace=True))
+        #self.finalrelu1 = nonlinearity
+        self.finalconv2 = ModuleParallel(nn.Conv2d(filters[0] // 2, filters[0] // 2, 3, padding=1))
+        self.finalrelu2 = ModuleParallel(nn.ReLU(inplace=True))
+        self.finalconv = nn.Conv2d(filters[0], num_classes, 3, padding=1)
+        # self.finalconv = ModuleParallel(nn.Conv2d(filters[0] // 2, num_classes, 3, padding=1))
+        self.alpha = nn.Parameter(torch.ones(num_parallel, requires_grad=True))
+        self.register_parameter('alpha', self.alpha)
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+
+    def _make_layer(self, block, planes, num_blocks, bn_threshold, stride=1):
+        downsample = None
+        if stride != 1 or self.inplanes != planes * block.expansion:
+            downsample = nn.Sequential(
+                conv1x1(self.inplanes, planes * block.expansion, stride=stride),
+                BatchNorm2dParallel(planes * block.expansion, self.num_parallel)
+            )
+
+        layers = []
+        layers.append(block(self.inplanes, planes, self.num_parallel, bn_threshold, stride, downsample))
+        self.inplanes = planes * block.expansion
+        for i in range(1, num_blocks):
+            layers.append(block(self.inplanes, planes, self.num_parallel, bn_threshold))
+
+        return nn.Sequential(*layers)
+
+    def forward(self, inputs):
+
+        x = inputs[:, :3, :, :]
+        g = inputs[:, 3:, :, :]
+
+        ##stem layer
+        out = self.relu(self.bn1(self.conv1(x)))
+        out = self.maxpool(out)
+        out_g = self.relu(self.bn1_g(self.conv1_g(g)))
+        out_g = self.maxpool(out_g)
+
+        out = out, out_g
+        # out = torch.cat((out, out_g), 1)
+
+        ##layers:
+        x_1 = self.layer1(out)
+        x_2 = self.layer2(x_1)
+        x_3 = self.layer3(x_2)
+        x_4 = self.layer4(x_3)
+
+        # x_e1 = x_1[0]
+        # g_e1 = x_1[1]
+        # x_e2 = x_2[0]
+        # g_e2 = x_2[1]
+        # x_e3 = x_3[0]
+        # g_e3 = x_3[1]
+        # x_e4 =x_4[0]
+        # g_e4 =x_4[1]
+        # g_c = self.dblock(g_e4)
+        x_c = self.dblock(x_4)
+        # decoder
+        x_d4 = [self.decoder4(x_c)[l] + x_3[l] for l in range(self.num_parallel)]
+        x_d3 = [self.decoder3(x_d4)[l] + x_2[l] for l in range(self.num_parallel)]
+        x_d2 = [self.decoder2(x_d3)[l] + x_1[l] for l in range(self.num_parallel)]
+        x_d1 = self.decoder1(x_d2)
+
+        # g_d4 = self.decoder4_add(g_c) + g_e3
+        # g_d3 = self.decoder3_add(g_d4) + g_e2
+        # g_d2 = self.decoder2_add(g_d3) + g_e1
+        # g_d1 = self.decoder1_add(g_d2)
+
+        x_out = self.finalrelu1(self.finaldeconv1(x_d1))
+        x_out = self.finalrelu2(self.finalconv2(x_out))
+        # g_out = self.finalrelu1(self.finaldeconv1(g_d1))
+        # g_out = self.finalrelu2(self.finalconv2(g_out))
+        out = self.finalconv(torch.cat((x_out[0], x_out[1]), 1))
+        # out=self.finalconv(x_out)
+        # alpha_soft = F.softmax(self.alpha)
+        # ens = 0
+        # for l in range(self.num_parallel):
+        #     ens += alpha_soft[l] * out[l].detach()
+        out = torch.sigmoid(out)
+
+        return out
+
+
+def DinkNet34_CMMPNet():
+    model = ResNet(block=BasicBlock, blocks_num=[3, 4, 6, 3],num_parallel=2,num_classes=1,bn_threshold=2e-2)
+    return model
