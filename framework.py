@@ -71,9 +71,9 @@ class Solver:
         # for output in outs:
         #     soft_output = torch.sigmoid(output)
         loss = self.loss(self.mask,pred)
-        L1_norm = sum([L1_penalty(m).cuda() for m in slim_params])
-        lamda =2e-4
-        loss += lamda * L1_norm  # this is actually counted for len(outputs) times
+        #L1_norm = sum([L1_penalty(m).cuda() for m in slim_params])
+        #lamda =2e-4
+        #loss += lamda * L1_norm  # this is actually counted for len(outputs) times
 
         loss.backward()
         self.optimizer.step()
@@ -112,9 +112,9 @@ class Solver:
         #     lamda = 2e-4
         #     loss += lamda * L1_norm  # this is actually counted for len(outputs) times
         loss = self.loss(self.mask, pred)
-        L1_norm = sum([L1_penalty(m).cuda() for m in slim_params])
-        lamda = 2e-4
-        loss += lamda * L1_norm  # this is actually counted for len(outputs) times
+#         L1_norm = sum([L1_penalty(m).cuda() for m in slim_params])
+#         lamda = 2e-4
+#         loss += lamda * L1_norm  # this is actually counted for len(outputs) times
 
         batch_iou, intersection, union = self.metrics(self.mask, pred)
         pred = pred.cpu().data.numpy().squeeze(1)
