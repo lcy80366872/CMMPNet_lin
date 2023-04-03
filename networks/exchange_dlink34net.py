@@ -177,10 +177,7 @@ class ResNet(nn.Module):
         self.layer3 = self._make_layer(block, 256, blocks_num[2], bn_threshold, stride=2)
         self.layer4 = self._make_layer(block, 512, blocks_num[3], bn_threshold, stride=2)
 
-        # self.layer1_add = self._make_layer(block, 64, blocks_num[0], condconv=False)
-        # self.layer2_add = self._make_layer(block, 128, blocks_num[1], stride=2, condconv=False)
-        # self.layer3_add = self._make_layer(block, 256, blocks_num[2], stride=2, condconv=False)
-        # self.layer4_add = self._make_layer(block, 512, blocks_num[3], stride=2, condconv=False)
+        self.dropout = ModuleParallel(nn.Dropout(p=0.5))
 
         self.dblock = DBlock_parallel(filters[3],2)
         # self.dblock_add = DBlock(filters[3])
@@ -190,10 +187,6 @@ class ResNet(nn.Module):
         self.decoder2 = DecoderBlock_parallel(filters[1], filters[0],2)
         self.decoder1 = DecoderBlock_parallel(filters[0], filters[0],2)
 
-        # self.decoder4_add = DecoderBlock(filters[3], filters[2])
-        # self.decoder3_add = DecoderBlock(filters[2], filters[1])
-        # self.decoder2_add = DecoderBlock(filters[1], filters[0])
-        # self.decoder1_add = DecoderBlock(filters[0], filters[0])
 
         # self.finaldeconv1_add = nn.ConvTranspose2d(filters[0], filters[0] // 2, 4, 2, 1)
         # self.finalrelu1_add = nonlinearity
@@ -203,10 +196,10 @@ class ResNet(nn.Module):
         self.finaldeconv1 = ModuleParallel(nn.ConvTranspose2d(filters[0], filters[0] // 2, 4, 2, 1))
         self.finalrelu1 =  ModuleParallel(nn.ReLU(inplace=True))
         #self.finalrelu1 = nonlinearity
-        self.finalconv2 = ModuleParallel(nn.Conv2d(filters[0] // 2, filters[0] // 2, 3, padding=1))
-        self.finalrelu2 = ModuleParallel(nn.ReLU(inplace=True))
-        self.finalconv = nn.Conv2d(filters[0], num_classes, 3, padding=1)
-        # self.finalconv = ModuleParallel(nn.Conv2d(filters[0] // 2, num_classes, 3, padding=1))
+        # self.finalconv2 = ModuleParallel(nn.Conv2d(filters[0] // 2, filters[0] // 2, 3, padding=1))
+        # self.finalrelu2 = ModuleParallel(nn.ReLU(inplace=True))
+        # self.finalconv = nn.Conv2d(filters[0], num_classes, 3, padding=1)
+        self.finalconv = ModuleParallel(nn.Conv2d(filters[0] // 2, num_classes, 3, padding=1))
         self.alpha = nn.Parameter(torch.ones(num_parallel, requires_grad=True))
         self.register_parameter('alpha', self.alpha)
         for m in self.modules():
@@ -249,6 +242,8 @@ class ResNet(nn.Module):
         x_3 = self.layer3(x_2)
         x_4 = self.layer4(x_3)
 
+        x_4 =self.dropout(x_4)
+
         x_c = self.dblock(x_4)
         # decoder
         x_d4 = [self.decoder4(x_c)[l] + x_3[l] for l in range(self.num_parallel)]
@@ -258,14 +253,15 @@ class ResNet(nn.Module):
 
 
         x_out = self.finalrelu1(self.finaldeconv1(x_d1))
-        x_out = self.finalrelu2(self.finalconv2(x_out))
-        out = self.finalconv(torch.cat((x_out[0], x_out[1]), 1))
-        # out=self.finalconv(x_out)
-        # alpha_soft = F.softmax(self.alpha)
-        # ens = 0
-        # for l in range(self.num_parallel):
-        #     ens += alpha_soft[l] * out[l].detach()
-        out = torch.sigmoid(out)
+        # x_out = self.finalrelu2(self.finalconv2(x_out))
+        # out = self.finalconv(torch.cat((x_out[0], x_out[1]), 1))
+        out=self.finalconv(x_out)
+        alpha_soft = F.softmax(self.alpha)
+        ens = 0
+        for l in range(self.num_parallel):
+            ens += alpha_soft[l] * out[l].detach()
+        # out = torch.sigmoid(out)
+        out.append(ens)#[两个输入的out以及他们按alpha均衡后的output,一共三个]
 
         return out
 
