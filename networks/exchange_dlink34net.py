@@ -2,7 +2,7 @@ import torch.nn as nn
 import torch
 from networks.CondConv import CondConv, DynamicConv
 from .basic_blocks import *
-
+from torchvision import models
 
 class Exchange(nn.Module):
     def __init__(self):
@@ -28,7 +28,7 @@ class ModuleParallel(nn.Module):
 
 
 class BatchNorm2dParallel(nn.Module):
-    def __init__(self, num_features, num_parallel=2):
+    def __init__(self, num_features, num_parallel=2,):
         super(BatchNorm2dParallel, self).__init__()
         for i in range(int(num_parallel)):
 
@@ -160,6 +160,18 @@ class ResNet(nn.Module):
         self.bn1_g = nn.BatchNorm2d(self.inplanes)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+
+        resnet = models.resnet34(pretrained=True)
+        self.firstconv1 = resnet.conv1
+        self.firstbn = resnet.bn1
+        self.firstrelu = resnet.relu
+        self.firstmaxpool = resnet.maxpool
+        resnet1 = models.resnet34(pretrained=True)
+        self.firstconv1_g = nn.Conv2d(1, filters[0], kernel_size=7, stride=2, padding=3)
+        self.firstbn_g = resnet1.bn1
+        self.firstrelu_g = resnet1.relu
+        self.firstmaxpool_g = resnet1.maxpool
+
         self.layer1 = self._make_layer(block, 64, blocks_num[0], bn_threshold)
         self.layer2 = self._make_layer(block, 128, blocks_num[1], bn_threshold, stride=2)
         self.layer3 = self._make_layer(block, 256, blocks_num[2], bn_threshold, stride=2)
@@ -223,10 +235,10 @@ class ResNet(nn.Module):
         g = inputs[:, 3:, :, :]
 
         ##stem layer
-        out = self.relu(self.bn1(self.conv1(x)))
-        out = self.maxpool(out)
-        out_g = self.relu(self.bn1_g(self.conv1_g(g)))
-        out_g = self.maxpool(out_g)
+        x = self.firstconv1(x)
+        g = self.firstconv1_g(g)
+        out = self.firstmaxpool(self.firstrelu(self.firstbn(x)))
+        out_g = self.firstmaxpool_g(self.firstrelu_g(self.firstbn_g(g)))
 
         out = out, out_g
         # out = torch.cat((out, out_g), 1)
@@ -237,15 +249,6 @@ class ResNet(nn.Module):
         x_3 = self.layer3(x_2)
         x_4 = self.layer4(x_3)
 
-        # x_e1 = x_1[0]
-        # g_e1 = x_1[1]
-        # x_e2 = x_2[0]
-        # g_e2 = x_2[1]
-        # x_e3 = x_3[0]
-        # g_e3 = x_3[1]
-        # x_e4 =x_4[0]
-        # g_e4 =x_4[1]
-        # g_c = self.dblock(g_e4)
         x_c = self.dblock(x_4)
         # decoder
         x_d4 = [self.decoder4(x_c)[l] + x_3[l] for l in range(self.num_parallel)]
@@ -253,15 +256,9 @@ class ResNet(nn.Module):
         x_d2 = [self.decoder2(x_d3)[l] + x_1[l] for l in range(self.num_parallel)]
         x_d1 = self.decoder1(x_d2)
 
-        # g_d4 = self.decoder4_add(g_c) + g_e3
-        # g_d3 = self.decoder3_add(g_d4) + g_e2
-        # g_d2 = self.decoder2_add(g_d3) + g_e1
-        # g_d1 = self.decoder1_add(g_d2)
 
         x_out = self.finalrelu1(self.finaldeconv1(x_d1))
         x_out = self.finalrelu2(self.finalconv2(x_out))
-        # g_out = self.finalrelu1(self.finaldeconv1(g_d1))
-        # g_out = self.finalrelu2(self.finalconv2(g_out))
         out = self.finalconv(torch.cat((x_out[0], x_out[1]), 1))
         # out=self.finalconv(x_out)
         # alpha_soft = F.softmax(self.alpha)
