@@ -242,7 +242,7 @@ class ResNet(nn.Module):
         x_3 = self.layer3(x_2)
         x_4 = self.layer4(x_3)
 
-#         x_4 =self.dropout(x_4)
+        x_4 =self.dropout(x_4)
 
         x_c = self.dblock(x_4)
         # decoder
@@ -260,7 +260,8 @@ class ResNet(nn.Module):
         ens = 0
         for l in range(self.num_parallel):
             ens += alpha_soft[l] * out[l].detach()
-        out = torch.sigmoid(ens)
+#         out = torch.sigmoid(ens)
+        out =nn.LogSoftmax()(ens)   
         # out.append(ens)#[两个输入的out以及他们按alpha均衡后的output,一共三个]
 
         return out
