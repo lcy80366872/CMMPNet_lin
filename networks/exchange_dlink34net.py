@@ -260,8 +260,8 @@ class ResNet(nn.Module):
         ens = 0
         for l in range(self.num_parallel):
             ens += alpha_soft[l] * out[l].detach()
-        # out = torch.sigmoid(out)
-        out.append(ens)#[两个输入的out以及他们按alpha均衡后的output,一共三个]
+        out = torch.sigmoid(ens)
+        # out.append(ens)#[两个输入的out以及他们按alpha均衡后的output,一共三个]
 
         return out
 
