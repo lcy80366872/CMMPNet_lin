@@ -60,7 +60,7 @@ class Solver:
         self.data2cuda()
 
         self.optimizer.zero_grad()
-        pred = self.net.forward(self.img)
+        outs = self.net.forward(self.img)
         slim_params = []
         for name, param in self.net.named_parameters():
             if param.requires_grad and name.endswith('weight') and 'bn2' in name:
@@ -68,18 +68,18 @@ class Solver:
                     slim_params.append(param[:len(param) // 2])
                 else:
                     slim_params.append(param[len(param) // 2:])
-        # for output in outs:
-        #     soft_output = torch.sigmoid(output)
-        loss = self.loss(self.mask,pred)
-        L1_norm = sum([L1_penalty(m).cuda() for m in slim_params])
-        lamda =2e-4
-        loss += lamda * L1_norm  # this is actually counted for len(outputs) times
+        for output in outs:
+            soft_output = torch.sigmoid(output)
+            loss = self.loss(self.mask,soft_output)
+            L1_norm = sum([L1_penalty(m).cuda() for m in slim_params])
+            lamda =2e-4
+            loss += lamda * L1_norm  # this is actually counted for len(outputs) times
 
         loss.backward()
         self.optimizer.step()
 
-        batch_iou, intersection, union = self.metrics(self.mask, pred)
-        return pred, loss.item(), batch_iou, intersection, union
+        batch_iou, intersection, union = self.metrics(self.mask, outs[0])
+        return outs[0], loss.item(), batch_iou, intersection, union
 
     def test_batch(self):
         self.net.eval()
@@ -95,7 +95,7 @@ class Solver:
         self.net.eval()
         self.data2cuda(volatile=True)
 
-        pred = self.net.forward(self.img)
+        outs = self.net.forward(self.img)
         slim_params = []
         for name, param in self.net.named_parameters():
             if param.requires_grad and name.endswith('weight') and 'bn2' in name:
@@ -103,21 +103,21 @@ class Solver:
                     slim_params.append(param[:len(param) // 2])
                 else:
                     slim_params.append(param[len(param) // 2:])
-        # loss = 0
-        # for output in outs:
-        #     soft_output = torch.sigmoid(output)
-        #     # Compute loss and backpropagate
-        #     loss += self.loss(self.mask, soft_output)
-        #     L1_norm = sum([L1_penalty(m).cuda() for m in slim_params])
-        #     lamda = 2e-4
-        #     loss += lamda * L1_norm  # this is actually counted for len(outputs) times
-        loss = self.loss(self.mask, pred)
-        L1_norm = sum([L1_penalty(m).cuda() for m in slim_params])
-        lamda = 2e-4
-        loss += lamda * L1_norm  # this is actually counted for len(outputs) times
+        loss = 0
+        for output in outs:
+            soft_output = torch.sigmoid(output)
+            # Compute loss and backpropagate
+            loss += self.loss(self.mask, soft_output)
+            L1_norm = sum([L1_penalty(m).cuda() for m in slim_params])
+            lamda = 2e-4
+            loss += lamda * L1_norm  # this is actually counted for len(outputs) times
+        # loss = self.loss(self.mask, pred)
+        # L1_norm = sum([L1_penalty(m).cuda() for m in slim_params])
+        # lamda = 2e-4
+        # loss += lamda * L1_norm  # this is actually counted for len(outputs) times
 
-        batch_iou, intersection, union = self.metrics(self.mask, pred)
-        pred = pred.cpu().data.numpy().squeeze(1)
+        batch_iou, intersection, union = self.metrics(self.mask, outs[0])
+        pred = outs[0].cpu().data.numpy().squeeze(1)
         return pred, loss.item(), batch_iou, intersection, union
 
     def update_lr(self, ratio=1.0):
