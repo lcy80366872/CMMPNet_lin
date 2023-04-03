@@ -10,7 +10,8 @@ import numpy
 
 class Solver:
     def __init__(self, net, optimizer, dataset):
-        self.net = torch.nn.DataParallel(net.cuda(), device_ids=list(range(torch.cuda.device_count())))
+#         self.net = torch.nn.DataParallel(net.cuda(), device_ids=list(range(torch.cuda.device_count())))
+        self.net=net.cuda()
         
         self.optimizer = optimizer
         self.dataset = dataset
