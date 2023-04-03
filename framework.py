@@ -93,7 +93,7 @@ class Solver:
         batch_iou, intersection, union = self.metrics(self.mask, pred)
         pred = pred.cpu().data.numpy().squeeze(1)
         return pred, loss.item(), batch_iou, intersection, union
-    def test_batch_exchange(self,model):
+    def test_batch_exchange(self):
         self.net.eval()
         self.data2cuda(volatile=True)
 
