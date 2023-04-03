@@ -256,7 +256,7 @@ class ResNet(nn.Module):
         # x_out = self.finalrelu2(self.finalconv2(x_out))
         # out = self.finalconv(torch.cat((x_out[0], x_out[1]), 1))
         out=self.finalconv(x_out)
-        alpha_soft = F.softmax(self.alpha)
+        alpha_soft = F.softmax(self.alpha,dim=0)
         ens = 0
         for l in range(self.num_parallel):
             ens += alpha_soft[l] * out[l].detach()
