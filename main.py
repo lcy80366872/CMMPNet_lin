@@ -7,6 +7,7 @@ from torch.nn import init
 import os
 import sys
 import cv2
+from utils.model_init import model_init
 from framework import Framework
 # from framework_connect import Framework
 # from utils.datasets_connect import prepare_Beijing_dataset, prepare_TLCGIS_dataset
@@ -77,6 +78,7 @@ def train_val_test(args):
     net = get_model(args.model)
 #     with torch.no_grad():  # 必须有
 #         summary(net.to('cuda'), input_size=(4, 512, 512), batch_size=4)
+    model_init(net, 'resnet34', 2, imagenet=True)
     print(net)
     print('lr:',args.lr)
     optimizer = torch.optim.Adam(params=net.parameters(), lr=args.lr)
