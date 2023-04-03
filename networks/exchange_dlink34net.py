@@ -196,12 +196,12 @@ class ResNet(nn.Module):
         self.finaldeconv1 = ModuleParallel(nn.ConvTranspose2d(filters[0], filters[0] // 2, 4, 2, 1))
         self.finalrelu1 =  ModuleParallel(nn.ReLU(inplace=True))
         #self.finalrelu1 = nonlinearity
-        # self.finalconv2 = ModuleParallel(nn.Conv2d(filters[0] // 2, filters[0] // 2, 3, padding=1))
-        # self.finalrelu2 = ModuleParallel(nn.ReLU(inplace=True))
-        # self.finalconv = nn.Conv2d(filters[0], num_classes, 3, padding=1)
-        self.finalconv = ModuleParallel(nn.Conv2d(filters[0] // 2, num_classes, 3, padding=1))
-        self.alpha = nn.Parameter(torch.ones(num_parallel, requires_grad=True))
-        self.register_parameter('alpha', self.alpha)
+        self.finalconv2 = ModuleParallel(nn.Conv2d(filters[0] // 2, filters[0] // 2, 3, padding=1))
+        self.finalrelu2 = ModuleParallel(nn.ReLU(inplace=True))
+        self.finalconv = nn.Conv2d(filters[0], num_classes, 3, padding=1)
+        # self.finalconv = ModuleParallel(nn.Conv2d(filters[0] // 2, num_classes, 3, padding=1))
+        # self.alpha = nn.Parameter(torch.ones(num_parallel, requires_grad=True))
+        # self.register_parameter('alpha', self.alpha)
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
@@ -253,16 +253,16 @@ class ResNet(nn.Module):
 
 
         x_out = self.finalrelu1(self.finaldeconv1(x_d1))
-        # x_out = self.finalrelu2(self.finalconv2(x_out))
-        # out = self.finalconv(torch.cat((x_out[0], x_out[1]), 1))
-        out=self.finalconv(x_out)
-        alpha_soft = F.softmax(self.alpha,dim=0)
-        ens = 0
-        for l in range(self.num_parallel):
-            ens += alpha_soft[l] * out[l].detach()
-        # out = torch.sigmoid(ens)
+        x_out = self.finalrelu2(self.finalconv2(x_out))
+        out = self.finalconv(torch.cat((x_out[0], x_out[1]), 1))
+        # out=self.finalconv(x_out)
+        # alpha_soft = F.softmax(self.alpha,dim=0)
+        # ens = 0
+        # for l in range(self.num_parallel):
+        #     ens += alpha_soft[l] * out[l].detach()
+        out = torch.sigmoid(out)
         # out =nn.LogSoftmax()(ens)
-        out.append(ens)#[两个输入的out以及他们按alpha均衡后的output,一共三个]
+        # out.append(ens)#[两个输入的out以及他们按alpha均衡后的output,一共三个]
 
         return out
 
