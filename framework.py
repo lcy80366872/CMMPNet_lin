@@ -68,9 +68,10 @@ class Solver:
                     slim_params.append(param[:len(param) // 2])
                 else:
                     slim_params.append(param[len(param) // 2:])
+        loss=0
         for output in outs:
-            soft_output = torch.sigmoid(output)
-            loss = self.loss(self.mask,soft_output)
+            soft_output = nn.LogSoftmax()(output)
+            loss += self.loss(self.mask,soft_output)
             L1_norm = sum([L1_penalty(m).cuda() for m in slim_params])
             lamda =2e-4
             loss += lamda * L1_norm  # this is actually counted for len(outputs) times
@@ -105,7 +106,7 @@ class Solver:
                     slim_params.append(param[len(param) // 2:])
         loss = 0
         for output in outs:
-            soft_output = torch.sigmoid(output)
+            soft_output = nn.LogSoftmax()(output)
             # Compute loss and backpropagate
             loss += self.loss(self.mask, soft_output)
             L1_norm = sum([L1_penalty(m).cuda() for m in slim_params])
