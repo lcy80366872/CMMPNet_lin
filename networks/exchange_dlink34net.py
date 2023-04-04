@@ -3,7 +3,7 @@ import torch
 from networks.CondConv import CondConv, DynamicConv
 from .basic_blocks import *
 from torchvision import models
-from networks.attention_block import CBAMBlock
+from networks.attention_block import CBAMBlock,SEAttention
 class Exchange(nn.Module):
     def __init__(self):
         super(Exchange, self).__init__()
@@ -177,7 +177,7 @@ class ResNet(nn.Module):
         self.layer3 = self._make_layer(block, 256, blocks_num[2], bn_threshold, stride=2)
         self.layer4 = self._make_layer(block, 512, blocks_num[3], bn_threshold, stride=2)
 
-        self.dropout = ModuleParallel(nn.Dropout(p=0.5))
+        # self.dropout = ModuleParallel(nn.Dropout(p=0.5))
 
         self.dblock = DBlock_parallel(filters[3],2)
         # self.dblock_add = DBlock(filters[3])
@@ -198,7 +198,8 @@ class ResNet(nn.Module):
         #self.finalrelu1 = nonlinearity
         self.finalconv2 = ModuleParallel(nn.Conv2d(filters[0] // 2, filters[0] // 2, 3, padding=1))
         self.finalrelu2 = ModuleParallel(nn.ReLU(inplace=True))
-        self.atten=CBAMBlock(channel=filters[0], reduction=4, kernel_size=7)
+        self.se = SEAttention(filters[0] // 2, reduction=4)
+        # self.atten=CBAMBlock(channel=filters[0], reduction=4, kernel_size=7)
         self.finalconv = nn.Conv2d(filters[0], num_classes, 3, padding=1)
         # self.finalconv = ModuleParallel(nn.Conv2d(filters[0] // 2, num_classes, 3, padding=1))
         # self.alpha = nn.Parameter(torch.ones(num_parallel, requires_grad=True))
@@ -243,7 +244,7 @@ class ResNet(nn.Module):
         x_3 = self.layer3(x_2)
         x_4 = self.layer4(x_3)
 
-        x_4 =self.dropout(x_4)
+        # x_4 =self.dropout(x_4)
 
         x_c = self.dblock(x_4)
         # decoder
@@ -255,8 +256,11 @@ class ResNet(nn.Module):
 
         x_out = self.finalrelu1(self.finaldeconv1(x_d1))
         x_out = self.finalrelu2(self.finalconv2(x_out))
-        atten=self.atten(torch.cat((x_out[0], x_out[1]), 1))
-        out = self.finalconv(atten)
+
+        x_out[0]=self.se(x_out[0])
+        x_out[1] = self.se(x_out[1])
+        # atten=self.atten(torch.cat((x_out[0], x_out[1]), 1))
+        out = self.finalconv(torch.cat((x_out[0], x_out[1]), 1))
         # out=self.finalconv(x_out)
         # alpha_soft = F.softmax(self.alpha,dim=0)
         # ens = 0
