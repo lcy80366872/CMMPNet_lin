@@ -171,7 +171,7 @@ class Framework:
     def set_save_path(self, save_path):
         self.save_path = save_path
 
-    def fit(self, epochs, no_optim_epochs=5):
+    def fit(self, epochs, no_optim_epochs=4):
         val_best_metrics = test_best_metrics = [0, 0]
         no_optim = 0
 
@@ -197,7 +197,7 @@ class Framework:
                     break
                 else:
                     no_optim = 0
-                    self.solver.update_lr(ratio=10.0)
+                    self.solver.update_lr(ratio=5.0)
 
             print(f'train_loss: {train_loss:.4f} train_metrics: {train_metrics}')
             print(f'  val_loss: {val_loss:.4f}   val_metrics:   {val_metrics}')
