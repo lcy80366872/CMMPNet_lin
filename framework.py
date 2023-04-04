@@ -54,11 +54,11 @@ class Solver:
         batch_iou, intersection, union = self.metrics(self.mask, pred)
         return pred, loss.item(), batch_iou, intersection, union
 
-    # 
+    #
     # def optimize_exchange(self):
     #     self.net.train()
     #     self.data2cuda()
-    # 
+    #
     #     self.optimizer.zero_grad()
     #     outs = self.net.forward(self.img)
     #     slim_params = []
@@ -75,10 +75,10 @@ class Solver:
     #         L1_norm = sum([L1_penalty(m).cuda() for m in slim_params])
     #         lamda =2e-4
     #         loss += lamda * L1_norm  # this is actually counted for len(outputs) times
-    # 
+    #
     #     loss.backward()
     #     self.optimizer.step()
-    # 
+    #
     #     batch_iou, intersection, union = self.metrics(self.mask, outs[0])
     #     return outs[0], loss.item(), batch_iou, intersection, union
 
@@ -174,14 +174,14 @@ class Framework:
     def fit(self, epochs, no_optim_epochs=4):
         val_best_metrics = test_best_metrics = [0, 0]
         no_optim = 0
-
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer=self.solver.optimizer, T_max=epochs,
+                                                               verbose=True)
         for epoch in range(1, epochs + 1):
             print(f"epoch {epoch}/{epochs}")
 
             train_loss, train_metrics = self.fit_one_epoch(self.train_dl, mode='training')
             val_loss, val_metrics = self.fit_one_epoch(self.validation_dl, mode='val')
             test_loss, test_metrics = self.fit_one_epoch(self.test_dl, mode='testing')
-
             if val_best_metrics[1] < val_metrics[1]:
                 val_best_metrics = val_metrics
                 test_best_metrics = test_metrics
@@ -190,7 +190,7 @@ class Framework:
                 no_optim = 0
             else:
                 no_optim += 1
-
+            scheduler.step()
             if no_optim > no_optim_epochs:
                 if self.solver.old_lr < 1e-8:
                     print('early stop at {epoch} epoch')
