@@ -199,6 +199,7 @@ class ResNet(nn.Module):
         self.finalconv2 = ModuleParallel(nn.Conv2d(filters[0] // 2, filters[0] // 2, 3, padding=1))
         self.finalrelu2 = ModuleParallel(nn.ReLU(inplace=True))
         self.se = SEAttention(filters[0] // 2, reduction=4)
+        self.se1 = SEAttention(filters[0] // 2, reduction=4)
         # self.atten=CBAMBlock(channel=filters[0], reduction=4, kernel_size=7)
         self.finalconv = nn.Conv2d(filters[0], num_classes, 3, padding=1)
         # self.finalconv = ModuleParallel(nn.Conv2d(filters[0] // 2, num_classes, 3, padding=1))
@@ -258,7 +259,7 @@ class ResNet(nn.Module):
         x_out = self.finalrelu2(self.finalconv2(x_out))
 
         x_out[0]=self.se(x_out[0])
-        x_out[1] = self.se(x_out[1])
+        x_out[1] = self.se1(x_out[1])
         # atten=self.atten(torch.cat((x_out[0], x_out[1]), 1))
         out = self.finalconv(torch.cat((x_out[0], x_out[1]), 1))
         # out=self.finalconv(x_out)
