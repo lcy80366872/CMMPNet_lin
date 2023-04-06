@@ -3,7 +3,18 @@ import torch.nn as nn
 from functools import partial
 import torch.nn.functional as F
 nonlinearity = partial(F.relu, inplace=True)
+class Exchange(nn.Module):
+    def __init__(self):
+        super(Exchange, self).__init__()
 
+    def forward(self, x, bn, bn_threshold):
+        bn1, bn2 = bn[0].weight.abs(), bn[1].weight.abs()
+        x1, x2 = torch.zeros_like(x[0]), torch.zeros_like(x[1])
+        x1[:, bn1 >= bn_threshold] = x[0][:, bn1 >= bn_threshold]
+        x1[:, bn1 < bn_threshold] = x[1][:, bn1 < bn_threshold]
+        x2[:, bn2 >= bn_threshold] = x[1][:, bn2 >= bn_threshold]
+        x2[:, bn2 < bn_threshold] = x[0][:, bn2 < bn_threshold]
+        return [x1, x2]
 class ModuleParallel(nn.Module):
     def __init__(self, module):
         super(ModuleParallel, self).__init__()
@@ -226,6 +237,44 @@ class DecoderBlock_parallel(nn.Module):
         x = self.relu2(x)
         x = self.conv3(x)
         x = self.norm3(x)
+        x = self.relu3(x)
+        return x
+
+
+
+class DecoderBlock_parallel_exchange(nn.Module):
+    def __init__(self, in_channels, n_filters,num_parallel,bn_threshold):
+        super(DecoderBlock_parallel_exchange, self).__init__()
+
+        self.conv1 = conv1x1(in_channels, in_channels // 4, 1)
+        self.bn1 = BatchNorm2dParallel(in_channels // 4, num_parallel)
+        self.relu1 =  ModuleParallel(nn.ReLU(inplace=True))
+        self.deconv2 = ModuleParallel(nn.ConvTranspose2d(
+            in_channels // 4, in_channels // 4, 3, stride=2, padding=1, output_padding=1
+        ))
+        self.bn2 = BatchNorm2dParallel(in_channels // 4, num_parallel)
+        self.relu2 = ModuleParallel(nn.ReLU(inplace=True))
+        self.conv3 = conv1x1(in_channels // 4, n_filters, 1)
+        self.bn3 = BatchNorm2dParallel(n_filters, num_parallel)
+        self.relu3 = ModuleParallel(nn.ReLU(inplace=True))
+        self.exchange = Exchange()
+        self.bn_threshold = bn_threshold
+        self.bn2_list = []
+        for module in self.bn2.modules():
+            if isinstance(module, nn.BatchNorm2d):
+                self.bn2_list.append(module)
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = self.bn1(x)
+        x = self.relu1(x)
+        x = self.deconv2(x)
+        x = self.bn2(x)
+        if len(x) > 1:
+            x = self.exchange(x, self.bn2_list, self.bn_threshold)
+        x = self.relu2(x)
+        x = self.conv3(x)
+        x = self.bn3(x)
         x = self.relu3(x)
         return x
 
