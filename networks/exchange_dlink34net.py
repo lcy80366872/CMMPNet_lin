@@ -145,7 +145,7 @@ class ResNet(nn.Module):
         self.layer2 = self._make_layer(block, 128, blocks_num[1], bn_threshold, stride=2)
         self.layer3 = self._make_layer(block, 256, blocks_num[2], bn_threshold, stride=2)
         self.layer4 = self._make_layer(block, 512, blocks_num[3], bn_threshold, stride=2)
-        self.non_local2 = NLBlockND(filters[1], mode='embedded', dimension=2)
+        # self.non_local2 = NLBlockND(filters[1], mode='embedded', dimension=2)
         # self.dropout = ModuleParallel(nn.Dropout(p=0.5))
 
         self.dblock = DBlock_parallel(filters[3],2)
@@ -209,7 +209,7 @@ class ResNet(nn.Module):
         ##layers:
         x_1 = self.layer1(out)
         x_2 = self.layer2(x_1)
-        x_2 = [self.non_local2(x_2[l]) for l in range(self.num_parallel) ]
+        # x_2 = [self.non_local2(x_2[l]) for l in range(self.num_parallel) ]
         x_3 = self.layer3(x_2)
         x_4 = self.layer4(x_3)
 
@@ -226,8 +226,8 @@ class ResNet(nn.Module):
         x_out = self.finalrelu1(self.finaldeconv1(x_d1))
         x_out = self.finalrelu2(self.finalconv2(x_out))
 
-        x_out[0]=self.se(x_out[0])
-        x_out[1] = self.se(x_out[1])
+        # x_out[0]=self.se(x_out[0])
+        # x_out[1] = self.se(x_out[1])
         # atten=self.atten(torch.cat((x_out[0], x_out[1]), 1))
         out = self.finalconv(torch.cat((x_out[0], x_out[1]), 1))
         # out=self.finalconv(x_out)
