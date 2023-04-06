@@ -5,7 +5,7 @@ from .basic_blocks import *
 from torchvision import models
 from networks.attention_block import CBAMBlock,SEAttention
 from networks.basic_blocks import Exchange,ModuleParallel,BatchNorm2dParallel
-
+from networks.Nonlocal import NLBlockND
 
 def conv3x3(in_planes, out_planes, stride=1, bias=False):
     "3x3 convolution with padding"
@@ -145,16 +145,20 @@ class ResNet(nn.Module):
         self.layer2 = self._make_layer(block, 128, blocks_num[1], bn_threshold, stride=2)
         self.layer3 = self._make_layer(block, 256, blocks_num[2], bn_threshold, stride=2)
         self.layer4 = self._make_layer(block, 512, blocks_num[3], bn_threshold, stride=2)
-
+        self.non_local2 = NLBlockND(filters[1], mode='embedded', dimension=2)
         # self.dropout = ModuleParallel(nn.Dropout(p=0.5))
 
         self.dblock = DBlock_parallel(filters[3],2)
-        # self.dblock_add = DBlock(filters[3])
+
         # decoder
-        self.decoder4 = DecoderBlock_parallel_exchange(filters[3], filters[2],2,bn_threshold)
-        self.decoder3 = DecoderBlock_parallel_exchange(filters[2], filters[1],2,bn_threshold)
-        self.decoder2 = DecoderBlock_parallel_exchange(filters[1], filters[0],2,bn_threshold)
-        self.decoder1 = DecoderBlock_parallel_exchange(filters[0], filters[0],2,bn_threshold)
+        # self.decoder4 = DecoderBlock_parallel_exchange(filters[3], filters[2],2,bn_threshold)
+        # self.decoder3 = DecoderBlock_parallel_exchange(filters[2], filters[1],2,bn_threshold)
+        # self.decoder2 = DecoderBlock_parallel_exchange(filters[1], filters[0],2,bn_threshold)
+        # self.decoder1 = DecoderBlock_parallel_exchange(filters[0], filters[0],2,bn_threshold)
+        self.decoder4 = DecoderBlock_parallel(filters[3], filters[2], 2)
+        self.decoder3 = DecoderBlock_parallel(filters[2], filters[1], 2)
+        self.decoder2 = DecoderBlock_parallel(filters[1], filters[0], 2)
+        self.decoder1 = DecoderBlock_parallel(filters[0], filters[0], 2)
 
         self.finaldeconv1 = ModuleParallel(nn.ConvTranspose2d(filters[0], filters[0] // 2, 4, 2, 1))
         self.finalrelu1 =  ModuleParallel(nn.ReLU(inplace=True))
@@ -205,6 +209,7 @@ class ResNet(nn.Module):
         ##layers:
         x_1 = self.layer1(out)
         x_2 = self.layer2(x_1)
+        x_2 = [self.non_local2(x_2[l]) for l in range(self.num_parallel) ]
         x_3 = self.layer3(x_2)
         x_4 = self.layer4(x_3)
 
