@@ -39,6 +39,7 @@ class BasicBlock(nn.Module):
             if isinstance(module, nn.BatchNorm2d):
                 self.bn2_list.append(module)
 
+
     def forward(self, x):
         residual = x
 
@@ -82,6 +83,7 @@ class Bottleneck(nn.Module):
             if isinstance(module, nn.BatchNorm2d):
                 self.bn2_list.append(module)
 
+
     def forward(self, x):
         residual = x
         out = x
@@ -92,6 +94,7 @@ class Bottleneck(nn.Module):
 
         out = self.conv2(out)
         out = self.bn2(out)
+
         if len(x) > 1:
             out = self.exchange(out, self.bn2_list, self.bn_threshold)
         out = self.relu(out)
@@ -165,7 +168,7 @@ class ResNet(nn.Module):
         #self.finalrelu1 = nonlinearity
         self.finalconv2 = ModuleParallel(nn.Conv2d(filters[0] // 2, filters[0] // 2, 3, padding=1))
         self.finalrelu2 = ModuleParallel(nn.ReLU(inplace=True))
-        self.se = SEAttention(filters[0] // 2, reduction=4)
+        # self.se = SEAttention(filters[0] // 2, reduction=4)
         # self.se1 = SEAttention(filters[0] // 2, reduction=4)
         # self.atten=CBAMBlock(channel=filters[0], reduction=4, kernel_size=7)
         self.finalconv = nn.Conv2d(filters[0], num_classes, 3, padding=1)
