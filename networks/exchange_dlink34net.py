@@ -124,25 +124,30 @@ class ResNet(nn.Module):
         self.num_parallel=num_parallel
 
         filters = [64, 128, 256, 512]
-        self.conv1 = nn.Conv2d(3, self.inplanes, kernel_size=7, stride=2,
-                               padding=3, bias=False)
-        self.conv1_g = nn.Conv2d(1, self.inplanes, kernel_size=7, stride=2,
-                                 padding=3, bias=False)
-        self.bn1 = nn.BatchNorm2d(self.inplanes)#BatchNorm2dParallel(self.inplanes, num_parallel)
-        self.bn1_g = nn.BatchNorm2d(self.inplanes)
-        self.relu = nn.ReLU(inplace=True)
-        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+        # self.conv1 = nn.Conv2d(3, self.inplanes, kernel_size=7, stride=2,
+        #                        padding=3, bias=False)
+        # self.conv1_g = nn.Conv2d(1, self.inplanes, kernel_size=7, stride=2,
+        #                          padding=3, bias=False)
+        # self.bn1 = nn.BatchNorm2d(self.inplanes)#BatchNorm2dParallel(self.inplanes, num_parallel)
+        # self.bn1_g = nn.BatchNorm2d(self.inplanes)
+        # self.relu = nn.ReLU(inplace=True)
+        # self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
 
-        resnet = models.resnet34(pretrained=True)
-        self.firstconv1 = resnet.conv1
-        self.firstbn = resnet.bn1
-        self.firstrelu = resnet.relu
-        self.firstmaxpool = resnet.maxpool
-        resnet1 = models.resnet34(pretrained=True)
-        self.firstconv1_g = nn.Conv2d(1, filters[0], kernel_size=7, stride=2, padding=3)
-        self.firstbn_g = resnet1.bn1
-        self.firstrelu_g = resnet1.relu
-        self.firstmaxpool_g = resnet1.maxpool
+        # resnet = models.resnet34(pretrained=True)
+        # self.firstconv1 = resnet.conv1
+        # self.firstbn = resnet.bn1
+        # self.firstrelu = resnet.relu
+        # self.firstmaxpool = resnet.maxpool
+        # resnet1 = models.resnet34(pretrained=True)
+        # self.firstconv1_g = nn.Conv2d(1, filters[0], kernel_size=7, stride=2, padding=3)
+        # self.firstbn_g = resnet1.bn1
+        # self.firstrelu_g = resnet1.relu
+        # self.firstmaxpool_g = resnet1.maxpool
+
+        self.conv1 = ModuleParallel(nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3, bias=False))
+        self.bn1 = BatchNorm2dParallel(64, num_parallel)
+        self.relu = ModuleParallel(nn.ReLU(inplace=True))
+        self.maxpool = ModuleParallel(nn.MaxPool2d(kernel_size=3, stride=2, padding=1))
 
         self.layer1 = self._make_layer(block, 64, blocks_num[0], bn_threshold)
         self.layer2 = self._make_layer(block, 128, blocks_num[1], bn_threshold, stride=2)
@@ -168,7 +173,7 @@ class ResNet(nn.Module):
         #self.finalrelu1 = nonlinearity
         self.finalconv2 = ModuleParallel(nn.Conv2d(filters[0] // 2, filters[0] // 2, 3, padding=1))
         self.finalrelu2 = ModuleParallel(nn.ReLU(inplace=True))
-        # self.se = SEAttention(filters[0] // 2, reduction=4)
+        self.se = SEAttention(filters[0] // 2, reduction=4)
         # self.se1 = SEAttention(filters[0] // 2, reduction=4)
         # self.atten=CBAMBlock(channel=filters[0], reduction=4, kernel_size=7)
         self.finalconv = nn.Conv2d(filters[0], num_classes, 3, padding=1)
@@ -199,15 +204,21 @@ class ResNet(nn.Module):
 
         x = inputs[:, :3, :, :]
         g = inputs[:, 3:, :, :]
+        g =g.repeat([1,3,1,1])#转化为三通道
 
         ##stem layer
-        x = self.firstconv1(x)
-        g = self.firstconv1_g(g)
-        out = self.firstmaxpool(self.firstrelu(self.firstbn(x)))
-        out_g = self.firstmaxpool_g(self.firstrelu_g(self.firstbn_g(g)))
+        # x = self.firstconv1(x)
+        # g = self.firstconv1_g(g)
+        # out = self.firstmaxpool(self.firstrelu(self.firstbn(x)))
+        # out_g = self.firstmaxpool_g(self.firstrelu_g(self.firstbn_g(g)))
 
-        out = out, out_g
-        # out = torch.cat((out, out_g), 1)
+        x=x,g
+        x = self.conv1(x)
+        x = self.bn1(x)
+        x = self.relu(x)
+        out = self.maxpool(x)
+
+        # out = out, out_g
 
         ##layers:
         x_1 = self.layer1(out)
@@ -229,8 +240,8 @@ class ResNet(nn.Module):
         x_out = self.finalrelu1(self.finaldeconv1(x_d1))
         x_out = self.finalrelu2(self.finalconv2(x_out))
 
-        # x_out[0]=self.se(x_out[0])
-        # x_out[1] = self.se(x_out[1])
+        x_out[0]=self.se(x_out[0])
+        x_out[1] = self.se(x_out[1])
         # atten=self.atten(torch.cat((x_out[0], x_out[1]), 1))
         out = self.finalconv(torch.cat((x_out[0], x_out[1]), 1))
         # out=self.finalconv(x_out)
