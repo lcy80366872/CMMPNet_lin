@@ -133,20 +133,20 @@ class ResNet(nn.Module):
         # self.relu = nn.ReLU(inplace=True)
         # self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
 
-        # resnet = models.resnet34(pretrained=True)
-        # self.firstconv1 = resnet.conv1
+        resnet = models.resnet34(pretrained=True)
+        self.firstconv1 = resnet.conv1
         # self.firstbn = resnet.bn1
         # self.firstrelu = resnet.relu
         # self.firstmaxpool = resnet.maxpool
         # resnet1 = models.resnet34(pretrained=True)
-        # self.firstconv1_g = nn.Conv2d(1, filters[0], kernel_size=7, stride=2, padding=3)
+        self.firstconv1_g = nn.Conv2d(1, filters[0], kernel_size=7, stride=2, padding=3)
         # self.firstbn_g = resnet1.bn1
         # self.firstrelu_g = resnet1.relu
         # self.firstmaxpool_g = resnet1.maxpool
 
 
 
-        self.conv1 = ModuleParallel(nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3, bias=False))
+        # self.conv1 = ModuleParallel(nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3, bias=False))
         self.bn1 = BatchNorm2dParallel(64, num_parallel)
         self.relu = ModuleParallel(nn.ReLU(inplace=True))
         self.maxpool = ModuleParallel(nn.MaxPool2d(kernel_size=3, stride=2, padding=1))
@@ -212,16 +212,16 @@ class ResNet(nn.Module):
 
         x = inputs[:, :3, :, :]
         g = inputs[:, 3:, :, :]
-        g =g.repeat([1,3,1,1])#转化为三通道
+        # g =g.repeat([1,3,1,1])#转化为三通道
 
         ##stem layer
-        # x = self.firstconv1(x)
-        # g = self.firstconv1_g(g)
+        x = self.firstconv1(x)
+        g = self.firstconv1_g(g)
         # out = self.firstmaxpool(self.firstrelu(self.firstbn(x)))
         # out_g = self.firstmaxpool_g(self.firstrelu_g(self.firstbn_g(g)))
 
         x=x,g
-        x = self.conv1(x)
+        # x = self.conv1(x)
         x = self.bn1(x)
         if len(x) > 1:
             x = self.exchange(x, self.bn_list, self.bn_threshold)
