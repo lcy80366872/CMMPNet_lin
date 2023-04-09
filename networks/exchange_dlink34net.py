@@ -176,7 +176,7 @@ class ResNet(nn.Module):
         self.se = SEAttention(filters[0] // 2, reduction=4)
         # self.se1 = SEAttention(filters[0] // 2, reduction=4)
         # self.atten=CBAMBlock(channel=filters[0], reduction=4, kernel_size=7)
-        self.fuse =NLBlockND_Fuse(filters[0]//2, filters[0]//2,mode='embedded', dimension=2)
+        self.fuse =NLBlockND_Fuse(filters[0]//2, mode='embedded', dimension=2)
         self.finalconv = nn.Conv2d(filters[0]//2, num_classes, 3, padding=1)
         # self.finalconv = ModuleParallel(nn.Conv2d(filters[0] // 2, num_classes, 3, padding=1))
         # self.alpha = nn.Parameter(torch.ones(num_parallel, requires_grad=True))
