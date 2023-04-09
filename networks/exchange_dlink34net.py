@@ -175,16 +175,18 @@ class ResNet(nn.Module):
         self.decoder2 = DecoderBlock_parallel(filters[1], filters[0], 2)
         self.decoder1 = DecoderBlock_parallel(filters[0], filters[0], 2)
 
-        self.finaldeconv1 = ModuleParallel(nn.ConvTranspose2d(filters[0], filters[0] // 2, 4, 2, 1))
-        self.finalrelu1 =  ModuleParallel(nn.ReLU(inplace=True))
-        #self.finalrelu1 = nonlinearity
-        self.finalconv2 = ModuleParallel(nn.Conv2d(filters[0] // 2, filters[0] // 2, 3, padding=1))
-        self.finalrelu2 = ModuleParallel(nn.ReLU(inplace=True))
+        self.finaldeconv1 = nn.ConvTranspose2d(filters[0], filters[0] // 2, 4, 2, 1)
+        self.finalrelu1 = nonlinearity
+        # self.finaldeconv1 = ModuleParallel(nn.ConvTranspose2d(filters[0], filters[0] // 2, 4, 2, 1))
+        # self.finalrelu1 =  ModuleParallel(nn.ReLU(inplace=True))
+        #
+        # self.finalconv2 = ModuleParallel(nn.Conv2d(filters[0] // 2, filters[0] // 2, 3, padding=1))
+        # self.finalrelu2 = ModuleParallel(nn.ReLU(inplace=True))
         self.se = SEAttention(filters[0] // 2, reduction=4)
         # self.se1 = SEAttention(filters[0] // 2, reduction=4)
         # self.atten=CBAMBlock(channel=filters[0], reduction=4, kernel_size=7)
-        # self.fuse =NLBlockND_Fuse(filters[0]//2, filters[0]//2,mode='embedded', dimension=2)
-        self.finalconv = nn.Conv2d(filters[0], num_classes, 3, padding=1)
+        self.fuse =NLBlockND_Fuse(filters[0], filters[0]//2,mode='embedded', dimension=2)
+        self.finalconv = nn.Conv2d(filters[0]//2, num_classes, 3, padding=1)
         # self.finalconv = ModuleParallel(nn.Conv2d(filters[0] // 2, num_classes, 3, padding=1))
         # self.alpha = nn.Parameter(torch.ones(num_parallel, requires_grad=True))
         # self.register_parameter('alpha', self.alpha)
@@ -246,17 +248,17 @@ class ResNet(nn.Module):
         x_d2 = [self.decoder2(x_d3)[l] + x_1[l] for l in range(self.num_parallel)]
         x_d1 = self.decoder1(x_d2)
 
+        fuse = self.fuse(x_d1)
+        x_out = self.finalrelu1(self.finaldeconv1(fuse))
+        # x_out = self.finalrelu2(self.finalconv2(x_out))
 
-        x_out = self.finalrelu1(self.finaldeconv1(x_d1))
-        x_out = self.finalrelu2(self.finalconv2(x_out))
-
-        x_out[0]=self.se(x_out[0])
-        x_out[1] = self.se(x_out[1])
+        # x_out[0]=self.se(x_out[0])
+        # x_out[1] = self.se(x_out[1])
         # atten=self.atten(torch.cat((x_out[0], x_out[1]), 1))
         # fuse=self.fuse(x_out)
         # out =self.finalconv(fuse)
-        out = self.finalconv(torch.cat((x_out[0], x_out[1]), 1))
-        # out=self.finalconv(x_out)
+        # out = self.finalconv(torch.cat((x_out[0], x_out[1]), 1))
+        out=self.finalconv(x_out)
         # alpha_soft = F.softmax(self.alpha,dim=0)
         # ens = 0
         # for l in range(self.num_parallel):
