@@ -135,14 +135,14 @@ class ResNet(nn.Module):
 
         resnet = models.resnet34(pretrained=True)
         self.firstconv1 = resnet.conv1
-        # self.firstbn = resnet.bn1
-        # self.firstrelu = resnet.relu
-        # self.firstmaxpool = resnet.maxpool
-        # resnet1 = models.resnet34(pretrained=True)
+        self.firstbn = resnet.bn1
+        self.firstrelu = resnet.relu
+        self.firstmaxpool = resnet.maxpool
+        resnet1 = models.resnet34(pretrained=True)
         self.firstconv1_g = nn.Conv2d(1, filters[0], kernel_size=7, stride=2, padding=3)
-        # self.firstbn_g = resnet1.bn1
-        # self.firstrelu_g = resnet1.relu
-        # self.firstmaxpool_g = resnet1.maxpool
+        self.firstbn_g = resnet1.bn1
+        self.firstrelu_g = resnet1.relu
+        self.firstmaxpool_g = resnet1.maxpool
 
 
 
@@ -218,18 +218,18 @@ class ResNet(nn.Module):
         ##stem layer
         x = self.firstconv1(x)
         g = self.firstconv1_g(g)
-        # out = self.firstmaxpool(self.firstrelu(self.firstbn(x)))
-        # out_g = self.firstmaxpool_g(self.firstrelu_g(self.firstbn_g(g)))
+        out = self.firstmaxpool(self.firstrelu(self.firstbn(x)))
+        out_g = self.firstmaxpool_g(self.firstrelu_g(self.firstbn_g(g)))
 
-        x=x,g
+        # x=x,g
         # x = self.conv1(x)
-        x = self.bn1(x)
-        if len(x) > 1:
-            x = self.exchange(x, self.bn_list, self.bn_threshold)
-        x = self.relu(x)
-        out = self.maxpool(x)
+        # x = self.bn1(x)
+        # if len(x) > 1:
+        #     x = self.exchange(x, self.bn_list, self.bn_threshold)
+        # x = self.relu(x)
+        # out = self.maxpool(x)
 
-        # out = out, out_g
+        out = out, out_g
 
         ##layers:
         x_1 = self.layer1(out)
