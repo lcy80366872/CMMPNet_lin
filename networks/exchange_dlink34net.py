@@ -147,15 +147,15 @@ class ResNet(nn.Module):
 
 
         # self.conv1 = ModuleParallel(nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3, bias=False))
-        self.bn1 = BatchNorm2dParallel(64, num_parallel)
-        self.relu = ModuleParallel(nn.ReLU(inplace=True))
-        self.maxpool = ModuleParallel(nn.MaxPool2d(kernel_size=3, stride=2, padding=1))
-        self.bn_threshold=bn_threshold
-        self.exchange = Exchange()
-        self.bn_list = []
-        for module in self.bn1.modules():
-            if isinstance(module, nn.BatchNorm2d):
-                self.bn_list.append(module)
+#         self.bn1 = BatchNorm2dParallel(64, num_parallel)
+#         self.relu = ModuleParallel(nn.ReLU(inplace=True))
+#         self.maxpool = ModuleParallel(nn.MaxPool2d(kernel_size=3, stride=2, padding=1))
+#         self.bn_threshold=bn_threshold
+#         self.exchange = Exchange()
+#         self.bn_list = []
+#         for module in self.bn1.modules():
+#             if isinstance(module, nn.BatchNorm2d):
+#                 self.bn_list.append(module)
         self.layer1 = self._make_layer(block, 64, blocks_num[0], bn_threshold)
         self.layer2 = self._make_layer(block, 128, blocks_num[1], bn_threshold, stride=2)
         self.layer3 = self._make_layer(block, 256, blocks_num[2], bn_threshold, stride=2)
@@ -178,9 +178,9 @@ class ResNet(nn.Module):
         self.finaldeconv1 = ModuleParallel(nn.ConvTranspose2d(filters[0], filters[0] // 2, 4, 2, 1))
         self.finalrelu1 =  ModuleParallel(nn.ReLU(inplace=True))
         #self.finalrelu1 = nonlinearity
-        self.finalconv2 = ModuleParallel(nn.Conv2d(filters[0] // 2, filters[0] // 2, 3, padding=1))
-        self.finalrelu2 = ModuleParallel(nn.ReLU(inplace=True))
-        self.se = SEAttention(filters[0] // 2, reduction=4)
+#         self.finalconv2 = ModuleParallel(nn.Conv2d(filters[0] // 2, filters[0] // 2, 3, padding=1))
+#         self.finalrelu2 = ModuleParallel(nn.ReLU(inplace=True))
+#         self.se = SEAttention(filters[0] // 2, reduction=4)
         # self.se1 = SEAttention(filters[0] // 2, reduction=4)
         # self.atten=CBAMBlock(channel=filters[0], reduction=4, kernel_size=7)
         # self.fuse =NLBlockND_Fuse(filters[0]//2, filters[0]//2,mode='embedded', dimension=2)
@@ -249,7 +249,7 @@ class ResNet(nn.Module):
 
 
         x_out = self.finalrelu1(self.finaldeconv1(x_d1))
-        x_out = self.finalrelu2(self.finalconv2(x_out))
+#         x_out = self.finalrelu2(self.finalconv2(x_out))
 
         # x_out[0]=self.se(x_out[0])
         # x_out[1] = self.se(x_out[1])
