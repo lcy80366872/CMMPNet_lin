@@ -273,8 +273,8 @@ class CrissCrossAttention_Fuse(nn.Module):
     """ Criss-Cross Attention Module"""
     def __init__(self, in_dim):
         super(CrissCrossAttention_Fuse,self).__init__()
-        self.query_conv = nn.Conv2d(in_channels=in_dim, out_channels=in_dim//2, kernel_size=1)
-        self.key_conv = nn.Conv2d(in_channels=in_dim, out_channels=in_dim//2, kernel_size=1)
+        self.query_conv = nn.Conv2d(in_channels=in_dim, out_channels=in_dim//4, kernel_size=1)
+        self.key_conv = nn.Conv2d(in_channels=in_dim, out_channels=in_dim//4, kernel_size=1)
         self.value_conv = nn.Conv2d(in_channels=in_dim*2, out_channels=in_dim, kernel_size=1)
         self.softmax = Softmax(dim=3)
         self.INF = INF
