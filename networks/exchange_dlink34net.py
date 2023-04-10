@@ -249,7 +249,9 @@ class ResNet(nn.Module):
         x_d3 = [self.decoder3(x_d4)[l] + x_2[l] for l in range(self.num_parallel)]
         x_d2 = [self.decoder2(x_d3)[l] + x_1[l] for l in range(self.num_parallel)]
         x_d1 = self.decoder1(x_d2)
-
+        v=x_d1[1]
+        x_d1 = self.fuse(x_d1)
+        x_d1 =[x_d1,v]
         x_d1 = self.fuse(x_d1)
         x_out = self.finalrelu1(self.finaldeconv1(x_d1))
         # x_out = self.finalrelu2(self.finalconv2(x_out))
