@@ -228,6 +228,7 @@ class ResNet(nn.Module):
 
         x = inputs[:, :3, :, :]
         g = inputs[:, 3:, :, :]
+        print('xx',x.shape)
 
         ##stem layer
         x = self.firstconv1(x)
