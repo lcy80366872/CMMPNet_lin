@@ -271,11 +271,12 @@ def INF(B,H,W):
 
 class CrissCrossAttention_Fuse(nn.Module):
     """ Criss-Cross Attention Module"""
+    #代码解析https://blog.csdn.net/yumaomi/article/details/125564802
     def __init__(self, in_dim):
         super(CrissCrossAttention_Fuse,self).__init__()
         self.query_conv = nn.Conv2d(in_channels=in_dim, out_channels=in_dim//2, kernel_size=1)
         self.key_conv = nn.Conv2d(in_channels=in_dim, out_channels=in_dim//2, kernel_size=1)
-        self.value_conv = nn.Conv2d(in_channels=in_dim*2, out_channels=in_dim, kernel_size=1)
+        self.value_conv = nn.Conv2d(in_channels=in_dim, out_channels=in_dim, kernel_size=1)
         self.softmax = Softmax(dim=3)
         self.INF = INF
         self.gamma = nn.Parameter(torch.zeros(1))
@@ -284,17 +285,19 @@ class CrissCrossAttention_Fuse(nn.Module):
     def forward(self, x):
 
         m_batchsize, _, height, width = x[0].size()
-        proj_query = self.query_conv(x[0])
+        proj_query = self.query_conv(x[0])  #contiguous()就是深拷贝的作用
         proj_query_H = proj_query.permute(0,3,1,2).contiguous().view(m_batchsize*width,-1,height).permute(0, 2, 1)
         proj_query_W = proj_query.permute(0,2,1,3).contiguous().view(m_batchsize*height,-1,width).permute(0, 2, 1)
         proj_key = self.key_conv(x[1])
         proj_key_H = proj_key.permute(0,3,1,2).contiguous().view(m_batchsize*width,-1,height)
         proj_key_W = proj_key.permute(0,2,1,3).contiguous().view(m_batchsize*height,-1,width)
-        proj_value = self.value_conv(torch.cat([x[0],x[1]], dim=1))
+        proj_value = self.value_conv(x[0])
         proj_value_H = proj_value.permute(0,3,1,2).contiguous().view(m_batchsize*width,-1,height)
         proj_value_W = proj_value.permute(0,2,1,3).contiguous().view(m_batchsize*height,-1,width)
+        #torch.bmm(a,b),tensor a 的size为(b,h,w),tensor b的size为(b,w,m) 也就是说两个tensor的第一维是相等的，然后第一个数组的第三维和第二个数组的第二维度要求一样，对于剩下的则不做要求，输出维度 （b,h,m）
         energy_H = (torch.bmm(proj_query_H, proj_key_H)+self.INF(m_batchsize, height, width)).view(m_batchsize,width,height,height).permute(0,2,1,3)
         energy_W = torch.bmm(proj_query_W, proj_key_W).view(m_batchsize,height,width,width)
+        # [b, h, w, h+w]  concate channels in axis=3 ，这就代表着q的（h,w）这个点与v的h+w个像素的相似度（当然这中间在高宽交叉处有一点的值是重复的）
         concate = self.softmax(torch.cat([energy_H, energy_W], 3))
 
         att_H = concate[:,:,:,0:height].permute(0,2,1,3).contiguous().view(m_batchsize*width,height,height)
