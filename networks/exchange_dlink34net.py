@@ -6,7 +6,7 @@ from torchvision import models
 from networks.attention_block import CBAMBlock,SEAttention
 from networks.basic_blocks import Exchange,ModuleParallel,BatchNorm2dParallel,spin
 from networks.Nonlocal import NLBlockND,NLBlockND_Fuse,CrissCrossAttention_Fuse
-
+from networks.SGCN import TwofoldGCN
 def conv3x3(in_planes, out_planes, stride=1, bias=False):
     "3x3 convolution with padding"
     return ModuleParallel(nn.Conv2d(in_planes, out_planes, kernel_size=3,
@@ -164,9 +164,9 @@ class ResNet(nn.Module):
         # self.dropout = ModuleParallel(nn.Dropout(p=0.5))
 
         self.dblock = DBlock_parallel(filters[3],2)
-        self.dgcn_seg1 = spin(filters[0] , ratio=2)
-        self.dgcn_seg2 = spin(filters[1] , ratio=2)
-        self.dgcn_seg3 = spin(filters[2] , ratio=2)
+        self.dgcn_seg1 = TwofoldGCN(filters[0] ,filters[0] ,filters[0]  )
+        self.dgcn_seg2 = TwofoldGCN(filters[1] ,filters[1] ,filters[1]  )
+        self.dgcn_seg3 = TwofoldGCN(filters[2] ,filters[2] ,filters[2]  )
         # decoder
         # self.decoder4 = DecoderBlock_parallel_exchange(filters[3], filters[2],2,bn_threshold)
         # self.decoder3 = DecoderBlock_parallel_exchange(filters[2], filters[1],2,bn_threshold)
@@ -218,7 +218,7 @@ class ResNet(nn.Module):
 
         x = inputs[:, :3, :, :]
         g = inputs[:, 3:, :, :]
-#         print('xxxxxxxx',x.shape)
+        # print('xxxxxxxx',x.shape)
         # g =g.repeat([1,3,1,1])#杞寲涓轰笁閫氶亾
 
         ##stem layer
@@ -252,7 +252,10 @@ class ResNet(nn.Module):
         x_d3 = [self.decoder3(x_d4)[l] + self.dgcn_seg2(x_2[l]) for l in range(self.num_parallel)]
         x_d2 = [self.decoder2(x_d3)[l] + self.dgcn_seg1(x_1[l]) for l in range(self.num_parallel)]
         x_d1 = self.decoder1(x_d2)
-        
+        # v=x_d1[1]
+        # x_d1 = self.fuse(x_d1)
+        # x_d1 =[x_d1,v]
+        # x_d1 = self.fuse(x_d1)
         x_out = self.finalrelu1(self.finaldeconv1(x_d1))
         x_out = self.finalrelu2(self.finalconv2(x_out))
 
@@ -262,7 +265,7 @@ class ResNet(nn.Module):
 
         # out =self.finalconv(fuse)
         out = self.finalconv(torch.cat((x_out[0], x_out[1]), 1))
-#         out=self.finalconv(x_out)
+        # out=self.finalconv(x_out)
         # alpha_soft = F.softmax(self.alpha,dim=0)
         # ens = 0
         # for l in range(self.num_parallel):
