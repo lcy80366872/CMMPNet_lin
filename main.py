@@ -131,7 +131,7 @@ if __name__ == "__main__":
     parser.add_argument('--epochs',  type=int, default=1)
     parser.add_argument('--random_seed', type=int, default=12345)
     parser.add_argument('--dataset', type=str, default='BJRoad')
-    parser.add_argument('--down_scale', type=bool, default=True)
+    parser.add_argument('--down_scale', type=bool, default=False)
     args = parser.parse_args()
 
     if args.use_gpu:
