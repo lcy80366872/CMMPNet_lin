@@ -4,7 +4,7 @@ from networks.CondConv import CondConv, DynamicConv
 from .basic_blocks import *
 from torchvision import models
 from networks.attention_block import CBAMBlock,SEAttention
-from networks.basic_blocks import Exchange,ModuleParallel,BatchNorm2dParallel
+from networks.basic_blocks import Exchange,ModuleParallel,BatchNorm2dParallel,spin
 from networks.Nonlocal import NLBlockND,NLBlockND_Fuse,CrissCrossAttention_Fuse
 
 def conv3x3(in_planes, out_planes, stride=1, bias=False):
