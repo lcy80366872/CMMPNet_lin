@@ -252,20 +252,17 @@ class ResNet(nn.Module):
         x_d3 = [self.decoder3(x_d4)[l] + self.dgcn_seg2(x_2[l]) for l in range(self.num_parallel)]
         x_d2 = [self.decoder2(x_d3)[l] + self.dgcn_seg1(x_1[l]) for l in range(self.num_parallel)]
         x_d1 = self.decoder1(x_d2)
-        v=x_d1[1]
-        x_d1 = self.fuse(x_d1)
-        x_d1 =[x_d1,v]
-        x_d1 = self.fuse(x_d1)
+        
         x_out = self.finalrelu1(self.finaldeconv1(x_d1))
-        # x_out = self.finalrelu2(self.finalconv2(x_out))
+        x_out = self.finalrelu2(self.finalconv2(x_out))
 
-        # x_out[0]=self.se(x_out[0])
-        # x_out[1] = self.se(x_out[1])
+        x_out[0]=self.se(x_out[0])
+        x_out[1] = self.se(x_out[1])
         # atten=self.atten(torch.cat((x_out[0], x_out[1]), 1))
 
         # out =self.finalconv(fuse)
-        # out = self.finalconv(torch.cat((x_out[0], x_out[1]), 1))
-        out=self.finalconv(x_out)
+        out = self.finalconv(torch.cat((x_out[0], x_out[1]), 1))
+#         out=self.finalconv(x_out)
         # alpha_soft = F.softmax(self.alpha,dim=0)
         # ens = 0
         # for l in range(self.num_parallel):
