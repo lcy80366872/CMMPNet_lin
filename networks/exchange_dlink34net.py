@@ -160,8 +160,7 @@ class ResNet(nn.Module):
         self.layer2 = self._make_layer(block, 128, blocks_num[1], bn_threshold, stride=2)
         self.layer3 = self._make_layer(block, 256, blocks_num[2], bn_threshold, stride=2)
         self.layer4 = self._make_layer(block, 512, blocks_num[3], bn_threshold, stride=2)
-        self.non_local20 = NLBlockND(filters[1], mode='embedded', dimension=2)
-        self.non_local21 = NLBlockND(filters[1], mode='embedded', dimension=2)
+        # self.non_local2 = NLBlockND(filters[1], mode='embedded', dimension=2)
         # self.dropout = ModuleParallel(nn.Dropout(p=0.5))
 
         self.dblock = DBlock_parallel(filters[3],2)
@@ -176,20 +175,20 @@ class ResNet(nn.Module):
         self.decoder2 = DecoderBlock_parallel(filters[1], filters[0], 2)
         self.decoder1 = DecoderBlock_parallel(filters[0], filters[0], 2)
 
-        # self.finaldeconv1 = nn.ConvTranspose2d(filters[0], filters[0] // 2, 4, 2, 1)
-        # self.finalrelu1 = nonlinearity
+        self.finaldeconv1 = nn.ConvTranspose2d(filters[0], filters[0] // 2, 4, 2, 1)
+        self.finalrelu1 = nonlinearity
 
-        self.finaldeconv1 = ModuleParallel(nn.ConvTranspose2d(filters[0], filters[0] // 2, 4, 2, 1))
-        self.finalrelu1 =  ModuleParallel(nn.ReLU(inplace=True))
+        # self.finaldeconv1 = ModuleParallel(nn.ConvTranspose2d(filters[0], filters[0] // 2, 4, 2, 1))
+        # self.finalrelu1 =  ModuleParallel(nn.ReLU(inplace=True))
         #self.finalrelu1 = nonlinearity
-        self.finalconv2 = ModuleParallel(nn.Conv2d(filters[0] // 2, filters[0] // 2, 3, padding=1))
-        self.finalrelu2 = ModuleParallel(nn.ReLU(inplace=True))
-        self.se = SEAttention(filters[0] // 2, reduction=4)
+#         self.finalconv2 = ModuleParallel(nn.Conv2d(filters[0] // 2, filters[0] // 2, 3, padding=1))
+#         self.finalrelu2 = ModuleParallel(nn.ReLU(inplace=True))
+#         self.se = SEAttention(filters[0] // 2, reduction=4)
         # self.se1 = SEAttention(filters[0] // 2, reduction=4)
         # self.atten=CBAMBlock(channel=filters[0], reduction=4, kernel_size=7)
         # self.fuse =NLBlockND_Fuse(filters[0]//2, filters[0]//2,mode='embedded', dimension=2)
-        # self.fuse =CrissCrossAttention_Fuse(filters[0])
-        self.finalconv = nn.Conv2d(filters[0], num_classes, 3, padding=1)
+        self.fuse =CrissCrossAttention_Fuse(filters[0])
+        self.finalconv = nn.Conv2d(filters[0]//2, num_classes, 3, padding=1)
         # self.finalconv = ModuleParallel(nn.Conv2d(filters[0] // 2, num_classes, 3, padding=1))
         # self.alpha = nn.Parameter(torch.ones(num_parallel, requires_grad=True))
         # self.register_parameter('alpha', self.alpha)
@@ -217,7 +216,7 @@ class ResNet(nn.Module):
 
         x = inputs[:, :3, :, :]
         g = inputs[:, 3:, :, :]
-        # g =g.repeat([1,3,1,1])#转化为三通道
+        # g =g.repeat([1,3,1,1])#杞寲涓轰笁閫氶亾
 
         ##stem layer
         x = self.firstconv1(x)
@@ -238,40 +237,39 @@ class ResNet(nn.Module):
         ##layers:
         x_1 = self.layer1(out)
         x_2 = self.layer2(x_1)
-        # x_2[0] =self.non_local20(x_2[0])
-        # x_2[1] = self.non_local20(x_2[1])
+        # x_2 = [self.non_local2(x_2[l]) for l in range(self.num_parallel) ]
         x_3 = self.layer3(x_2)
         x_4 = self.layer4(x_3)
 
         # x_4 =self.dropout(x_4)
 
-        # x_c = self.dblock(x_4)
+        x_c = self.dblock(x_4)
         # decoder
-        x_d4 = [self.decoder4(x_4)[l] + x_3[l] for l in range(self.num_parallel)]
+        x_d4 = [self.decoder4(x_c)[l] + x_3[l] for l in range(self.num_parallel)]
         x_d3 = [self.decoder3(x_d4)[l] + x_2[l] for l in range(self.num_parallel)]
         x_d2 = [self.decoder2(x_d3)[l] + x_1[l] for l in range(self.num_parallel)]
         x_d1 = self.decoder1(x_d2)
-        # v=x_d1[1]
-        # x_d1 = self.fuse(x_d1)
-        # x_d1 =[x_d1,v]
-        # x_d1 = self.fuse(x_d1)
+        v=x_d1[1]
+        x_d1 = self.fuse(x_d1)
+        x_d1 =[x_d1,v]
+        x_d1 = self.fuse(x_d1)
         x_out = self.finalrelu1(self.finaldeconv1(x_d1))
-        x_out = self.finalrelu2(self.finalconv2(x_out))
+        # x_out = self.finalrelu2(self.finalconv2(x_out))
 
-        x_out[0]=self.se(x_out[0])
-        x_out[1] = self.se(x_out[1])
+        # x_out[0]=self.se(x_out[0])
+        # x_out[1] = self.se(x_out[1])
         # atten=self.atten(torch.cat((x_out[0], x_out[1]), 1))
 
         # out =self.finalconv(fuse)
-        out = self.finalconv(torch.cat((x_out[0], x_out[1]), 1))
-        # out=self.finalconv(x_out)
+        # out = self.finalconv(torch.cat((x_out[0], x_out[1]), 1))
+        out=self.finalconv(x_out)
         # alpha_soft = F.softmax(self.alpha,dim=0)
         # ens = 0
         # for l in range(self.num_parallel):
         #     ens += alpha_soft[l] * out[l].detach()
         out = torch.sigmoid(out)
         # out =nn.LogSoftmax()(ens)
-        # out.append(ens)#[两个输入的out以及他们按alpha均衡后的output,一共三个]
+        # out.append(ens)#[涓や釜杈撳叆鐨刼ut浠ュ強浠栦滑鎸塧lpha鍧囪　鍚庣殑output,涓€鍏变笁涓猐
 
         return out
 
