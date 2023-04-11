@@ -218,7 +218,7 @@ class ResNet(nn.Module):
 
         x = inputs[:, :3, :, :]
         g = inputs[:, 3:, :, :]
-        print('xxxxxxxx',x.shape)
+#         print('xxxxxxxx',x.shape)
         # g =g.repeat([1,3,1,1])#杞寲涓轰笁閫氶亾
 
         ##stem layer
