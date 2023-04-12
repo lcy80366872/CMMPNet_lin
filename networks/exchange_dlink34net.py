@@ -164,10 +164,11 @@ class ResNet(nn.Module):
         # self.dropout = ModuleParallel(nn.Dropout(p=0.5))
 
         self.dblock = DBlock_parallel(filters[3],2)
-        self.dgcn_seg1 = TwofoldGCN(filters[0] ,filters[0] ,filters[0]  )
-        self.dgcn_seg2 = TwofoldGCN(filters[1] ,filters[1] ,filters[1]  )
-        self.dgcn_seg3 = TwofoldGCN(filters[2] ,filters[2] ,filters[2]  )
-        # decoder
+        self.SGCN=TwofoldGCN(filters[3] ,filters[3] ,filters[3]  )
+        # self.dgcn_seg1 = TwofoldGCN(filters[0] ,filters[0] ,filters[0]  )
+        # self.dgcn_seg2 = TwofoldGCN(filters[1] ,filters[1] ,filters[1]  )
+        # self.dgcn_seg3 = TwofoldGCN(filters[2] ,filters[2] ,filters[2]  )
+        # # decoder
         # self.decoder4 = DecoderBlock_parallel_exchange(filters[3], filters[2],2,bn_threshold)
         # self.decoder3 = DecoderBlock_parallel_exchange(filters[2], filters[1],2,bn_threshold)
         # self.decoder2 = DecoderBlock_parallel_exchange(filters[1], filters[0],2,bn_threshold)
@@ -245,13 +246,19 @@ class ResNet(nn.Module):
         x_4 = self.layer4(x_3)
 
         # x_4 =self.dropout(x_4)
-
-        x_c = self.dblock(x_4)
+        x_c0=self.SGCN(x_4[0])
+        x_c1 = self.SGCN(x_4[1])
+        x_c =x_c0,x_c1
+        # x_c = self.dblock(x_4)
         # decoder
-        x_d4 = [self.decoder4(x_c)[l] + self.dgcn_seg3(x_3[l]) for l in range(self.num_parallel)]
-        x_d3 = [self.decoder3(x_d4)[l] + self.dgcn_seg2(x_2[l]) for l in range(self.num_parallel)]
-        x_d2 = [self.decoder2(x_d3)[l] + self.dgcn_seg1(x_1[l]) for l in range(self.num_parallel)]
+        x_d4 = [self.decoder4(x_c)[l] + x_3[l] for l in range(self.num_parallel)]
+        x_d3 = [self.decoder3(x_d4)[l] + x_2[l] for l in range(self.num_parallel)]
+        x_d2 = [self.decoder2(x_d3)[l] + x_1[l] for l in range(self.num_parallel)]
         x_d1 = self.decoder1(x_d2)
+        # x_d4 = [self.decoder4(x_c)[l] + self.dgcn_seg3(x_3[l]) for l in range(self.num_parallel)]
+        # x_d3 = [self.decoder3(x_d4)[l] + self.dgcn_seg2(x_2[l]) for l in range(self.num_parallel)]
+        # x_d2 = [self.decoder2(x_d3)[l] + self.dgcn_seg1(x_1[l]) for l in range(self.num_parallel)]
+        # x_d1 = self.decoder1(x_d2)
         # v=x_d1[1]
         # x_d1 = self.fuse(x_d1)
         # x_d1 =[x_d1,v]
