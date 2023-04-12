@@ -89,20 +89,22 @@ class GCNSpatial(nn.Module):
 
     def normalize(self, A):
         b, c, im = A.size()
-        out = np.array([])
+        # out = np.array([])
+        out =torch.zeros_like(A)
         for i in range(b):
-            A1 = A[i].to(device="cpu")
-            I = torch.eye(c, im)
+            A1 = A[i]#.to(device="cpu")
+            I = torch.eye(c, im).cuda()#这个函数主要是为了生成对角线全1，其余部分全0的二维数组，c为行数，im为列数
             A1 = A1 + I
             # degree matrix
             d = A1.sum(1)
             # D = D^-1/2
             D = torch.diag(torch.pow(d, -0.5))
-            new_A = D.mm(A1).mm(D).detach().numpy()
-            out = np.append(out, new_A)
-        out = out.reshape(b, c, im)
-        normalize_A = torch.from_numpy(out)
-        normalize_A = normalize_A.type(torch.cuda.FloatTensor)
+            new_A = D.mm(A1).mm(D)#.detach().numpy()
+            out[i,:] = new_A
+        # out = out.reshape(b, c, im)
+        # normalize_A = torch.from_numpy(out)
+        # normalize_A = normalize_A.type(torch.cuda.FloatTensor)
+        normalize_A =out
         return normalize_A
 
     def forward(self, x):
@@ -110,6 +112,7 @@ class GCNSpatial(nn.Module):
         A = self.sobel(x)
         A = self.normalize(A)
         x = x.view(b, c, -1)
+        #bmm就是根据batch做矩阵乘法
         x = F.relu(self.fc1(A.bmm(x)))
         x = F.relu(self.fc2(A.bmm(x)))
         x = self.fc3(A.bmm(x))
@@ -143,21 +146,19 @@ class GCNChannel(nn.Module):
 
     def normalize(self, A):
         b, c, im = A.size()
-        out = np.array([])
+        out = torch.zeros_like(A)
         for i in range(b):
-            # A = A = I
-            A1 = A[i].to(device="cpu")
-            I = torch.eye(c, im)
+            A1 = A[i]
+            I = torch.eye(c, im).cuda()  # 这个函数主要是为了生成对角线全1，其余部分全0的二维数组，c为行数，im为列数
             A1 = A1 + I
             # degree matrix
             d = A1.sum(1)
             # D = D^-1/2
             D = torch.diag(torch.pow(d, -0.5))
-            new_A = D.mm(A1).mm(D).detach().numpy()
-            out = np.append(out, new_A)
-        out = out.reshape(b, c, im)
-        normalize_A = torch.from_numpy(out)
-        normalize_A = normalize_A.type(torch.cuda.FloatTensor)
+            new_A = D.mm(A1).mm(D)
+            out[i, :] = new_A
+
+        normalize_A = out
         return normalize_A
 
     def forward(self, x):
