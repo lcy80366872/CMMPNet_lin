@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torch.autograd import Variable
 import os
 from tqdm import tqdm
@@ -7,6 +8,8 @@ from utils.metrics import IoU
 from loss import dice_bce_loss
 import copy
 import numpy
+import cv2
+import torch_dct as DCT
 
 
 def L1_penalty(var):
@@ -21,6 +24,20 @@ class Solver:
         self.loss = dice_bce_loss()
         self.metrics = IoU(threshold=0.5)
         self.old_lr = optimizer.param_groups[0]["lr"]
+
+    def DCTloss(self,img,pred,mask):
+        num_batchsize = img.shape[0]
+        size = img.shape[2]
+        x=img*pred
+        y=img*mask
+        ycbcr_x = x.reshape(num_batchsize, 3, size // 8, 8, size // 8, 8).permute(0, 2, 4, 1, 3, 5)
+        ycbcr_y = y.reshape(num_batchsize, 3, size // 8, 8, size // 8, 8).permute(0, 2, 4, 1, 3, 5)
+        ycbcr_dctx = DCT.dct_2d(ycbcr_x, norm='ortho')
+        ycbcr_dcty = DCT.dct_2d(ycbcr_y, norm='ortho')
+        ycbcr_dctx = ycbcr_dctx.reshape(num_batchsize, size // 8, size // 8, -1).permute(0, 3, 1, 2)
+        ycbcr_dcty = ycbcr_dcty.reshape(num_batchsize, size // 8, size // 8, -1).permute(0, 3, 1, 2)
+        loss = torch.sum((ycbcr_dctx-ycbcr_dcty)**2)
+        return loss
 
     def set_input(self, img_batch, mask_batch=None):
         self.img = img_batch
@@ -87,7 +104,7 @@ class Solver:
         self.data2cuda()
 
         self.optimizer.zero_grad()
-        pred = self.net.forward(self.img)
+        pred,freq1,freq2,freq3 = self.net.forward(self.img)
         slim_params = []
         for name, param in self.net.named_parameters():
             if param.requires_grad and name.endswith('weight') and 'bn2' in name:
@@ -100,6 +117,19 @@ class Solver:
         L1_norm = sum([L1_penalty(m).cuda() for m in slim_params])
         lamda =2e-4
         loss += lamda * L1_norm  # this is actually counted for len(outputs) times
+        img=self.img[:,4:,:,:]
+        img1 = F.interpolate(img, (128, 128))
+        img2 = F.interpolate(img, (64, 64))
+        img3 = F.interpolate(img, (32, 32))
+        # print ('img:',img1.shape)
+        mask1 = F.interpolate(self.mask, (128, 128))
+        mask2 = F.interpolate(self.mask, (64, 64))
+        mask3 = F.interpolate(self.mask, (32, 32))
+        loss1 = self.DCTloss(img1,freq1,mask1)
+        loss2 = self.DCTloss(img2, freq2, mask2)
+        loss3 = self.DCTloss(img3, freq3, mask3)
+        loss=loss+loss1+0.5*loss2+0.25*loss3
+
 
         loss.backward()
         self.optimizer.step()
