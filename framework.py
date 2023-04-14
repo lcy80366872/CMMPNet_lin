@@ -43,10 +43,10 @@ class Solver:
         # print('ycbcr:',ycbcr_dcty)
         # print('cha:',torch.sqrt((ycbcr_dctx-ycbcr_dcty)**2))
         # print('sum:', torch.sum(torch.sqrt((ycbcr_dctx-ycbcr_dcty)**2)))
-#         a=torch.sqrt((ycbcr_dctx - ycbcr_dcty) ** 2)
-        a=(ycbcr_dctx - ycbcr_dcty) ** 2
+        eps=1e-6
+        a=torch.sqrt((ycbcr_dctx - ycbcr_dcty) ** 2+eps)
         loss = torch.sum(a)/a.numel()
-        # print('loss',loss)
+        print('loss',loss)
         return loss
 
     def set_input(self, img_batch, mask_batch=None):
@@ -139,7 +139,7 @@ class Solver:
         loss1 = self.DCTloss(img1,freq1,mask1)
         loss2 = self.DCTloss(img2, freq2, mask2)
         loss3 = self.DCTloss(img3, freq3, mask3)
-        loss=loss+0.1*loss1+0.05*loss2+0.025*loss3
+        loss=loss+loss1+0.5*loss2+0.25*loss3
 
 
         loss.backward()
