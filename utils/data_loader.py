@@ -159,6 +159,8 @@ class ImageGPSDataset(data.Dataset):
             img, mask = randomcrop(img,mask)
         else:
             img = self._concat_images(sat, gps)
+            ycb = cv2.cvtColor(sat, cv2.COLOR_BGR2YCrCb)
+            img = self._concat_images(img, ycb)
     
         # The image's resolution of BJRoad is too high. To reduce memory consumption, we reduce the resolution of input images to 512*512
         # But the resolution of masks is maintained. For a fair comparison, the final predicted maps would be resized to the resolution of masks during testing.
