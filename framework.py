@@ -41,7 +41,9 @@ class Solver:
         # print('ycbcr:',ycbcr_dcty)
         # print('cha:',torch.sqrt((ycbcr_dctx-ycbcr_dcty)**2))
         # print('sum:', torch.sum(torch.sqrt((ycbcr_dctx-ycbcr_dcty)**2)))
-        loss = torch.sum(torch.sqrt((ycbcr_dctx-ycbcr_dcty)**2))
+        a=torch.sqrt((ycbcr_dctx - ycbcr_dcty) ** 2)
+        loss = torch.sum(a)/a.numel()
+        print('loss',loss)
         return loss
 
     def set_input(self, img_batch, mask_batch=None):
