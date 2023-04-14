@@ -128,6 +128,9 @@ class Solver:
         loss1 = self.DCTloss(img1,freq1,mask1)
         loss2 = self.DCTloss(img2, freq2, mask2)
         loss3 = self.DCTloss(img3, freq3, mask3)
+        print('loss1:',loss1)
+        print('loss2:',loss2)
+        print('loss3:',loss3)
         loss=loss+loss1+0.5*loss2+0.25*loss3
 
 
