@@ -127,9 +127,10 @@ class Solver:
         img2 = F.interpolate(img, (64, 64))
         img3 = F.interpolate(img, (32, 32))
         # print ('img:',img1.shape)
-        mask1 = F.interpolate(self.mask, (128, 128))
-        mask2 = F.interpolate(self.mask, (64, 64))
-        mask3 = F.interpolate(self.mask, (32, 32))
+        mask=self.mask
+        mask1 = F.interpolate(mask, (128, 128))
+        mask2 = F.interpolate(mask, (64, 64))
+        mask3 = F.interpolate(mask, (32, 32))
         loss1 = self.DCTloss(img1,freq1,mask1)
         loss2 = self.DCTloss(img2, freq2, mask2)
         loss3 = self.DCTloss(img3, freq3, mask3)
