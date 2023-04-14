@@ -4,3 +4,6 @@ scikit_learn
 torch
 torchvision
 tqdm
+
+torch-dct
+einops
