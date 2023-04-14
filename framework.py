@@ -46,7 +46,7 @@ class Solver:
         eps=1e-6
         a=torch.sqrt((ycbcr_dctx - ycbcr_dcty) ** 2+eps)
         loss = torch.sum(a)/a.numel()
-        print('loss',loss)
+        # print('loss',loss)
         return loss
 
     def set_input(self, img_batch, mask_batch=None):
