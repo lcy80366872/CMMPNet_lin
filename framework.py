@@ -29,7 +29,9 @@ class Solver:
     def DCTloss(self,img,pred,mask):
         num_batchsize = img.shape[0]
         size = img.shape[2]
+        pred = pred.repeat([1, 3, 1, 1])
         x=img*pred
+
         y=img*mask
         ycbcr_x = x.reshape(num_batchsize, 3, size // 8, 8, size // 8, 8).permute(0, 2, 4, 1, 3, 5)
         ycbcr_y = y.reshape(num_batchsize, 3, size // 8, 8, size // 8, 8).permute(0, 2, 4, 1, 3, 5)
@@ -43,7 +45,7 @@ class Solver:
         # print('sum:', torch.sum(torch.sqrt((ycbcr_dctx-ycbcr_dcty)**2)))
         a=torch.sqrt((ycbcr_dctx - ycbcr_dcty) ** 2)
         loss = torch.sum(a)/a.numel()
-        print('loss',loss)
+        # print('loss',loss)
         return loss
 
     def set_input(self, img_batch, mask_batch=None):
