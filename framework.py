@@ -8,7 +8,8 @@ from utils.metrics import IoU
 from loss import dice_bce_loss
 import copy
 import numpy
-import cv2
+
+
 import torch_dct as DCT
 
 
@@ -36,7 +37,11 @@ class Solver:
         ycbcr_dcty = DCT.dct_2d(ycbcr_y, norm='ortho')
         ycbcr_dctx = ycbcr_dctx.reshape(num_batchsize, size // 8, size // 8, -1).permute(0, 3, 1, 2)
         ycbcr_dcty = ycbcr_dcty.reshape(num_batchsize, size // 8, size // 8, -1).permute(0, 3, 1, 2)
-        loss = torch.sum((ycbcr_dctx-ycbcr_dcty)**2)
+        # print('ycbcr_shape:', ycbcr_dcty.shape)
+        # print('ycbcr:',ycbcr_dcty)
+        # print('cha:',torch.sqrt((ycbcr_dctx-ycbcr_dcty)**2))
+        # print('sum:', torch.sum(torch.sqrt((ycbcr_dctx-ycbcr_dcty)**2)))
+        loss = torch.sum(torch.sqrt((ycbcr_dctx-ycbcr_dcty)**2))
         return loss
 
     def set_input(self, img_batch, mask_batch=None):
@@ -128,9 +133,6 @@ class Solver:
         loss1 = self.DCTloss(img1,freq1,mask1)
         loss2 = self.DCTloss(img2, freq2, mask2)
         loss3 = self.DCTloss(img3, freq3, mask3)
-        print('loss1:',loss1)
-        print('loss2:',loss2)
-        print('loss3:',loss3)
         loss=loss+loss1+0.5*loss2+0.25*loss3
 
 
@@ -144,7 +146,7 @@ class Solver:
         self.net.eval()
         self.data2cuda(volatile=True)
 
-        pred = self.net.forward(self.img)
+        pred,freq1,freq2,freq3 = self.net.forward(self.img)
         loss = self.loss(self.mask, pred)
 
         batch_iou, intersection, union = self.metrics(self.mask, pred)
@@ -212,7 +214,7 @@ class Framework:
         for epoch in range(1, epochs + 1):
             print(f"epoch {epoch}/{epochs}")
 
-            train_loss, train_metrics = self.fit_one_epoch(self.train_dl, mode='training')
+            train_loss, train_metrics = self.fit_one_epoch(self.train_dl, mode='val')
             val_loss, val_metrics = self.fit_one_epoch(self.validation_dl, mode='val')
             test_loss, test_metrics = self.fit_one_epoch(self.test_dl, mode='testing')
             if val_best_metrics[1] < val_metrics[1]:
