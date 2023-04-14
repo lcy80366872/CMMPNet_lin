@@ -120,6 +120,7 @@ class ImageGPSDataset(data.Dataset):
         img  = cv2.imread(img_path)
         mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
         gps  = cv2.imread(gps_path,  cv2.IMREAD_GRAYSCALE)
+
         
         assert (img is not None),  img_path
         assert (mask is not None), mask_path
@@ -147,6 +148,8 @@ class ImageGPSDataset(data.Dataset):
         if self.randomize:
             sat = randomHueSaturationValue(sat)
             img = self._concat_images(sat, gps)
+            ycb = cv2.cvtColor(sat, cv2.COLOR_BGR2YCrCb)
+            img = self._concat_images(img, ycb)
             img, mask = randomShiftScaleRotate(img, mask)
             img, mask = randomRotate180(img, mask)
             img, mask = randomHorizontalFlip(img, mask)
@@ -179,7 +182,7 @@ class ImageGPSDataset(data.Dataset):
 
     def __getitem__(self, index):
         image_id = self.image_list[index]
-        img, mask, gps= self._read_data(image_id) 
+        img, mask, gps= self._read_data(image_id)
         img, mask = self._data_augmentation(img, mask, gps)
         img, mask = torch.Tensor(img), torch.Tensor(mask)
         return img, mask
