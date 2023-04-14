@@ -138,7 +138,7 @@ class Solver:
         loss1 = self.DCTloss(img1,freq1,mask1)
         loss2 = self.DCTloss(img2, freq2, mask2)
         loss3 = self.DCTloss(img3, freq3, mask3)
-        loss=loss+loss1+0.5*loss2+0.25*loss3
+        loss=loss+0.1*loss1+0.05*loss2+0.025*loss3
 
 
         loss.backward()
