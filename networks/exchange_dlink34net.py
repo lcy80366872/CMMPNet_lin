@@ -170,14 +170,14 @@ class ResNet(nn.Module):
         self.dgcn_seg2 = TwofoldGCN(filters[1] ,filters[1] ,filters[1]  )
         self.dgcn_seg3 = TwofoldGCN(filters[2] ,filters[2] ,filters[2]  )
         # # decoder
-        self.decoder4 = DecoderBlock_parallel_exchange(filters[3], filters[2],2,bn_threshold)
-        self.decoder3 = DecoderBlock_parallel_exchange(filters[2], filters[1],2,bn_threshold)
-        self.decoder2 = DecoderBlock_parallel_exchange(filters[1], filters[0],2,bn_threshold)
-        self.decoder1 = DecoderBlock_parallel_exchange(filters[0], filters[0],2,bn_threshold)
-#         self.decoder4 = DecoderBlock_parallel(filters[3], filters[2], 2)
-#         self.decoder3 = DecoderBlock_parallel(filters[2], filters[1], 2)
-#         self.decoder2 = DecoderBlock_parallel(filters[1], filters[0], 2)
-#         self.decoder1 = DecoderBlock_parallel(filters[0], filters[0], 2)
+        # self.decoder4 = DecoderBlock_parallel_exchange(filters[3], filters[2],2,bn_threshold)
+        # self.decoder3 = DecoderBlock_parallel_exchange(filters[2], filters[1],2,bn_threshold)
+        # self.decoder2 = DecoderBlock_parallel_exchange(filters[1], filters[0],2,bn_threshold)
+        # self.decoder1 = DecoderBlock_parallel_exchange(filters[0], filters[0],2,bn_threshold)
+        self.decoder4 = DecoderBlock_parallel(filters[3], filters[2], 2)
+        self.decoder3 = DecoderBlock_parallel(filters[2], filters[1], 2)
+        self.decoder2 = DecoderBlock_parallel(filters[1], filters[0], 2)
+        self.decoder1 = DecoderBlock_parallel(filters[0], filters[0], 2)
 
         # self.finaldeconv1 = nn.ConvTranspose2d(filters[0], filters[0] // 2, 4, 2, 1)
         # self.finalrelu1 = nonlinearity
@@ -198,7 +198,7 @@ class ResNet(nn.Module):
         # self.register_parameter('alpha', self.alpha)
 
         #freq
-        self.fem=FEM()
+        self.fem=FEM(in_chanel=192)
         self.con1_1 = nn.Conv2d(in_channels=192, out_channels=64, kernel_size=1)
         self.con1_2 = nn.Conv2d(in_channels=192, out_channels=64, kernel_size=1)
         self.con1_3 = nn.Conv2d(in_channels=192, out_channels=64, kernel_size=1)
@@ -248,6 +248,7 @@ class ResNet(nn.Module):
 
         x = inputs[:, :3, :, :]
         g = inputs[:, 3:4, :, :]
+        gps=g.repeat([1,3,1,1])
         ycbr=inputs[:, 4:, :, :]
         # print('xxxxxxxx',ycbr.shape)
         # g =g.repeat([1,3,1,1])#杞寲涓轰笁閫氶亾
@@ -283,9 +284,10 @@ class ResNet(nn.Module):
         x_c = self.dblock(x_4)
 
         # feature fusion
-        DCT_x = DCT_Operation(ycbr)
-        # print('dctx:',DCT_x.shape)
+        DCT_x = DCT_Operation(gps)
+        print('dctx:',DCT_x.shape)
         feat_DCT = self.fem(DCT_x)
+        # print('feat_dctx:', feat_DCT.shape)
         # using 1*1conv to change the numbers of the channel of DCT_x
         feat_DCT1 = self.con1_1(feat_DCT)
         feat_DCT2 = self.con1_2(feat_DCT)
@@ -313,9 +315,9 @@ class ResNet(nn.Module):
         freq_output_1 = self.freq_out_1(feat1)
         freq_output_2 = self.freq_out_2(feat2)
         freq_output_3 = self.freq_out_3(feat3)
-#         freq_output_1 = torch.sigmoid(freq_output_1)
-#         freq_output_2 = torch.sigmoid(freq_output_2)
-#         freq_output_3 = torch.sigmoid(freq_output_3)
+        freq_output_1 = torch.sigmoid(freq_output_1)
+        freq_output_2 = torch.sigmoid(freq_output_2)
+        freq_output_3 = torch.sigmoid(freq_output_3)
         # print('freq1:', freq_output_1.shape)
         # print('freq2:', freq_output_2.shape)
         # print('freq3:', freq_output_3.shape)
