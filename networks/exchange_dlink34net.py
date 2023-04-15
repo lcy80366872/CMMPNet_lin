@@ -198,7 +198,7 @@ class ResNet(nn.Module):
         # self.register_parameter('alpha', self.alpha)
 
         #freq
-        self.fem=FEM(in_chanel=192)
+        self.fem=FEM()
         self.con1_1 = nn.Conv2d(in_channels=192, out_channels=64, kernel_size=1)
         self.con1_2 = nn.Conv2d(in_channels=192, out_channels=64, kernel_size=1)
         self.con1_3 = nn.Conv2d(in_channels=192, out_channels=64, kernel_size=1)
@@ -285,7 +285,7 @@ class ResNet(nn.Module):
 
         # feature fusion
         DCT_x = DCT_Operation(gps)
-        print('dctx:',DCT_x.shape)
+        # print('dctx:',DCT_x.shape)
         feat_DCT = self.fem(DCT_x)
         # print('feat_dctx:', feat_DCT.shape)
         # using 1*1conv to change the numbers of the channel of DCT_x
@@ -332,14 +332,14 @@ class ResNet(nn.Module):
         # x_d2 = [self.decoder2(x_d3)[l] + x_1[l] for l in range(self.num_parallel)]
         # x_d1 = self.decoder1(x_d2)
 
-        x_d40 = self.decoder4(x_c)[0]+feat3
-        x_d41 = self.decoder4(x_c)[1] + x_3[1]
+        x_d41 = self.decoder4(x_c)[1]+feat3
+        x_d40 = self.decoder4(x_c)[0] + x_3[0]
         x_d4=x_d40,x_d41
-        x_d30 = self.decoder3(x_d4)[0] + feat2
-        x_d31 = self.decoder3(x_d4)[1] + x_2[1]
+        x_d31 = self.decoder3(x_d4)[1] + feat2
+        x_d30 = self.decoder3(x_d4)[0] + x_2[0]
         x_d3 = x_d30, x_d31
-        x_d21 = self.decoder2(x_d3)[1] + x_1[1]
-        x_d20 = self.decoder2(x_d3)[0] + feat1
+        x_d20 = self.decoder2(x_d3)[0] + x_1[0]
+        x_d21 = self.decoder2(x_d3)[1] + feat1
         x_d2 = x_d20, x_d21
         x_d1 = self.decoder1(x_d2)
 
