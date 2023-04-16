@@ -333,7 +333,7 @@ class Framework:
 
         for i, (img, ycbr,mask) in progress_bar:
             # print('ycbr_data:',ycbr.shape)
-            ycbr = DCT_Operation(ycbr)
+#             ycbr = DCT_Operation(ycbr)
 #             print('ycbr:',ycbr.shape)
 #             print('ycbr:',ycbr)
             self.solver.set_input(img, ycbr,mask)
