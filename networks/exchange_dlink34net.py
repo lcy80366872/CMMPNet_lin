@@ -243,6 +243,7 @@ class ResNet(nn.Module):
 
         x = inputs[:, :3, :, :]
         g = inputs[:, 3:4, :, :]
+        print('xxxxxxxx',ycbr.shape)
         ycbr_dct=ycbr[:,64:,:,:]
         gps_dct = ycbr[:, :64, :, :]
 
