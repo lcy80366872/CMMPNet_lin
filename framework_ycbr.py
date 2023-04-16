@@ -198,6 +198,7 @@ class Solver:
                 else:
                     slim_params.append(param[2*len(param) // 3:])
 
+        print(pred)
         loss = self.loss(self.mask,pred)
         L1_norm = sum([L1_penalty(m).cuda() for m in slim_params])
         lamda =2e-4
