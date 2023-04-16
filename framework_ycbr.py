@@ -332,6 +332,7 @@ class Framework:
             # print('ycbr_data:',ycbr.shape)
             ycbr = DCT_Operation(ycbr)
             print('ycbr:',ycbr.shape)
+            print('ycbr:',ycbr)
             self.solver.set_input(img, ycbr,mask)
             # print('img_data:',img.shape)
             if mode == 'training':
