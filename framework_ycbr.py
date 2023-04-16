@@ -188,6 +188,8 @@ class Solver:
 
         self.optimizer.zero_grad()
         pred = self.net.forward(self.img,self.ycbr)
+        print('pred_shape:',pred.shape)
+        print('pred:',pred)
         slim_params = []
         for name, param in self.net.named_parameters():
             if param.requires_grad and name.endswith('weight') and 'bn2' in name:
@@ -329,6 +331,7 @@ class Framework:
         for i, (img, ycbr,mask) in progress_bar:
             # print('ycbr_data:',ycbr.shape)
             ycbr = DCT_Operation(ycbr)
+            print('ycbr:',ycbr.shape)
             self.solver.set_input(img, ycbr,mask)
             # print('img_data:',img.shape)
             if mode == 'training':
