@@ -237,7 +237,7 @@ def DCT_Operation(x):
     return ycbcr_image
 
 class FEM(nn.Module):
-    def __init__(self):
+    def __init__(self,in_chanel=192):
         super(FEM, self).__init__()
         self.seg=Seg()
         self.shuffle = channel_shuffle()
@@ -248,10 +248,10 @@ class FEM(nn.Module):
         self.band = Transformer(dim=256, depth=1, heads=2, dim_head=128, mlp_dim=128 * 2, dropout=0)
         self.spatial = Transformer(dim=192, depth=1, heads=2, dim_head=64, mlp_dim=64 * 2, dropout=0)
 
-        self.con1_2 = nn.Conv2d(in_channels=192, out_channels=64, kernel_size=1)
-        self.con1_3 = nn.Conv2d(in_channels=192, out_channels=64, kernel_size=1)
-        self.con1_4 = nn.Conv2d(in_channels=192, out_channels=64, kernel_size=1)
-        self.con1_5 = nn.Conv2d(in_channels=192, out_channels=64, kernel_size=1)
+        self.con1_2 = nn.Conv2d(in_channels=in_chanel, out_channels=64, kernel_size=1)
+        self.con1_3 = nn.Conv2d(in_channels=in_chanel, out_channels=64, kernel_size=1)
+        self.con1_4 = nn.Conv2d(in_channels=in_chanel, out_channels=64, kernel_size=1)
+        self.con1_5 = nn.Conv2d(in_channels=in_chanel, out_channels=64, kernel_size=1)
         self.vector_y = nn.Parameter(torch.FloatTensor(1, 64, 1, 1), requires_grad=True)
         self.vector_cb = nn.Parameter(torch.FloatTensor(1, 64, 1, 1), requires_grad=True)
         self.vector_cr = nn.Parameter(torch.FloatTensor(1, 64, 1, 1), requires_grad=True)
@@ -262,7 +262,10 @@ class FEM(nn.Module):
         self.freq_out_4 = nn.Conv2d(64, 1, 1, 1, 0)
 
     def forward(self, DCT_x):
+        DCT_x =DCT_x.cuda()
         self.seg = self.seg.to(DCT_x.device)
+        # print('device:',DCT_x.device)
+        # print('device_vect:',self.vector_y.device)
         feat_y = DCT_x[:, 0:64, :, :] * (self.seg + norm(self.vector_y))
         feat_Cb = DCT_x[:, 64:128, :, :] * (self.seg + norm(self.vector_cb))
         feat_Cr = DCT_x[:, 128:192, :, :] * (self.seg + norm(self.vector_cr))
