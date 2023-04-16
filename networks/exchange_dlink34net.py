@@ -117,7 +117,7 @@ class ResNet(nn.Module):
     def __init__(self,
                  block,
                  blocks_num,
-                 num_parallel=2,
+                 num_parallel=3,
                  num_classes=1,
                  bn_threshold=2e-2):
         super(ResNet, self).__init__()
