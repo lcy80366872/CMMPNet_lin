@@ -147,6 +147,8 @@ class ResNet(nn.Module):
         self.firstrelu_g = resnet1.relu
         self.firstmaxpool_g = resnet1.maxpool
         self.conv192to64=nn.Conv2d(192, filters[0], kernel_size=1, stride=1, padding=0)
+        self.bn_ycbr=nn.BatchNorm2d(filters[0])
+        self.relu_ycbr=nn.ReLU(inplace=True)
 
 
 
@@ -246,6 +248,7 @@ class ResNet(nn.Module):
 
         # print('dctx:',DCT_x.shape)
         feat_DCT = self.conv192to64(self.fem(ycbr))
+        feat_DCT=self.relu_ycbr(self.bn_ycbr(feat_DCT))
         # print('feat_dctx:', feat_DCT.shape)
         out =out,out_g,feat_DCT
         # print('out2',out[2].shape)
