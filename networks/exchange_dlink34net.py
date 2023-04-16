@@ -56,6 +56,9 @@ class BasicBlock(nn.Module):
 
         if self.downsample is not None:
             residual = self.downsample(x)
+        
+        print('num_paraller',self.num_parallel)
+        print('lenout',len(out))
 
         out = [out[l] + residual[l] for l in range(self.num_parallel)]
         out = self.relu(out)
