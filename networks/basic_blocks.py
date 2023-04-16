@@ -12,11 +12,11 @@ class Exchange(nn.Module):
         #就是大于阈值的那些通道保留，小于阈值的那些通道取另外一个的值
         x1, x2 ,x3= torch.zeros_like(x[0]), torch.zeros_like(x[1]),torch.zeros_like(x[2])
         x1[:, bn1 >= bn_threshold] = x[0][:, bn1 >= bn_threshold]
-        x1[:, bn1 < bn_threshold] = (x[1][:, bn1 < bn_threshold]+x[2][:, bn1 < bn_threshold])/2
+        x1[:, bn1 < bn_threshold] = (x[1][:, bn1 < bn_threshold]+x[2][:, bn1 < bn_threshold])/2.0
         x2[:, bn2 >= bn_threshold] = x[1][:, bn2 >= bn_threshold]
-        x2[:, bn2 < bn_threshold] = (x[0][:, bn2 < bn_threshold]+x[2][:, bn2 < bn_threshold])/2
+        x2[:, bn2 < bn_threshold] = (x[0][:, bn2 < bn_threshold]+x[2][:, bn2 < bn_threshold])/2.0
         x3[:, bn3 >= bn_threshold] = x[2][:, bn3 >= bn_threshold]
-        x3[:, bn3 < bn_threshold] = (x[0][:, bn3 < bn_threshold] + x[1][:, bn3 < bn_threshold]) / 2
+        x3[:, bn3 < bn_threshold] = (x[0][:, bn3 < bn_threshold] + x[1][:, bn3 < bn_threshold]) / 2.0
 
         return [x1, x2,x3]
 class ModuleParallel(nn.Module):
