@@ -242,11 +242,11 @@ class ResNet(nn.Module):
         # x = self.relu(x)
         # out = self.maxpool(x)
         DCT_x = DCT_Operation(ycbr)
-        # print('dctx:',DCT_x.shape)
+        print('dctx:',DCT_x.shape)
         feat_DCT = self.conv192to64(self.fem(DCT_x))
         # print('feat_dctx:', feat_DCT.shape)
         out =out,out_g,feat_DCT
-        # print('out2',out[2].shape)
+        print('out2',out[2].shape)
 
         ##layers:
         x_1 = self.layer1(out)
