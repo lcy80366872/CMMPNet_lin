@@ -14,7 +14,10 @@ import torch_dct as DCT
 
 
 def L1_penalty(var):
-    return torch.abs(var).sum()
+    a=torch.abs(var).sum()
+    eps=1e-6
+    a=a+eps
+    return a
 class Solver:
     def __init__(self, net, optimizer, dataset):
         # self.net = torch.nn.DataParallel(net.cuda(), device_ids=list(range(torch.cuda.device_count())))
