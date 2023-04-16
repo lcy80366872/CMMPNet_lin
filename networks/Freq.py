@@ -231,7 +231,7 @@ def DCT_Operation(x):
     num_batchsize = x.shape[0]
     size = x.shape[2]
 
-    ycbcr_image = x.reshape(num_batchsize, 3, size // 8, 8, size // 8, 8).permute(0, 2, 4, 1, 3, 5)
+    ycbcr_image = x.reshape(num_batchsize, 4, size // 8, 8, size // 8, 8).permute(0, 2, 4, 1, 3, 5)
     ycbcr_image = DCT.dct_2d(ycbcr_image, norm='ortho')
     ycbcr_image = ycbcr_image.reshape(num_batchsize, size // 8, size // 8, -1).permute(0, 3, 1, 2)
     return ycbcr_image
@@ -262,7 +262,7 @@ class FEM(nn.Module):
         self.freq_out_4 = nn.Conv2d(64, 1, 1, 1, 0)
 
     def forward(self, DCT_x):
-        DCT_x =DCT_x.cuda()
+        # DCT_x =DCT_x.cuda()
         self.seg = self.seg.to(DCT_x.device)
         # print('device:',DCT_x.device)
         # print('device_vect:',self.vector_y.device)
@@ -296,6 +296,64 @@ class FEM(nn.Module):
 
         feat_DCT = self.band(feat_DCT)
         feat_DCT = feat_DCT.transpose(1, 2)
+        feat_DCT = self.spatial(feat_DCT)
+        feat_DCT = feat_DCT.transpose(1, 2)
+        feat_DCT = rearrange(feat_DCT, 'b n (h w) -> b n h w', h=16)
+        feat_DCT = torch.nn.functional.interpolate(feat_DCT, size=(h, w))
+
+        feat_DCT = origin_feat_DCT + feat_DCT
+        return feat_DCT
+class FEM_gps(nn.Module):
+    def __init__(self,in_chanel=64):
+        super(FEM_gps, self).__init__()
+        self.seg=Seg()
+        self.shuffle = channel_shuffle()
+
+        self.high_band = Transformer(dim=256, depth=1, heads=2, dim_head=128, mlp_dim=128 * 2, dropout=0)
+        self.low_band = Transformer(dim=256, depth=1, heads=2, dim_head=128, mlp_dim=128 * 2, dropout=0)
+
+        self.band = Transformer(dim=256, depth=1, heads=2, dim_head=128, mlp_dim=128 * 2, dropout=0)
+        self.spatial = Transformer(dim=64, depth=1, heads=2, dim_head=64, mlp_dim=64 * 2, dropout=0)
+
+        self.con1_2 = nn.Conv2d(in_channels=in_chanel, out_channels=64, kernel_size=1)
+        self.con1_3 = nn.Conv2d(in_channels=in_chanel, out_channels=64, kernel_size=1)
+        self.con1_4 = nn.Conv2d(in_channels=in_chanel, out_channels=64, kernel_size=1)
+        self.con1_5 = nn.Conv2d(in_channels=in_chanel, out_channels=64, kernel_size=1)
+        self.vector_y = nn.Parameter(torch.FloatTensor(1, 64, 1, 1), requires_grad=True)
+        self.vector_cb = nn.Parameter(torch.FloatTensor(1, 64, 1, 1), requires_grad=True)
+        self.vector_cr = nn.Parameter(torch.FloatTensor(1, 64, 1, 1), requires_grad=True)
+
+        self.freq_out_1 = nn.Conv2d(64, 1, 1, 1, 0)
+        self.freq_out_2 = nn.Conv2d(64, 1, 1, 1, 0)
+        self.freq_out_3 = nn.Conv2d(64, 1, 1, 1, 0)
+        self.freq_out_4 = nn.Conv2d(64, 1, 1, 1, 0)
+
+    def forward(self, DCT_x):
+        # DCT_x =DCT_x.cuda()
+        self.seg = self.seg.to(DCT_x.device)
+        # print('device:',DCT_x.device)
+        # print('device_vect:',self.vector_y.device)
+        feat = DCT_x[:, 0:64, :, :] * (self.seg + norm(self.vector_y))
+        origin_feat_DCT = self.shuffle(feat)
+
+        high = feat[:, 32:, :, :]
+        low = feat[:, :32, :, :]
+
+        b, n, h, w = high.shape
+        high = torch.nn.functional.interpolate(high, size=(16, 16))
+        low = torch.nn.functional.interpolate(low, size=(16, 16))
+
+        high = rearrange(high, 'b n h w -> b n (h w)')
+        low = rearrange(low, 'b n h w -> b n (h w)')
+
+        high = self.high_band(high)
+        low = self.low_band(low)
+
+        feat = torch.cat([high,low], 1)
+
+        feat_DCT = self.band(feat)
+        feat_DCT = feat_DCT.transpose(1, 2)
+        # print('ssss',feat_DCT.shape)
         feat_DCT = self.spatial(feat_DCT)
         feat_DCT = feat_DCT.transpose(1, 2)
         feat_DCT = rearrange(feat_DCT, 'b n (h w) -> b n h w', h=16)
