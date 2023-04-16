@@ -144,6 +144,7 @@ class ResNet(nn.Module):
         self.firstbn_g = resnet1.bn1
         self.firstrelu_g = resnet1.relu
         self.firstmaxpool_g = resnet1.maxpool
+        self.conv192to64=nn.Conv2d(192, filters[0], kernel_size=1, stride=1, padding=0)
 
 
 
@@ -157,6 +158,7 @@ class ResNet(nn.Module):
 #         for module in self.bn1.modules():
 #             if isinstance(module, nn.BatchNorm2d):
 #                 self.bn_list.append(module)
+        self.fem=FEM()
         self.layer1 = self._make_layer(block, 64, blocks_num[0], bn_threshold)
         self.layer2 = self._make_layer(block, 128, blocks_num[1], bn_threshold, stride=2)
         self.layer3 = self._make_layer(block, 256, blocks_num[2], bn_threshold, stride=2)
@@ -164,20 +166,20 @@ class ResNet(nn.Module):
         # self.non_local2 = NLBlockND(filters[1], mode='embedded', dimension=2)
         # self.dropout = ModuleParallel(nn.Dropout(p=0.5))
 
-        self.dblock = DBlock_parallel(filters[3],2)
+        self.dblock = DBlock_parallel(filters[3],3)
         # self.SGCN=TwofoldGCN(filters[3] ,filters[3] ,filters[3]  )
-        self.dgcn_seg1 = TwofoldGCN(filters[0] ,filters[0] ,filters[0]  )
-        self.dgcn_seg2 = TwofoldGCN(filters[1] ,filters[1] ,filters[1]  )
-        self.dgcn_seg3 = TwofoldGCN(filters[2] ,filters[2] ,filters[2]  )
+        # self.dgcn_seg1 = TwofoldGCN(filters[0] ,filters[0] ,filters[0]  )
+        # self.dgcn_seg2 = TwofoldGCN(filters[1] ,filters[1] ,filters[1]  )
+        # self.dgcn_seg3 = TwofoldGCN(filters[2] ,filters[2] ,filters[2]  )
         # # decoder
-        # self.decoder4 = DecoderBlock_parallel_exchange(filters[3], filters[2],2,bn_threshold)
-        # self.decoder3 = DecoderBlock_parallel_exchange(filters[2], filters[1],2,bn_threshold)
-        # self.decoder2 = DecoderBlock_parallel_exchange(filters[1], filters[0],2,bn_threshold)
-        # self.decoder1 = DecoderBlock_parallel_exchange(filters[0], filters[0],2,bn_threshold)
-        self.decoder4 = DecoderBlock_parallel(filters[3], filters[2], 2)
-        self.decoder3 = DecoderBlock_parallel(filters[2], filters[1], 2)
-        self.decoder2 = DecoderBlock_parallel(filters[1], filters[0], 2)
-        self.decoder1 = DecoderBlock_parallel(filters[0], filters[0], 2)
+        self.decoder4 = DecoderBlock_parallel_exchange(filters[3], filters[2],3,bn_threshold)
+        self.decoder3 = DecoderBlock_parallel_exchange(filters[2], filters[1],3,bn_threshold)
+        self.decoder2 = DecoderBlock_parallel_exchange(filters[1], filters[0],3,bn_threshold)
+        self.decoder1 = DecoderBlock_parallel_exchange(filters[0], filters[0],3,bn_threshold)
+        # self.decoder4 = DecoderBlock_parallel(filters[3], filters[2], 3)
+        # self.decoder3 = DecoderBlock_parallel(filters[2], filters[1], 3)
+        # self.decoder2 = DecoderBlock_parallel(filters[1], filters[0], 3)
+        # self.decoder1 = DecoderBlock_parallel(filters[0], filters[0], 3)
 
         # self.finaldeconv1 = nn.ConvTranspose2d(filters[0], filters[0] // 2, 4, 2, 1)
         # self.finalrelu1 = nonlinearity
@@ -192,37 +194,10 @@ class ResNet(nn.Module):
         # self.atten=CBAMBlock(channel=filters[0], reduction=4, kernel_size=7)
         # self.fuse =NLBlockND_Fuse(filters[0]//2, filters[0]//2,mode='embedded', dimension=2)
         # self.fuse =CrissCrossAttention_Fuse(filters[0])
-        self.finalconv = nn.Conv2d(filters[0], num_classes, 3, padding=1)
+        self.finalconv = nn.Conv2d(filters[0]//2*3, num_classes, 3, padding=1)
         # self.finalconv = ModuleParallel(nn.Conv2d(filters[0] // 2, num_classes, 3, padding=1))
         # self.alpha = nn.Parameter(torch.ones(num_parallel, requires_grad=True))
         # self.register_parameter('alpha', self.alpha)
-
-        #freq
-        self.fem=FEM()
-        self.con1_1 = nn.Conv2d(in_channels=192, out_channels=64, kernel_size=1)
-        self.con1_2 = nn.Conv2d(in_channels=192, out_channels=64, kernel_size=1)
-        self.con1_3 = nn.Conv2d(in_channels=192, out_channels=64, kernel_size=1)
-
-        self.PAM1 = PAM(in_dim=64)
-        self.PAM2 = PAM(in_dim=64)
-        self.PAM3 = PAM(in_dim=64)
-
-
-        self.freq_out_1 = nn.Conv2d(filters[0], 1, 1, 1, 0)
-        self.freq_out_2 = nn.Conv2d(filters[0], 1, 1, 1, 0)
-        self.freq_out_3 = nn.Conv2d(filters[0], 1, 1, 1, 0)
-
-        self.conv_r1 = two_ConvBnRule(filters[0],64)
-        self.conv_r2 = two_ConvBnRule(filters[1],64)
-        self.conv_r3 = two_ConvBnRule(filters[2],64)
-
-        self.hor = HOR()
-
-        self.conv_l1 = two_ConvBnRule(64,filters[0])
-        self.conv_l2 = two_ConvBnRule(64,filters[1])
-        self.conv_l3 = two_ConvBnRule(64,filters[2])
-
-
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
@@ -243,13 +218,12 @@ class ResNet(nn.Module):
 
         return nn.Sequential(*layers)
 
-    def forward(self, inputs):
+    def forward(self, inputs,ycbr):
 
 
         x = inputs[:, :3, :, :]
         g = inputs[:, 3:4, :, :]
-        gps=g.repeat([1,3,1,1])
-        ycbr=inputs[:, 4:, :, :]
+
         # print('xxxxxxxx',ycbr.shape)
         # g =g.repeat([1,3,1,1])#杞寲涓轰笁閫氶亾
 
@@ -267,8 +241,12 @@ class ResNet(nn.Module):
         #     x = self.exchange(x, self.bn_list, self.bn_threshold)
         # x = self.relu(x)
         # out = self.maxpool(x)
-
-        out = out, out_g
+        DCT_x = DCT_Operation(ycbr)
+        # print('dctx:',DCT_x.shape)
+        feat_DCT = self.conv192to64(self.fem(DCT_x))
+        # print('feat_dctx:', feat_DCT.shape)
+        out =out,out_g,feat_DCT
+        # print('out2',out[2].shape)
 
         ##layers:
         x_1 = self.layer1(out)
@@ -282,66 +260,12 @@ class ResNet(nn.Module):
         # x_c1 = self.SGCN(x_4[1])
         # x_c =x_c0,x_c1
         x_c = self.dblock(x_4)
-
-        # feature fusion
-        DCT_x = DCT_Operation(gps)
-        # print('dctx:',DCT_x.shape)
-        feat_DCT = self.fem(DCT_x)
-        # print('feat_dctx:', feat_DCT.shape)
-        # using 1*1conv to change the numbers of the channel of DCT_x
-        feat_DCT1 = self.con1_1(feat_DCT)
-        feat_DCT2 = self.con1_2(feat_DCT)
-        feat_DCT3 = self.con1_3(feat_DCT)
-        feat1 = self.conv_r1(x_1[0])
-        feat2 = self.conv_r2(x_2[0])
-        feat3 = self.conv_r3(x_3[0])
-
-
-        feat_DCT1 = torch.nn.functional.interpolate(feat_DCT1, size=x_1[0].size()[2:], mode='bilinear',
-                                                    align_corners=True)
-        feat_DCT2 = torch.nn.functional.interpolate(feat_DCT2, size=x_2[0].size()[2:], mode='bilinear',
-                                                    align_corners=True)
-        feat_DCT3 = torch.nn.functional.interpolate(feat_DCT3, size=x_3[0].size()[2:], mode='bilinear',
-                                                    align_corners=True)
-
-
-        # print('x_1:',feat1.shape)
-        # print('dct1:', feat_DCT1.shape)
-        feat1 = self.PAM1(feat1, feat_DCT1)
-        feat2 = self.PAM2(feat2, feat_DCT2)
-        feat3 = self.PAM3(feat3, feat_DCT3)
-
-
-        freq_output_1 = self.freq_out_1(feat1)
-        freq_output_2 = self.freq_out_2(feat2)
-        freq_output_3 = self.freq_out_3(feat3)
-        freq_output_1 = torch.sigmoid(freq_output_1)
-        freq_output_2 = torch.sigmoid(freq_output_2)
-        freq_output_3 = torch.sigmoid(freq_output_3)
-        # print('freq1:', freq_output_1.shape)
-        # print('freq2:', freq_output_2.shape)
-        # print('freq3:', freq_output_3.shape)
-
-        feat1 = self.conv_l1(feat1)
-        feat2 = self.conv_l2(feat2)
-        feat3 = self.conv_l3(feat3)
-
-        # decoder
-        # x_d4 = [self.decoder4(x_c)[l] + x_3[l] for l in range(self.num_parallel)]
-        # x_d3 = [self.decoder3(x_d4)[l] + x_2[l] for l in range(self.num_parallel)]
-        # x_d2 = [self.decoder2(x_d3)[l] + x_1[l] for l in range(self.num_parallel)]
-        # x_d1 = self.decoder1(x_d2)
-
-        x_d41 = self.decoder4(x_c)[1]+feat3
-        x_d40 = self.decoder4(x_c)[0] + x_3[0]
-        x_d4=x_d40,x_d41
-        x_d31 = self.decoder3(x_d4)[1] + feat2
-        x_d30 = self.decoder3(x_d4)[0] + x_2[0]
-        x_d3 = x_d30, x_d31
-        x_d20 = self.decoder2(x_d3)[0] + x_1[0]
-        x_d21 = self.decoder2(x_d3)[1] + feat1
-        x_d2 = x_d20, x_d21
+       # decoder
+        x_d4 = [self.decoder4(x_c)[l] + x_3[l] for l in range(self.num_parallel)]
+        x_d3 = [self.decoder3(x_d4)[l] + x_2[l] for l in range(self.num_parallel)]
+        x_d2 = [self.decoder2(x_d3)[l] + x_1[l] for l in range(self.num_parallel)]
         x_d1 = self.decoder1(x_d2)
+
 
 
         # v=x_d1[1]
@@ -353,10 +277,11 @@ class ResNet(nn.Module):
 
         x_out[0]=self.se(x_out[0])
         x_out[1] = self.se(x_out[1])
+        x_out[2] = self.se(x_out[2])
         # atten=self.atten(torch.cat((x_out[0], x_out[1]), 1))
 
         # out =self.finalconv(fuse)
-        out = self.finalconv(torch.cat((x_out[0], x_out[1]), 1))
+        out = self.finalconv(torch.cat((torch.cat((x_out[0], x_out[1]), 1),x_out[2]),1))
         # out=self.finalconv(x_out)
         # alpha_soft = F.softmax(self.alpha,dim=0)
         # ens = 0
@@ -366,9 +291,9 @@ class ResNet(nn.Module):
         # out =nn.LogSoftmax()(ens)
         # out.append(ens)#[涓や釜杈撳叆鐨刼ut浠ュ強浠栦滑鎸塧lpha鍧囪　鍚庣殑output,涓€鍏变笁涓猐
 
-        return out,freq_output_1,freq_output_2,freq_output_3
+        return out#,freq_output_1,freq_output_2,freq_output_3
 
 
 def DinkNet34_CMMPNet():
-    model = ResNet(block=BasicBlock, blocks_num=[3, 4, 6, 3],num_parallel=2,num_classes=1,bn_threshold=2e-2)
+    model = ResNet(block=BasicBlock, blocks_num=[3, 4, 6, 3],num_parallel=3,num_classes=1,bn_threshold=2e-2)
     return model
