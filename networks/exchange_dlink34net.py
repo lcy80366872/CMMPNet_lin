@@ -57,8 +57,8 @@ class BasicBlock(nn.Module):
         if self.downsample is not None:
             residual = self.downsample(x)
         
-        print('num_paraller',self.num_parallel)
-        print('lenout',len(out))
+#         print('num_paraller',self.num_parallel)
+#         print('lenout',len(out))
 
         out = [out[l] + residual[l] for l in range(self.num_parallel)]
         out = self.relu(out)
@@ -120,7 +120,7 @@ class ResNet(nn.Module):
     def __init__(self,
                  block,
                  blocks_num,
-                 num_parallel=2,
+                 num_parallel=3,
                  num_classes=1,
                  bn_threshold=2e-2):
         super(ResNet, self).__init__()
@@ -250,6 +250,7 @@ class ResNet(nn.Module):
         # print('feat_dctx:', feat_DCT.shape)
         out =out,out_g,feat_DCT
         # print('out2',out[2].shape)
+#         print('lenout1',len(out))
 
         ##layers:
         x_1 = self.layer1(out)
