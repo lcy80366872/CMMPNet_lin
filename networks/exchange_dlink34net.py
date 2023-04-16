@@ -243,6 +243,7 @@ class ResNet(nn.Module):
 
         x = inputs[:, :3, :, :]
         g = inputs[:, 3:4, :, :]
+        ycbr = DCT_Operation(ycbr)
         ycbr_dct=ycbr[:,64:,:,:]
         gps_dct = ycbr[:, :64, :, :]
 
