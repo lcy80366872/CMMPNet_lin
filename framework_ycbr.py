@@ -185,10 +185,12 @@ class Solver:
         slim_params = []
         for name, param in self.net.named_parameters():
             if param.requires_grad and name.endswith('weight') and 'bn2' in name:
-                if len(slim_params) % 2 == 0:
-                    slim_params.append(param[:len(param) // 2])
+                if len(slim_params) % 3 == 0:
+                    slim_params.append(param[:len(param) // 3])
+                elif len(slim_params) % 3 == 1:
+                    slim_params.append(param[len(param) // 3:2*len(param) // 3])
                 else:
-                    slim_params.append(param[len(param) // 2:])
+                    slim_params.append(param[2*len(param) // 3:])
 
         loss = self.loss(self.mask,pred)
         L1_norm = sum([L1_penalty(m).cuda() for m in slim_params])
@@ -204,7 +206,7 @@ class Solver:
         self.net.eval()
         self.data2cuda(volatile=True)
 
-        pred,freq1,freq2,freq3 = self.net.forward(self.img)
+        pred = self.net.forward(self.img,self.ycbr)
         loss = self.loss(self.mask, pred)
 
         batch_iou, intersection, union = self.metrics(self.mask, pred)
@@ -214,7 +216,7 @@ class Solver:
         self.net.eval()
         self.data2cuda(volatile=True)
 
-        outs = self.net.forward(self.img)
+        outs = self.net.forward(self.img,self.ycbr)
         slim_params = []
         for name, param in self.net.named_parameters():
             if param.requires_grad and name.endswith('weight') and 'bn2' in name:
