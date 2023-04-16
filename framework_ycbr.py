@@ -189,7 +189,7 @@ class Solver:
         self.optimizer.zero_grad()
         pred = self.net.forward(self.img,self.ycbr)
 #         print('pred_shape:',pred.shape)
-        print('pred:',pred)
+#         print('pred:',pred)
         slim_params = []
         for name, param in self.net.named_parameters():
             if param.requires_grad and name.endswith('weight') and 'bn2' in name:
@@ -200,7 +200,6 @@ class Solver:
                 else:
                     slim_params.append(param[2*len(param) // 3:])
 
-#         print(pred)
         loss = self.loss(self.mask,pred)
         L1_norm = sum([L1_penalty(m).cuda() for m in slim_params])
         lamda =2e-4
