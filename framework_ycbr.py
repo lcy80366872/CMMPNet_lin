@@ -8,6 +8,7 @@ from utils.metrics import IoU
 from loss import dice_bce_loss
 import copy
 import numpy
+from networks.Freq import DCT_Operation
 
 
 import torch_dct as DCT
@@ -127,8 +128,10 @@ class Solver:
         if volatile:
             with torch.no_grad():
                 self.img = Variable(self.img.cuda())
+                self.ycbr = Variable(self.ycbr.cuda())
         else:
             self.img = Variable(self.img.cuda())
+            self.ycbr = Variable(self.ycbr.cuda())
 
         if self.mask is not None:
             if volatile:
@@ -324,6 +327,7 @@ class Framework:
 
         for i, (img, ycbr,mask) in progress_bar:
             # print('ycbr_data:',ycbr.shape)
+            ycbr = DCT_Operation(ycbr)
             self.solver.set_input(img, ycbr,mask)
             # print('img_data:',img.shape)
             if mode == 'training':
