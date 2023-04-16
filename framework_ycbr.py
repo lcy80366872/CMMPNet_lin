@@ -188,8 +188,12 @@ class Solver:
 
         self.optimizer.zero_grad()
         pred = self.net.forward(self.img,self.ycbr)
-#         print('pred_shape:',pred.shape)
-#         print('pred:',pred)
+        print('img_shape:',self.img.shape)
+        print('img:',self.img)
+        print('pred_shape:',pred.shape)
+        print('pred:',pred)
+        print('self.ycbr_shape:',self.ycbr.shape)
+        print('self.ycbr:',self.ycbr)
         slim_params = []
         for name, param in self.net.named_parameters():
             if param.requires_grad and name.endswith('weight') and 'bn2' in name:
