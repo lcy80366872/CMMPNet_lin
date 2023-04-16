@@ -165,13 +165,18 @@ class ImageGPSDataset(data.Dataset):
         # The image's resolution of BJRoad is too high. To reduce memory consumption, we reduce the resolution of input images to 512*512
         # But the resolution of masks is maintained. For a fair comparison, the final predicted maps would be resized to the resolution of masks during testing.
         if self.down_scale:
-           img = cv2.resize(img, (self.down_resolution, self.down_resolution))
+            ycbr = img[:, :, 4:]
+            img = img[:, :, :4]
+            img = cv2.resize(img, (self.down_resolution, self.down_resolution))
+
+
         
         if mask.ndim == 2:
-           mask = np.expand_dims(mask, axis=2)
+            mask = np.expand_dims(mask, axis=2)
 
         try:
             img = np.array(img, np.float32).transpose(2, 0, 1) / 255.0 * 3.2 - 1.6
+            ycbr = np.array(ycbr, np.float32).transpose(2, 0, 1) / 255.0 * 3.2 - 1.6
             mask = np.array(mask, np.float32).transpose(2, 0, 1) / 255.0
         except Exception as e:
             print(e)
@@ -179,15 +184,15 @@ class ImageGPSDataset(data.Dataset):
 
         mask[mask >= 0.5] = 1
         mask[mask <  0.5] = 0
-        return img, mask
+        return img,ycbr, mask
 
 
     def __getitem__(self, index):
         image_id = self.image_list[index]
         img, mask, gps= self._read_data(image_id)
-        img, mask = self._data_augmentation(img, mask, gps)
-        img, mask = torch.Tensor(img), torch.Tensor(mask)
-        return img, mask
+        img, ycbr,mask = self._data_augmentation(img, mask, gps)
+        img, ycbr,mask = torch.Tensor(img),  torch.Tensor(ycbr),torch.Tensor(mask)
+        return img,ycbr,mask
 
     def __len__(self):
         return len(self.image_list)
