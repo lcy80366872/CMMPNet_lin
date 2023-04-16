@@ -16,6 +16,7 @@ class Exchange(nn.Module):
         x2[:, bn2 >= bn_threshold] = x[1][:, bn2 >= bn_threshold]
         x2[:, bn2 < bn_threshold] = (x[0][:, bn2 < bn_threshold]+x[2][:, bn1 < bn_threshold])/2
         x3[:, bn3 >= bn_threshold] = x[2][:, bn3 >= bn_threshold]
+        print('x3', x3[:, bn3 < bn_threshold].shape)
         x3[:, bn3 < bn_threshold] = (x[0][:, bn3 < bn_threshold] + x[1][:, bn1 < bn_threshold]) / 2
 
         return [x1, x2,x3]
