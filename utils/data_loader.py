@@ -165,7 +165,8 @@ class ImageGPSDataset(data.Dataset):
         # The image's resolution of BJRoad is too high. To reduce memory consumption, we reduce the resolution of input images to 512*512
         # But the resolution of masks is maintained. For a fair comparison, the final predicted maps would be resized to the resolution of masks during testing.
         if self.down_scale:
-            ycbr = img[:, :, 4:]
+            ycbr = img[:, :, 3:]
+
             img = img[:, :, :4]
             img = cv2.resize(img, (self.down_resolution, self.down_resolution))
 
@@ -177,6 +178,7 @@ class ImageGPSDataset(data.Dataset):
         try:
             img = np.array(img, np.float32).transpose(2, 0, 1) / 255.0 * 3.2 - 1.6
             ycbr = np.array(ycbr, np.float32).transpose(2, 0, 1) / 255.0 * 3.2 - 1.6
+
             mask = np.array(mask, np.float32).transpose(2, 0, 1) / 255.0
         except Exception as e:
             print(e)
