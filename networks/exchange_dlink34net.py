@@ -201,7 +201,7 @@ class ResNet(nn.Module):
         self.finalrelu2 = ModuleParallel(nn.ReLU(inplace=True))
 #         self.se = SEAttention(filters[0] // 2, reduction=4)
         # self.atten=CBAMBlock(channel=filters[0], reduction=4, kernel_size=7)
-        self.feature_fuse=PAM(filters[0])
+        self.feature_fuse=PAM(filters[0]//2)
         self.finalconv = nn.Conv2d(filters[0]//2, num_classes, 3, padding=1)
         # self.finalconv = ModuleParallel(nn.Conv2d(filters[0] // 2, num_classes, 3, padding=1))
         # self.alpha = nn.Parameter(torch.ones(num_parallel, requires_grad=True))
