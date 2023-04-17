@@ -114,7 +114,7 @@ class Solver:
         self.data2cuda()
 
         self.optimizer.zero_grad()
-        pred,freq1,freq2,freq3 = self.net.forward(self.img)
+        pred = self.net.forward(self.img)
         slim_params = []
         for name, param in self.net.named_parameters():
             if param.requires_grad and name.endswith('weight') and 'bn2' in name:
@@ -127,19 +127,7 @@ class Solver:
         L1_norm = sum([L1_penalty(m).cuda() for m in slim_params])
         lamda =2e-4
         loss += lamda * L1_norm  # this is actually counted for len(outputs) times
-        img=self.img[:,4:,:,:]
-        img1 = F.interpolate(img, (128, 128))
-        img2 = F.interpolate(img, (64, 64))
-        img3 = F.interpolate(img, (32, 32))
-        # print ('img:',img1.shape)
-        mask=self.mask
-        mask1 = F.interpolate(mask, (128, 128))
-        mask2 = F.interpolate(mask, (64, 64))
-        mask3 = F.interpolate(mask, (32, 32))
-        loss1 = self.DCTloss(img1,freq1,mask1)
-        loss2 = self.DCTloss(img2, freq2, mask2)
-        loss3 = self.DCTloss(img3, freq3, mask3)
-        loss=loss+loss1+0.5*loss2+0.25*loss3
+        
 
 
         loss.backward()
@@ -152,7 +140,7 @@ class Solver:
         self.net.eval()
         self.data2cuda(volatile=True)
 
-        pred,freq1,freq2,freq3 = self.net.forward(self.img)
+        pred = self.net.forward(self.img)
         loss = self.loss(self.mask, pred)
 
         batch_iou, intersection, union = self.metrics(self.mask, pred)
