@@ -327,7 +327,7 @@ class ResNet(nn.Module):
 
         # out =self.finalconv(fuse)
         # out = self.finalconv(torch.cat((torch.cat((x_out[0], x_out[1]), 1),x_out[2]),1))
-        out = self.finalconv(xoutf)
+        out = self.finalconv(out_fuse)
         # out=self.finalconv(x_out)
         # alpha_soft = F.softmax(self.alpha,dim=0)
         # ens = 0
