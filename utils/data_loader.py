@@ -148,8 +148,8 @@ class ImageGPSDataset(data.Dataset):
         if self.randomize:
             sat = randomHueSaturationValue(sat)
             img = self._concat_images(sat, gps)
-            ycb = cv2.cvtColor(sat, cv2.COLOR_BGR2YCrCb)
-            img = self._concat_images(img, ycb)
+#             ycb = cv2.cvtColor(sat, cv2.COLOR_BGR2YCrCb)
+#             img = self._concat_images(img, ycb)
             img, mask = randomShiftScaleRotate(img, mask)
             img, mask = randomRotate180(img, mask)
             img, mask = randomHorizontalFlip(img, mask)
@@ -159,15 +159,15 @@ class ImageGPSDataset(data.Dataset):
             img, mask = randomcrop(img,mask)
         else:
             img = self._concat_images(sat, gps)
-            ycb = cv2.cvtColor(sat, cv2.COLOR_BGR2YCrCb)
-            img = self._concat_images(img, ycb)
+#             ycb = cv2.cvtColor(sat, cv2.COLOR_BGR2YCrCb)
+#             img = self._concat_images(img, ycb)
     
         # The image's resolution of BJRoad is too high. To reduce memory consumption, we reduce the resolution of input images to 512*512
         # But the resolution of masks is maintained. For a fair comparison, the final predicted maps would be resized to the resolution of masks during testing.
         if self.down_scale:
-            ycbr = img[:, :, 3:]
+#             ycbr = img[:, :, 3:]
 
-            img = img[:, :, :4]
+#             img = img[:, :, :4]
             img = cv2.resize(img, (self.down_resolution, self.down_resolution))
 
 
@@ -177,7 +177,7 @@ class ImageGPSDataset(data.Dataset):
 
         try:
             img = np.array(img, np.float32).transpose(2, 0, 1) / 255.0 * 3.2 - 1.6
-            ycbr = np.array(ycbr, np.float32).transpose(2, 0, 1) / 255.0 * 3.2 - 1.6
+#             ycbr = np.array(ycbr, np.float32).transpose(2, 0, 1) / 255.0 * 3.2 - 1.6
 
             mask = np.array(mask, np.float32).transpose(2, 0, 1) / 255.0
         except Exception as e:
@@ -186,15 +186,15 @@ class ImageGPSDataset(data.Dataset):
 
         mask[mask >= 0.5] = 1
         mask[mask <  0.5] = 0
-        return img,ycbr, mask
+        return img, mask
 
 
     def __getitem__(self, index):
         image_id = self.image_list[index]
         img, mask, gps= self._read_data(image_id)
-        img, ycbr,mask = self._data_augmentation(img, mask, gps)
-        img, ycbr,mask = torch.Tensor(img),  torch.Tensor(ycbr),torch.Tensor(mask)
-        return img,ycbr,mask
+        img,mask = self._data_augmentation(img, mask, gps)
+        img,mask = torch.Tensor(img),torch.Tensor(mask)
+        return img,mask
 
     def __len__(self):
         return len(self.image_list)
