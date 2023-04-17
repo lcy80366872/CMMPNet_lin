@@ -5,7 +5,7 @@ import torch.nn.functional as F
 nonlinearity = partial(F.relu, inplace=True)
 class Exchange_3(nn.Module):
     def __init__(self):
-        super(Exchange, self).__init__()
+        super(Exchange_3, self).__init__()
 
     def forward(self, x, bn, bn_threshold):
         bn1, bn2,bn3 = bn[0].weight.abs(), bn[1].weight.abs(),bn[2].weight.abs()
