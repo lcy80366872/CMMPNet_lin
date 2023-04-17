@@ -4,6 +4,7 @@ from networks.CondConv import CondConv, DynamicConv
 from .basic_blocks import *
 from torchvision import models
 from networks.attention_block import CBAMBlock,SEAttention
+from networks.Freq import *
 class Exchange(nn.Module):
     def __init__(self):
         super(Exchange, self).__init__()
@@ -198,8 +199,9 @@ class ResNet(nn.Module):
         #self.finalrelu1 = nonlinearity
         self.finalconv2 = ModuleParallel(nn.Conv2d(filters[0] // 2, filters[0] // 2, 3, padding=1))
         self.finalrelu2 = ModuleParallel(nn.ReLU(inplace=True))
-        self.se = SEAttention(filters[0] // 2, reduction=4)
+#         self.se = SEAttention(filters[0] // 2, reduction=4)
         # self.atten=CBAMBlock(channel=filters[0], reduction=4, kernel_size=7)
+        self.feature_fuse=PAM(filters[0])
         self.finalconv = nn.Conv2d(filters[0], num_classes, 3, padding=1)
         # self.finalconv = ModuleParallel(nn.Conv2d(filters[0] // 2, num_classes, 3, padding=1))
         # self.alpha = nn.Parameter(torch.ones(num_parallel, requires_grad=True))
@@ -257,11 +259,10 @@ class ResNet(nn.Module):
         x_out = self.finalrelu1(self.finaldeconv1(x_d1))
         x_out = self.finalrelu2(self.finalconv2(x_out))
 
-        x_out[0]=self.se(x_out[0])
-        x_out[1] = self.se(x_out[1])
+        out_fuse=self.feature_fuse(x_out[0],x_out[1])
         # atten=self.atten(torch.cat((x_out[0], x_out[1]), 1))
-        out = self.finalconv(torch.cat((x_out[0], x_out[1]), 1))
-        # out=self.finalconv(x_out)
+#         out = self.finalconv(torch.cat((x_out[0], x_out[1]), 1))
+        out=self.finalconv(out_fuse)
         # alpha_soft = F.softmax(self.alpha,dim=0)
         # ens = 0
         # for l in range(self.num_parallel):
