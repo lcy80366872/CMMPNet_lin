@@ -177,14 +177,14 @@ class ResNet(nn.Module):
         # self.dgcn_seg2 = TwofoldGCN(filters[1] ,filters[1] ,filters[1]  )
         # self.dgcn_seg3 = TwofoldGCN(filters[2] ,filters[2] ,filters[2]  )
         # # decoder
-#         self.decoder4 = DecoderBlock_parallel_exchange(filters[3], filters[2],2,bn_threshold)
-#         self.decoder3 = DecoderBlock_parallel_exchange(filters[2], filters[1],2,bn_threshold)
-#         self.decoder2 = DecoderBlock_parallel_exchange(filters[1], filters[0],2,bn_threshold)
-#         self.decoder1 = DecoderBlock_parallel_exchange(filters[0], filters[0],2,bn_threshold)
-        self.decoder4 = DecoderBlock_parallel(filters[3], filters[2], 2)
-        self.decoder3 = DecoderBlock_parallel(filters[2], filters[1], 2)
-        self.decoder2 = DecoderBlock_parallel(filters[1], filters[0], 2)
-        self.decoder1 = DecoderBlock_parallel(filters[0], filters[0], 2)
+        self.decoder4 = DecoderBlock_parallel_exchange(filters[3], filters[2],2,bn_threshold)
+        self.decoder3 = DecoderBlock_parallel_exchange(filters[2], filters[1],2,bn_threshold)
+        self.decoder2 = DecoderBlock_parallel_exchange(filters[1], filters[0],2,bn_threshold)
+        self.decoder1 = DecoderBlock_parallel_exchange(filters[0], filters[0],2,bn_threshold)
+        # self.decoder4 = DecoderBlock_parallel(filters[3], filters[2], 3)
+        # self.decoder3 = DecoderBlock_parallel(filters[2], filters[1], 3)
+        # self.decoder2 = DecoderBlock_parallel(filters[1], filters[0], 3)
+        # self.decoder1 = DecoderBlock_parallel(filters[0], filters[0], 3)
         self.layer1_freq = self._make_layer(block, 64, blocks_num[0], bn_threshold)
         self.layer2_freq = self._make_layer(block, 128, blocks_num[1], bn_threshold, stride=2)
         self.layer3_freq = self._make_layer(block, 256, blocks_num[2], bn_threshold, stride=2)
@@ -327,14 +327,13 @@ class ResNet(nn.Module):
 
         # out =self.finalconv(fuse)
         # out = self.finalconv(torch.cat((torch.cat((x_out[0], x_out[1]), 1),x_out[2]),1))
-        out = self.finalconv(out_fuse)
+        out = self.finalconv(xoutf)
         # out=self.finalconv(x_out)
         # alpha_soft = F.softmax(self.alpha,dim=0)
         # ens = 0
         # for l in range(self.num_parallel):
         #     ens += alpha_soft[l] * out[l].detach()
-#         out = torch.sigmoid(out)
-        out =nn.LogSoftmax(out)
+        out = torch.sigmoid(out)
         # out =nn.LogSoftmax()(ens)
         # out.append(ens)#[涓や釜杈撳叆鐨刼ut浠ュ強浠栦滑鎸塧lpha鍧囪　鍚庣殑output,涓€鍏变笁涓猐
 
