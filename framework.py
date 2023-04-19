@@ -48,6 +48,72 @@ class Solver:
         loss = torch.sum(a)/a.numel()
         # print('loss',loss)
         return loss
+    def DCTloss(self,img,pred,mask):
+        num_batchsize = img.shape[0]
+        size = img.shape[2]
+        pred = pred.repeat([1, 3, 1, 1])
+        x=img*pred
+
+        y=img*mask
+        ycbcr_x = x.reshape(num_batchsize, 3, size // 8, 8, size // 8, 8).permute(0, 2, 4, 1, 3, 5)
+        ycbcr_y = y.reshape(num_batchsize, 3, size // 8, 8, size // 8, 8).permute(0, 2, 4, 1, 3, 5)
+        ycbcr_dctx = DCT.dct_2d(ycbcr_x, norm='ortho')
+        ycbcr_dcty = DCT.dct_2d(ycbcr_y, norm='ortho')
+        ycbcr_dctx = ycbcr_dctx.reshape(num_batchsize, size // 8, size // 8, -1).permute(0, 3, 1, 2)
+        ycbcr_dcty = ycbcr_dcty.reshape(num_batchsize, size // 8, size // 8, -1).permute(0, 3, 1, 2)
+        # print('ycbcr_shape:', ycbcr_dcty.shape)
+        # print('ycbcr:',ycbcr_dcty)
+        # print('cha:',torch.sqrt((ycbcr_dctx-ycbcr_dcty)**2))
+        # print('sum:', torch.sum(torch.sqrt((ycbcr_dctx-ycbcr_dcty)**2)))
+        eps=1e-6
+        a=torch.sqrt((ycbcr_dctx - ycbcr_dcty) ** 2+eps)
+        loss = torch.sum(a)/a.numel()
+        # print('loss',loss)
+        return loss
+    def DCTloss(self,img,pred,mask):
+        num_batchsize = img.shape[0]
+        size = img.shape[2]
+        pred = pred.repeat([1, 3, 1, 1])
+        x=img*pred
+
+        y=img*mask
+        ycbcr_x = x.reshape(num_batchsize, 3, size // 8, 8, size // 8, 8).permute(0, 2, 4, 1, 3, 5)
+        ycbcr_y = y.reshape(num_batchsize, 3, size // 8, 8, size // 8, 8).permute(0, 2, 4, 1, 3, 5)
+        ycbcr_dctx = DCT.dct_2d(ycbcr_x, norm='ortho')
+        ycbcr_dcty = DCT.dct_2d(ycbcr_y, norm='ortho')
+        ycbcr_dctx = ycbcr_dctx.reshape(num_batchsize, size // 8, size // 8, -1).permute(0, 3, 1, 2)
+        ycbcr_dcty = ycbcr_dcty.reshape(num_batchsize, size // 8, size // 8, -1).permute(0, 3, 1, 2)
+        # print('ycbcr_shape:', ycbcr_dcty.shape)
+        # print('ycbcr:',ycbcr_dcty)
+        # print('cha:',torch.sqrt((ycbcr_dctx-ycbcr_dcty)**2))
+        # print('sum:', torch.sum(torch.sqrt((ycbcr_dctx-ycbcr_dcty)**2)))
+        eps=1e-6
+        a=torch.sqrt((ycbcr_dctx - ycbcr_dcty) ** 2+eps)
+        loss = torch.sum(a)/a.numel()
+        # print('loss',loss)
+        return loss
+    def DCTloss_gps(self,gps,pred,mask):
+        num_batchsize = gps.shape[0]
+        size = gps.shape[2]
+        x=gps*pred
+
+        y=gps*mask
+        ycbcr_x = x.reshape(num_batchsize, 1, size // 8, 8, size // 8, 8).permute(0, 2, 4, 1, 3, 5)
+        ycbcr_y = y.reshape(num_batchsize, 1, size // 8, 8, size // 8, 8).permute(0, 2, 4, 1, 3, 5)
+        ycbcr_dctx = DCT.dct_2d(ycbcr_x, norm='ortho')
+        ycbcr_dcty = DCT.dct_2d(ycbcr_y, norm='ortho')
+        ycbcr_dctx = ycbcr_dctx.reshape(num_batchsize, size // 8, size // 8, -1).permute(0, 3, 1, 2)
+        ycbcr_dcty = ycbcr_dcty.reshape(num_batchsize, size // 8, size // 8, -1).permute(0, 3, 1, 2)
+        # print('ycbcr_shape:', ycbcr_dcty.shape)
+        # print('ycbcr:',ycbcr_dcty)
+        # print('cha:',torch.sqrt((ycbcr_dctx-ycbcr_dcty)**2))
+        # print('sum:', torch.sum(torch.sqrt((ycbcr_dctx-ycbcr_dcty)**2)))
+        eps=1e-6
+        a=torch.sqrt((ycbcr_dctx - ycbcr_dcty) ** 2+eps)
+        loss = torch.sum(a)/a.numel()
+        # print('loss',loss)
+        return loss
+
 
     def set_input(self, img_batch, mask_batch=None):
         self.img = img_batch
@@ -127,7 +193,6 @@ class Solver:
         L1_norm = sum([L1_penalty(m).cuda() for m in slim_params])
         lamda =2e-4
         loss += lamda * L1_norm  # this is actually counted for len(outputs) times
-        
 
 
         loss.backward()
@@ -140,7 +205,7 @@ class Solver:
         self.net.eval()
         self.data2cuda(volatile=True)
 
-        pred = self.net.forward(self.img)
+        pred= self.net.forward(self.img)
         loss = self.loss(self.mask, pred)
 
         batch_iou, intersection, union = self.metrics(self.mask, pred)
