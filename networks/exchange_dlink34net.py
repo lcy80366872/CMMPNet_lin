@@ -21,13 +21,17 @@ def conv1x1(in_planes, out_planes, stride=1, bias=False):
 
 class BasicBlock(nn.Module):
     expansion = 1
-    def __init__(self, inplanes, planes, num_parallel, bn_threshold,stride=1, downsample=None):
+    def __init__(self, inplanes, planes, num_parallel, bn_threshold,stride=1, downsample=None,condconv=False):
         super(BasicBlock, self).__init__()
-
+        self.condconv=condconv
         self.conv1 = conv3x3(inplanes, planes, stride)
         self.bn1 = BatchNorm2dParallel(planes, num_parallel)
         self.relu = ModuleParallel(nn.ReLU(inplace=True))
-        self.conv2 = conv3x3(planes, planes)
+        if condconv == False:
+            self.conv2 = conv3x3(planes, planes)
+        else:
+            self.conv2 =nn.Conv2d(planes, planes, kernel_size=3,stride=1, padding=1, bias=False)
+            self.dynamicconv=DynamicConv(planes, planes, kernel_size=3, stride=1,padding=1, bias=False)
         self.bn2 = BatchNorm2dParallel(planes, num_parallel)
         self.num_parallel = num_parallel
         self.downsample = downsample
@@ -45,11 +49,13 @@ class BasicBlock(nn.Module):
         residual = x
 
         out = self.conv1(x)
-        # print('conv1',out[1].shape)
         out = self.bn1(out)
         out = self.relu(out)
-
-        out = self.conv2(out)
+        if self.condconv == False:
+            out = self.conv2(out)
+        else:
+            out[0] = self.dynamicconv(out[0], out[1])
+            out[1] = self.conv2(out[1])
         out = self.bn2(out)
         if len(x) > 1:
             out = self.exchange(out, self.bn2_list, self.bn_threshold)
@@ -159,14 +165,14 @@ class ResNet(nn.Module):
 #             if isinstance(module, nn.BatchNorm2d):
 #                 self.bn_list.append(module)
 
-        self.layer1 = self._make_layer(block, 64, blocks_num[0], bn_threshold)
-        self.layer2 = self._make_layer(block, 128, blocks_num[1], bn_threshold, stride=2)
-        self.layer3 = self._make_layer(block, 256, blocks_num[2], bn_threshold, stride=2)
-        self.layer4 = self._make_layer(block, 512, blocks_num[3], bn_threshold, stride=2)
+        self.layer1 = self._make_layer(block, 64, blocks_num[0], bn_threshold, condconv=True)
+        self.layer2 = self._make_layer(block, 128, blocks_num[1], bn_threshold, stride=2, condconv=True)
+        self.layer3 = self._make_layer(block, 256, blocks_num[2], bn_threshold, stride=2, condconv=True)
+        self.layer4 = self._make_layer(block, 512, blocks_num[3], bn_threshold, stride=2, condconv=True)
         # self.gcn1=DualGCN(64)
         # self.gcn2 = DualGCN(128)
         # self.gcn3 = DualGCN(256)
-        self.gcn4 = DualGCN(512)
+        # self.gcn4 = DualGCN(512)
         # self.non_local2 = NLBlockND(filters[1], mode='embedded', dimension=2)
         # self.dropout = ModuleParallel(nn.Dropout(p=0.5))
 
@@ -176,24 +182,24 @@ class ResNet(nn.Module):
         # self.dgcn_seg2 = TwofoldGCN(filters[1] ,filters[1] ,filters[1]  )
         # self.dgcn_seg3 = TwofoldGCN(filters[2] ,filters[2] ,filters[2]  )
         # # decoder
-        self.decoder4 = DecoderBlock_parallel_exchange(filters[3], filters[2],num_parallel,bn_threshold)
-        self.decoder3 = DecoderBlock_parallel_exchange(filters[2], filters[1],num_parallel,bn_threshold)
-        self.decoder2 = DecoderBlock_parallel_exchange(filters[1], filters[0],num_parallel,bn_threshold)
-        self.decoder1 = DecoderBlock_parallel_exchange(filters[0], filters[0],num_parallel,bn_threshold)
-        # self.decoder4 = DecoderBlock_parallel(filters[3], filters[2], 3)
-        # self.decoder3 = DecoderBlock_parallel(filters[2], filters[1], 3)
-        # self.decoder2 = DecoderBlock_parallel(filters[1], filters[0], 3)
-        # self.decoder1 = DecoderBlock_parallel(filters[0], filters[0], 3)
+        # self.decoder4 = DecoderBlock_parallel_exchange(filters[3], filters[2],num_parallel,bn_threshold)
+        # self.decoder3 = DecoderBlock_parallel_exchange(filters[2], filters[1],num_parallel,bn_threshold)
+        # self.decoder2 = DecoderBlock_parallel_exchange(filters[1], filters[0],num_parallel,bn_threshold)
+        # self.decoder1 = DecoderBlock_parallel_exchange(filters[0], filters[0],num_parallel,bn_threshold)
+        self.decoder4 = DecoderBlock_parallel(filters[3], filters[2], num_parallel)
+        self.decoder3 = DecoderBlock_parallel(filters[2], filters[1], num_parallel)
+        self.decoder2 = DecoderBlock_parallel(filters[1], filters[0], num_parallel)
+        self.decoder1 = DecoderBlock_parallel(filters[0], filters[0], num_parallel)
 
-#         self.dem_e1 = DEM(filters[0])
-#         self.dem_e2 = DEM(filters[1])
-#         self.dem_e3 = DEM(filters[2])
-#         self.dem_e4 = DEM(filters[3])
-
-#         self.dem_d4 = DEM(filters[2])
-#         self.dem_d3 = DEM(filters[1])
-#         self.dem_d2 = DEM(filters[0])
-#         self.dem_d1 = DEM(filters[0])
+        # self.dem_e1 = DEM(filters[0])
+        # self.dem_e2 = DEM(filters[1])
+        # self.dem_e3 = DEM(filters[2])
+        # self.dem_e4 = DEM(filters[3])
+        #
+        # self.dem_d4 = DEM(filters[2])
+        # self.dem_d3 = DEM(filters[1])
+        # self.dem_d2 = DEM(filters[0])
+        # self.dem_d1 = DEM(filters[0])
 
         self.finaldeconv1 = ModuleParallel(nn.ConvTranspose2d(filters[0], filters[0] // 2, 4, 2, 1))
         self.finalrelu1 =  ModuleParallel(nn.ReLU(inplace=True))
@@ -211,7 +217,7 @@ class ResNet(nn.Module):
             if isinstance(m, nn.Conv2d):
                 nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
 
-    def _make_layer(self, block, planes, num_blocks, bn_threshold, stride=1):
+    def _make_layer(self, block, planes, num_blocks, bn_threshold, stride=1, condconv=False):
         downsample = None
         if stride != 1 or self.inplanes != planes * block.expansion:
             downsample = nn.Sequential(
@@ -220,7 +226,7 @@ class ResNet(nn.Module):
             )
 
         layers = []
-        layers.append(block(self.inplanes, planes, self.num_parallel, bn_threshold, stride, downsample))
+        layers.append(block(self.inplanes, planes, self.num_parallel, bn_threshold, stride, downsample,condconv=condconv))
         self.inplanes = planes * block.expansion
         for i in range(1, num_blocks):
             layers.append(block(self.inplanes, planes, self.num_parallel, bn_threshold))
@@ -254,25 +260,25 @@ class ResNet(nn.Module):
 
         ##layers:
         x_1 = self.layer1(out)
-#         x_1 = self.dem_e1(x_1)
+        # x_1 = self.dem_e1(x_1)
         x_2 = self.layer2(x_1)
-#         x_2 = self.dem_e2(x_2)
+        # x_2 = self.dem_e2(x_2)
         x_3 = self.layer3(x_2)
-#         x_3 = self.dem_e3(x_3)
+        # x_3 = self.dem_e3(x_3)
         x_4 = self.layer4(x_3)
-#         x_4 = self.dem_e4(x_4)
+        # x_4 = self.dem_e4(x_4)
 
         x_c = self.dblock(x_4)
 
        # decoder
         x_d4 = [self.decoder4(x_c)[l] + x_3[l] for l in range(self.num_parallel)]
-#         x_d4 = self.dem_d4(x_d4)
+        # x_d4 = self.dem_d4(x_d4)
         x_d3 = [self.decoder3(x_d4)[l] + x_2[l] for l in range(self.num_parallel)]
-#         x_d3 = self.dem_d3(x_d3)
+        # x_d3 = self.dem_d3(x_d3)
         x_d2 = [self.decoder2(x_d3)[l] + x_1[l] for l in range(self.num_parallel)]
-#         x_d2 = self.dem_d2(x_d2)
+        # x_d2 = self.dem_d2(x_d2)
         x_d1 = self.decoder1(x_d2)
-#         x_d1 = self.dem_d1(x_d1)
+        # x_d1 = self.dem_d1(x_d1)
 
 
         x_out = self.finalrelu1(self.finaldeconv1(x_d1))
