@@ -185,8 +185,15 @@ class ResNet(nn.Module):
         # self.decoder2 = DecoderBlock_parallel(filters[1], filters[0], 3)
         # self.decoder1 = DecoderBlock_parallel(filters[0], filters[0], 3)
 
-        # self.finaldeconv1 = nn.ConvTranspose2d(filters[0], filters[0] // 2, 4, 2, 1)
-        # self.finalrelu1 = nonlinearity
+        self.dem_e1 = DEM(filters[0])
+        self.dem_e2 = DEM(filters[1])
+        self.dem_e3 = DEM(filters[2])
+        self.dem_e4 = DEM(filters[3])
+
+        self.dem_d4 = DEM(filters[2])
+        self.dem_d3 = DEM(filters[1])
+        self.dem_d2 = DEM(filters[0])
+        self.dem_d1 = DEM(filters[0])
 
         self.finaldeconv1 = ModuleParallel(nn.ConvTranspose2d(filters[0], filters[0] // 2, 4, 2, 1))
         self.finalrelu1 =  ModuleParallel(nn.ReLU(inplace=True))
@@ -199,9 +206,7 @@ class ResNet(nn.Module):
         # self.fuse =NLBlockND_Fuse(filters[0]//2, filters[0]//2,mode='embedded', dimension=2)
         # self.fuse =CrissCrossAttention_Fuse(filters[0])
         self.finalconv = nn.Conv2d(filters[0], num_classes, 3, padding=1)
-        # self.finalconv = ModuleParallel(nn.Conv2d(filters[0] // 2, num_classes, 3, padding=1))
-        # self.alpha = nn.Parameter(torch.ones(num_parallel, requires_grad=True))
-        # self.register_parameter('alpha', self.alpha)
+
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
@@ -249,21 +254,25 @@ class ResNet(nn.Module):
 
         ##layers:
         x_1 = self.layer1(out)
-        # x_1 = [self.gcn1(x_1[l]) for l in range(self.num_parallel) ]
+        x_1 = self.dem_e1(x_1)
         x_2 = self.layer2(x_1)
-        # x_2 = [self.gcn2(x_2[l]) for l in range(self.num_parallel) ]
+        x_2 = self.dem_e2(x_2)
         x_3 = self.layer3(x_2)
-        # x_3 = [self.gcn3(x_3[l]) for l in range(self.num_parallel)]
+        x_3 = self.dem_e3(x_3)
         x_4 = self.layer4(x_3)
-        x_4 = [self.gcn4(x_4[l]) for l in range(self.num_parallel)]
+        x_4 = self.dem_e4(x_4)
 
         x_c = self.dblock(x_4)
 
        # decoder
         x_d4 = [self.decoder4(x_c)[l] + x_3[l] for l in range(self.num_parallel)]
+        x_d4 = self.dem_d4(x_d4)
         x_d3 = [self.decoder3(x_d4)[l] + x_2[l] for l in range(self.num_parallel)]
+        x_d3 = self.dem_d3(x_d3)
         x_d2 = [self.decoder2(x_d3)[l] + x_1[l] for l in range(self.num_parallel)]
+        x_d2 = self.dem_d2(x_d2)
         x_d1 = self.decoder1(x_d2)
+        x_d1 = self.dem_d1(x_d1)
 
 
         x_out = self.finalrelu1(self.finaldeconv1(x_d1))
