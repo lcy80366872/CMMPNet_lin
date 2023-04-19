@@ -163,9 +163,9 @@ class ResNet(nn.Module):
         self.layer2 = self._make_layer(block, 128, blocks_num[1], bn_threshold, stride=2)
         self.layer3 = self._make_layer(block, 256, blocks_num[2], bn_threshold, stride=2)
         self.layer4 = self._make_layer(block, 512, blocks_num[3], bn_threshold, stride=2)
-        self.gcn1=DualGCN(64)
-        self.gcn2 = DualGCN(128)
-        self.gcn3 = DualGCN(256)
+        # self.gcn1=DualGCN(64)
+        # self.gcn2 = DualGCN(128)
+        # self.gcn3 = DualGCN(256)
         self.gcn4 = DualGCN(512)
         # self.non_local2 = NLBlockND(filters[1], mode='embedded', dimension=2)
         # self.dropout = ModuleParallel(nn.Dropout(p=0.5))
@@ -249,11 +249,11 @@ class ResNet(nn.Module):
 
         ##layers:
         x_1 = self.layer1(out)
-        x_1 = [self.gcn1(x_1[l]) for l in range(self.num_parallel) ]
+        # x_1 = [self.gcn1(x_1[l]) for l in range(self.num_parallel) ]
         x_2 = self.layer2(x_1)
-        x_2 = [self.gcn2(x_2[l]) for l in range(self.num_parallel) ]
+        # x_2 = [self.gcn2(x_2[l]) for l in range(self.num_parallel) ]
         x_3 = self.layer3(x_2)
-        x_3 = [self.gcn3(x_3[l]) for l in range(self.num_parallel)]
+        # x_3 = [self.gcn3(x_3[l]) for l in range(self.num_parallel)]
         x_4 = self.layer4(x_3)
         x_4 = [self.gcn4(x_4[l]) for l in range(self.num_parallel)]
 
