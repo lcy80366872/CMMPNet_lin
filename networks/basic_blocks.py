@@ -643,13 +643,13 @@ class DeformConv2d(nn.Module):
 
         self.p_conv = nn.Conv2d(inc, 2*kernel_size*kernel_size, kernel_size=3, padding=1, stride=stride)
         nn.init.constant_(self.p_conv.weight, 0)
-        self.p_conv.register_backward_hook(self._set_lr)
+        self.p_conv.register_full_backward_hook(self._set_lr)
 
         self.modulation = modulation
         if modulation:
             self.m_conv = nn.Conv2d(inc, kernel_size*kernel_size, kernel_size=3, padding=1, stride=stride)
             nn.init.constant_(self.m_conv.weight, 0)
-            self.m_conv.register_backward_hook(self._set_lr)
+            self.m_conv.register_full_backward_hook(self._set_lr)
 
     @staticmethod
     def _set_lr(module, grad_input, grad_output):
