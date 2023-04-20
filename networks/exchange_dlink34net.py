@@ -231,7 +231,7 @@ class ResNet(nn.Module):
         layers.append(block(self.inplanes, planes, self.num_parallel, bn_threshold, stride, downsample,condconv=condconv))
         self.inplanes = planes * block.expansion
         for i in range(1, num_blocks):
-            layers.append(block(self.inplanes, planes, self.num_parallel, bn_threshold))
+            layers.append(block(self.inplanes, planes, self.num_parallel, bn_threshold,condconv=condconv))
 
         return nn.Sequential(*layers)
 
