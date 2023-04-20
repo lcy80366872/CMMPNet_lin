@@ -166,11 +166,14 @@ class ResNet(nn.Module):
 #         for module in self.bn1.modules():
 #             if isinstance(module, nn.BatchNorm2d):
 #                 self.bn_list.append(module)
+        self.deformconv1=DeformConv2d(filters[0], filters[0],kernel_size=3,stride=1, padding=1, bias=None)
+        self.deformconv2 = DeformConv2d(filters[1], filters[1], kernel_size=3, stride=1, padding=1, bias=None)
+        self.deformconv3 = DeformConv2d(filters[2], filters[2], kernel_size=3, stride=1, padding=1, bias=None)
 
-        self.layer1 = self._make_layer(block, 64, blocks_num[0], bn_threshold, condconv=True)
-        self.layer2 = self._make_layer(block, 128, blocks_num[1], bn_threshold, stride=2, condconv=True)
-        self.layer3 = self._make_layer(block, 256, blocks_num[2], bn_threshold, stride=2, condconv=True)
-        self.layer4 = self._make_layer(block, 512, blocks_num[3], bn_threshold, stride=2, condconv=True)
+        self.layer1 = self._make_layer(block, 64, blocks_num[0], bn_threshold, condconv=False)
+        self.layer2 = self._make_layer(block, 128, blocks_num[1], bn_threshold, stride=2, condconv=False)
+        self.layer3 = self._make_layer(block, 256, blocks_num[2], bn_threshold, stride=2, condconv=False)
+        self.layer4 = self._make_layer(block, 512, blocks_num[3], bn_threshold, stride=2, condconv=False)
         # self.gcn1=DualGCN(64)
         # self.gcn2 = DualGCN(128)
         # self.gcn3 = DualGCN(256)
@@ -231,7 +234,7 @@ class ResNet(nn.Module):
         layers.append(block(self.inplanes, planes, self.num_parallel, bn_threshold, stride, downsample,condconv=condconv))
         self.inplanes = planes * block.expansion
         for i in range(1, num_blocks):
-            layers.append(block(self.inplanes, planes, self.num_parallel, bn_threshold,condconv=condconv))
+            layers.append(block(self.inplanes, planes, self.num_parallel, bn_threshold))
 
         return nn.Sequential(*layers)
 
@@ -274,10 +277,13 @@ class ResNet(nn.Module):
 
        # decoder
         x_d4 = [self.decoder4(x_c)[l] + x_3[l] for l in range(self.num_parallel)]
+        x_d4[0] +=  self.deformconv3(x_3)
         # x_d4 = self.dem_d4(x_d4)
         x_d3 = [self.decoder3(x_d4)[l] + x_2[l] for l in range(self.num_parallel)]
+        x_d3[0] += self.deformconv2(x_2)
         # x_d3 = self.dem_d3(x_d3)
         x_d2 = [self.decoder2(x_d3)[l] + x_1[l] for l in range(self.num_parallel)]
+        x_d2[0] += self.deformconv1(x_1)
         # x_d2 = self.dem_d2(x_d2)
         x_d1 = self.decoder1(x_d2)
         # x_d1 = self.dem_d1(x_d1)
