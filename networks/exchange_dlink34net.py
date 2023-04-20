@@ -1,6 +1,7 @@
 import torch.nn as nn
 import torch
 from networks.CondConv import CondConv, DynamicConv
+# from networks.deform_conv_v2 import DeformConv2d
 from .basic_blocks import *
 from torchvision import models
 from networks.attention_block import CBAMBlock,SEAttention
@@ -31,7 +32,8 @@ class BasicBlock(nn.Module):
             self.conv2 = conv3x3(planes, planes)
         else:
             self.conv2 =nn.Conv2d(planes, planes, kernel_size=3,stride=1, padding=1, bias=False)
-            self.dynamicconv=DynamicConv(planes, planes, kernel_size=3, stride=1,padding=1, bias=False)
+            # self.dynamicconv=DynamicConv(planes, planes, kernel_size=3, stride=1,padding=1, bias=False)
+            self.deformconv=DeformConv2d(planes, planes,kernel_size=3,stride=1, padding=1, bias=None)
         self.bn2 = BatchNorm2dParallel(planes, num_parallel)
         self.num_parallel = num_parallel
         self.downsample = downsample
@@ -54,7 +56,7 @@ class BasicBlock(nn.Module):
         if self.condconv == False:
             out = self.conv2(out)
         else:
-            out[0] = self.dynamicconv(out[0], out[1])
+            out[0] = self.deformconv(out)
             out[1] = self.conv2(out[1])
         out = self.bn2(out)
         if len(x) > 1:
