@@ -75,9 +75,9 @@ class DynamicConv(nn.Module):
         for i in range(self.K):
             nn.init.kaiming_uniform_(self.weight[i])
 
-    def forward(self, input,x):
-        bs, in_planels, h, w = x.shape
-        softmax_att = self.attention(x)  # bs,K
+    def forward(self, input):
+        bs, in_planels, h, w = input.shape
+        softmax_att = self.attention(input)  # bs,K
         # x = x.view(1, -1, h, w)
         input = input.view(1, -1, h, w)
         weight = self.weight.view(self.K, -1)  # K,-1
