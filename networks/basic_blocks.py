@@ -648,9 +648,9 @@ class DeformConv2d(nn.Module):
         self.modulation = modulation
         if modulation:
             self.m_conv = nn.Conv2d(inc, kernel_size*kernel_size, kernel_size=3, padding=1, stride=stride)
-            nn.init.constant_(self.m_conv.weight, 0)
+            nn.init.constant_(self.m_conv.weight, 0.5)
             self.m_conv.register_full_backward_hook(self._set_lr)
-
+    #论文中可变形卷积的两个学习量的学习率设置的是当前层的0.1，初始化值分别为0和0.5
     @staticmethod
     def _set_lr(module, grad_input, grad_output):
         grad_input = (grad_input[i] * 0.1 for i in range(len(grad_input)))
