@@ -31,6 +31,7 @@ class Exchange(nn.Module):
         x1[:, bn1 < bn_threshold] = x[1][:, bn1 < bn_threshold]
         x2[:, bn2 >= bn_threshold] = x[1][:, bn2 >= bn_threshold]
         x2[:, bn2 < bn_threshold] = x[0][:, bn2 < bn_threshold]
+        print('bn',bn1 < bn_threshold)
 
         return [x1, x2]
 class ModuleParallel(nn.Module):
@@ -657,10 +658,10 @@ class DeformConv2d(nn.Module):
         grad_output = (grad_output[i] * 0.1 for i in range(len(grad_output)))
 
     def forward(self, x):
-        offset = self.p_conv(x[1])
+        offset = self.p_conv(x)
         if self.modulation:
-            m = torch.sigmoid(self.m_conv(x[1]))
-        x=x[0]
+            m = torch.sigmoid(self.m_conv(x))
+
         dtype = offset.data.type()
         ks = self.kernel_size
         N = offset.size(1) // 2
