@@ -32,7 +32,9 @@ class BasicBlock(nn.Module):
             self.conv2 = conv3x3(planes, planes)
         else:
             # self.conv2 =nn.Conv2d(planes, planes, kernel_size=3,stride=1, padding=1, bias=False)
-            self.dynamicconv=DynamicConv(planes, planes, kernel_size=3, stride=1,padding=1, bias=False)
+            self.dynamicconv1=DynamicConv(planes, planes, kernel_size=3, stride=1,padding=1, bias=False)
+            self.dynamicconv2 = DynamicConv(planes, planes, kernel_size=3, stride=1, padding=1, bias=False)
+
             # self.deformconv=DeformConv2d(planes, planes,kernel_size=3,stride=1, padding=1, bias=None)
         self.bn2 = BatchNorm2dParallel(planes, num_parallel)
         self.num_parallel = num_parallel
@@ -56,8 +58,8 @@ class BasicBlock(nn.Module):
         if self.condconv == False:
             out = self.conv2(out)
         else:
-            out[0] = self.dynamicconv(out[0])
-            out[1] = self.dynamicconv(out[1])
+            out[0] = self.dynamicconv1(out[0])
+            out[1] = self.dynamicconv2(out[1])
         out = self.bn2(out)
         if len(x) > 1:
             out = self.exchange(out, self.bn2_list, self.bn_threshold)
