@@ -5,7 +5,7 @@ from torch.autograd import Variable
 import os
 from tqdm import tqdm
 from utils.metrics import IoU
-from loss import dice_bce_loss
+from loss import dice_bce_loss,SSIM
 import copy
 import numpy
 
@@ -180,7 +180,7 @@ class Solver:
         self.data2cuda()
 
         self.optimizer.zero_grad()
-        pred = self.net.forward(self.img)
+        pred,pred1 = self.net.forward(self.img)
         slim_params = []
         for name, param in self.net.named_parameters():
             if param.requires_grad and name.endswith('weight') and 'bn2' in name:
@@ -190,6 +190,7 @@ class Solver:
                     slim_params.append(param[len(param) // 2:])
 
         loss = self.loss(self.mask,pred)
+        loss += self.loss(self.mask, pred1)
         L1_norm = sum([L1_penalty(m).cuda() for m in slim_params])
         lamda =2e-4
         loss += lamda * L1_norm  # this is actually counted for len(outputs) times
@@ -205,8 +206,9 @@ class Solver:
         self.net.eval()
         self.data2cuda(volatile=True)
 
-        pred= self.net.forward(self.img)
+        pred,pred1= self.net.forward(self.img)
         loss = self.loss(self.mask, pred)
+        loss += self.loss(self.mask, pred1)
 
         batch_iou, intersection, union = self.metrics(self.mask, pred)
         pred = pred.cpu().data.numpy().squeeze(1)
@@ -268,7 +270,7 @@ class Framework:
     def fit(self, epochs, no_optim_epochs=4):
         val_best_metrics = test_best_metrics = [0, 0]
         no_optim = 0
-        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer=self.solver.optimizer, T_max= epochs,
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer=self.solver.optimizer, T_max=epochs,
                                                                verbose=True)
         for epoch in range(1, epochs + 1):
             print(f"epoch {epoch}/{epochs}")
