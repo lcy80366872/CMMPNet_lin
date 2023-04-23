@@ -114,15 +114,15 @@ class dice_bce_loss(nn.Module):
         # the ground_truth map is resized to the resolution of the predicted map during training
         if y_true.shape[2] != y_pred.shape[2] or y_true.shape[3] != y_pred.shape[3]:
             y_true = self.resize(y_true, y_pred.shape[2], y_pred.shape[3]).cuda()
-#         print(y_pred)
+        # print(y_pred)
 
 
         a = self.bce_loss(y_pred, y_true)
         b = self.soft_dice_loss(y_true, y_pred)
-        c =  self.ssim(y_true, y_pred)
+        # c =  self.ssim(y_true, y_pred)
 
-        return a + b + c
-
+        return a + b #+ c
+#
 def gaussian(window_size, sigma):
     gauss = torch.Tensor([exp(-(x - window_size//2)**2/float(2*sigma**2)) for x in range(window_size)])
     return gauss/gauss.sum()
