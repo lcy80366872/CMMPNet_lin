@@ -180,7 +180,7 @@ class Solver:
         self.data2cuda()
 
         self.optimizer.zero_grad()
-        pred,pred1 = self.net.forward(self.img)
+        pred1,pred = self.net.forward(self.img)
         slim_params = []
         for name, param in self.net.named_parameters():
             if param.requires_grad and name.endswith('weight') and 'bn2' in name:
@@ -206,7 +206,7 @@ class Solver:
         self.net.eval()
         self.data2cuda(volatile=True)
 
-        pred,pred1= self.net.forward(self.img)
+        pred1,pred= self.net.forward(self.img)
         loss = self.loss(self.mask, pred)
         loss += self.loss(self.mask, pred1)
 
