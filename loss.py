@@ -119,9 +119,9 @@ class dice_bce_loss(nn.Module):
 
         a = self.bce_loss(y_pred, y_true)
         b = self.soft_dice_loss(y_true, y_pred)
-        # c =  self.ssim(y_true, y_pred)
+        c =  self.ssim(y_true, y_pred)
 
-        return a + b #+ c
+        return a + b + c
 #
 def gaussian(window_size, sigma):
     gauss = torch.Tensor([exp(-(x - window_size//2)**2/float(2*sigma**2)) for x in range(window_size)])
