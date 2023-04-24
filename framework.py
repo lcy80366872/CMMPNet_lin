@@ -2,12 +2,14 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
+import cv2
 import os
 from tqdm import tqdm
 from utils.metrics import IoU
 from loss import dice_bce_loss,SSIM
 import copy
 import numpy
+from networks.DirectionNet import DirectionNet
 
 
 import torch_dct as DCT
@@ -19,100 +21,31 @@ class Solver:
     def __init__(self, net, optimizer, dataset):
         # self.net = torch.nn.DataParallel(net.cuda(), device_ids=list(range(torch.cuda.device_count())))
         self.net=net.cuda()
+        self.net_direction=DirectionNet().cuda()
         self.optimizer = optimizer
         self.dataset = dataset
-
+        self.loss_direction=nn.NLLLoss()
         self.loss = dice_bce_loss()
         self.metrics = IoU(threshold=0.5)
         self.old_lr = optimizer.param_groups[0]["lr"]
+    def resize(self, y_true, h, w):
+        b = y_true.shape[0]
+        y = numpy.zeros((b, h, w, y_true.shape[1]))
+        # print('y_t:', y_true.shape)
+        y_true = numpy.array(y_true.cpu())
+        for id in range(b):
+            y1 = y_true[id, :, :, :].transpose(1, 2, 0)
+            # print('y1:', y1.shape)
+            a = cv2.resize(y1, (h, w))
 
-    def DCTloss(self,img,pred,mask):
-        num_batchsize = img.shape[0]
-        size = img.shape[2]
-        pred = pred.repeat([1, 3, 1, 1])
-        x=img*pred
+            if a.ndim == 2:
+                a = numpy.expand_dims(a, axis=-1)
+            # print('a:', a.shape)
+            y[id, :, :, :] = a
+        # print(y.shape)
+        y = y.transpose(0, 3, 1,2)
 
-        y=img*mask
-        ycbcr_x = x.reshape(num_batchsize, 3, size // 8, 8, size // 8, 8).permute(0, 2, 4, 1, 3, 5)
-        ycbcr_y = y.reshape(num_batchsize, 3, size // 8, 8, size // 8, 8).permute(0, 2, 4, 1, 3, 5)
-        ycbcr_dctx = DCT.dct_2d(ycbcr_x, norm='ortho')
-        ycbcr_dcty = DCT.dct_2d(ycbcr_y, norm='ortho')
-        ycbcr_dctx = ycbcr_dctx.reshape(num_batchsize, size // 8, size // 8, -1).permute(0, 3, 1, 2)
-        ycbcr_dcty = ycbcr_dcty.reshape(num_batchsize, size // 8, size // 8, -1).permute(0, 3, 1, 2)
-        # print('ycbcr_shape:', ycbcr_dcty.shape)
-        # print('ycbcr:',ycbcr_dcty)
-        # print('cha:',torch.sqrt((ycbcr_dctx-ycbcr_dcty)**2))
-        # print('sum:', torch.sum(torch.sqrt((ycbcr_dctx-ycbcr_dcty)**2)))
-        eps=1e-6
-        a=torch.sqrt((ycbcr_dctx - ycbcr_dcty) ** 2+eps)
-        loss = torch.sum(a)/a.numel()
-        # print('loss',loss)
-        return loss
-    def DCTloss(self,img,pred,mask):
-        num_batchsize = img.shape[0]
-        size = img.shape[2]
-        pred = pred.repeat([1, 3, 1, 1])
-        x=img*pred
-
-        y=img*mask
-        ycbcr_x = x.reshape(num_batchsize, 3, size // 8, 8, size // 8, 8).permute(0, 2, 4, 1, 3, 5)
-        ycbcr_y = y.reshape(num_batchsize, 3, size // 8, 8, size // 8, 8).permute(0, 2, 4, 1, 3, 5)
-        ycbcr_dctx = DCT.dct_2d(ycbcr_x, norm='ortho')
-        ycbcr_dcty = DCT.dct_2d(ycbcr_y, norm='ortho')
-        ycbcr_dctx = ycbcr_dctx.reshape(num_batchsize, size // 8, size // 8, -1).permute(0, 3, 1, 2)
-        ycbcr_dcty = ycbcr_dcty.reshape(num_batchsize, size // 8, size // 8, -1).permute(0, 3, 1, 2)
-        # print('ycbcr_shape:', ycbcr_dcty.shape)
-        # print('ycbcr:',ycbcr_dcty)
-        # print('cha:',torch.sqrt((ycbcr_dctx-ycbcr_dcty)**2))
-        # print('sum:', torch.sum(torch.sqrt((ycbcr_dctx-ycbcr_dcty)**2)))
-        eps=1e-6
-        a=torch.sqrt((ycbcr_dctx - ycbcr_dcty) ** 2+eps)
-        loss = torch.sum(a)/a.numel()
-        # print('loss',loss)
-        return loss
-    def DCTloss(self,img,pred,mask):
-        num_batchsize = img.shape[0]
-        size = img.shape[2]
-        pred = pred.repeat([1, 3, 1, 1])
-        x=img*pred
-
-        y=img*mask
-        ycbcr_x = x.reshape(num_batchsize, 3, size // 8, 8, size // 8, 8).permute(0, 2, 4, 1, 3, 5)
-        ycbcr_y = y.reshape(num_batchsize, 3, size // 8, 8, size // 8, 8).permute(0, 2, 4, 1, 3, 5)
-        ycbcr_dctx = DCT.dct_2d(ycbcr_x, norm='ortho')
-        ycbcr_dcty = DCT.dct_2d(ycbcr_y, norm='ortho')
-        ycbcr_dctx = ycbcr_dctx.reshape(num_batchsize, size // 8, size // 8, -1).permute(0, 3, 1, 2)
-        ycbcr_dcty = ycbcr_dcty.reshape(num_batchsize, size // 8, size // 8, -1).permute(0, 3, 1, 2)
-        # print('ycbcr_shape:', ycbcr_dcty.shape)
-        # print('ycbcr:',ycbcr_dcty)
-        # print('cha:',torch.sqrt((ycbcr_dctx-ycbcr_dcty)**2))
-        # print('sum:', torch.sum(torch.sqrt((ycbcr_dctx-ycbcr_dcty)**2)))
-        eps=1e-6
-        a=torch.sqrt((ycbcr_dctx - ycbcr_dcty) ** 2+eps)
-        loss = torch.sum(a)/a.numel()
-        # print('loss',loss)
-        return loss
-    def DCTloss_gps(self,gps,pred,mask):
-        num_batchsize = gps.shape[0]
-        size = gps.shape[2]
-        x=gps*pred
-
-        y=gps*mask
-        ycbcr_x = x.reshape(num_batchsize, 1, size // 8, 8, size // 8, 8).permute(0, 2, 4, 1, 3, 5)
-        ycbcr_y = y.reshape(num_batchsize, 1, size // 8, 8, size // 8, 8).permute(0, 2, 4, 1, 3, 5)
-        ycbcr_dctx = DCT.dct_2d(ycbcr_x, norm='ortho')
-        ycbcr_dcty = DCT.dct_2d(ycbcr_y, norm='ortho')
-        ycbcr_dctx = ycbcr_dctx.reshape(num_batchsize, size // 8, size // 8, -1).permute(0, 3, 1, 2)
-        ycbcr_dcty = ycbcr_dcty.reshape(num_batchsize, size // 8, size // 8, -1).permute(0, 3, 1, 2)
-        # print('ycbcr_shape:', ycbcr_dcty.shape)
-        # print('ycbcr:',ycbcr_dcty)
-        # print('cha:',torch.sqrt((ycbcr_dctx-ycbcr_dcty)**2))
-        # print('sum:', torch.sum(torch.sqrt((ycbcr_dctx-ycbcr_dcty)**2)))
-        eps=1e-6
-        a=torch.sqrt((ycbcr_dctx - ycbcr_dcty) ** 2+eps)
-        loss = torch.sum(a)/a.numel()
-        # print('loss',loss)
-        return loss
+        return torch.Tensor(y)
 
 
     def set_input(self, img_batch, mask_batch=None):
@@ -180,7 +113,13 @@ class Solver:
         self.data2cuda()
 
         self.optimizer.zero_grad()
-        pred1,pred = self.net.forward(self.img)
+        mask = self.resize(self.mask, 512, 512).cuda()
+        direct_mask=self.net_direction.forward(mask)
+        # print('ss',direct_mask.shape)
+        # print(direct_mask)
+
+
+        pred1,pred,direct_pred = self.net.forward(self.img)
         slim_params = []
         for name, param in self.net.named_parameters():
             if param.requires_grad and name.endswith('weight') and 'bn2' in name:
@@ -191,6 +130,7 @@ class Solver:
 
         loss = self.loss(self.mask,pred)
         loss += self.loss(self.mask, pred1)
+        loss +=0.2*self.loss_direction(direct_pred,direct_mask)
         L1_norm = sum([L1_penalty(m).cuda() for m in slim_params])
         lamda =2e-4
         loss += lamda * L1_norm  # this is actually counted for len(outputs) times
@@ -205,10 +145,12 @@ class Solver:
     def test_batch(self):
         self.net.eval()
         self.data2cuda(volatile=True)
-
-        pred1,pred= self.net.forward(self.img)
+        mask = self.resize(self.mask, 512, 512).cuda()
+        direct_mask = self.net_direction.forward(mask)
+        pred1, pred, direct_pred = self.net.forward(self.img)
         loss = self.loss(self.mask, pred)
         loss += self.loss(self.mask, pred1)
+        loss +=0.2*self.loss_direction(direct_pred,direct_mask)
 
         batch_iou, intersection, union = self.metrics(self.mask, pred)
         pred = pred.cpu().data.numpy().squeeze(1)
@@ -270,7 +212,7 @@ class Framework:
     def fit(self, epochs, no_optim_epochs=4):
         val_best_metrics = test_best_metrics = [0, 0]
         no_optim = 0
-        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer=self.solver.optimizer, T_max=30,
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer=self.solver.optimizer, T_max=epochs,
                                                                verbose=True)
         for epoch in range(1, epochs + 1):
             print(f"epoch {epoch}/{epochs}")
