@@ -4,6 +4,7 @@ from networks.CondConv import CondConv, DynamicConv
 from .basic_blocks import *
 from torchvision import models
 from networks.attention_block import CBAMBlock,SEAttention
+
 class Exchange(nn.Module):
     def __init__(self):
         super(Exchange, self).__init__()
@@ -201,6 +202,8 @@ class ResNet(nn.Module):
         self.se = SEAttention(filters[0] // 2, reduction=4)
         # self.atten=CBAMBlock(channel=filters[0], reduction=4, kernel_size=7)
         self.finalconv = nn.Conv2d(filters[0], num_classes, 3, padding=1)
+
+        self.DConv = nn.Conv2d(filters[0], 5, kernel_size=1)
         self.Ref = RefUnet(1)
         # self.finalconv = ModuleParallel(nn.Conv2d(filters[0] // 2, num_classes, 3, padding=1))
         # self.alpha = nn.Parameter(torch.ones(num_parallel, requires_grad=True))
@@ -262,7 +265,8 @@ class ResNet(nn.Module):
         x_out[1] = self.se(x_out[1])
         # atten=self.atten(torch.cat((x_out[0], x_out[1]), 1))
         out = self.finalconv(torch.cat((x_out[0], x_out[1]), 1))
-        
+        out_direct=self.DConv(torch.cat((x_out[0], x_out[1]), 1))
+        out_direct= nn.LogSoftmax(dim=1)(out_direct)
         out1 = self.Ref(out)
         out = torch.sigmoid(out)
         # out=self.finalconv(x_out)
@@ -274,7 +278,7 @@ class ResNet(nn.Module):
         # out =nn.LogSoftmax()(ens)
         # out.append(ens)#[涓や釜杈撳叆鐨刼ut浠ュ強浠栦滑鎸塧lpha鍧囪　鍚庣殑output,涓€鍏变笁涓猐
 
-        return out,out1
+        return out,out1,out_direct
 
 
 def DinkNet34_CMMPNet():
