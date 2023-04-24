@@ -262,8 +262,9 @@ class ResNet(nn.Module):
         x_out[1] = self.se(x_out[1])
         # atten=self.atten(torch.cat((x_out[0], x_out[1]), 1))
         out = self.finalconv(torch.cat((x_out[0], x_out[1]), 1))
-        out = torch.sigmoid(out)
+        
         out1 = self.Ref(out)
+        out = torch.sigmoid(out)
         # out=self.finalconv(x_out)
         # alpha_soft = F.softmax(self.alpha,dim=0)
         # ens = 0
