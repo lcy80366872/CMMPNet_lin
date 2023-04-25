@@ -31,8 +31,8 @@ def prepare_Beijing_dataset(args):
     train_dataset = ImageGPSDataset(train_list, args.sat_dir,      args.mask_dir,      args.gps_dir,      randomize=True,  down_scale=args.down_scale)
     # val_dataset   = ImageGPSDataset(val_list,   args.sat_dir,      args.mask_dir,      args.gps_dir,      randomize=False, down_scale=args.down_scale)
     # test_dataset  = ImageGPSDataset(test_list,  args.test_sat_dir, args.test_mask_dir, args.test_gps_dir, randomize=False, down_scale=args.down_scale)
-    test_dataset   = ImageGPSDataset(val_list,   args.sat_dir,      args.mask_dir,      args.gps_dir,      randomize=False, down_scale=args.down_scale)
-    val_dataset  = ImageGPSDataset(test_list,  args.test_sat_dir, args.test_mask_dir, args.test_gps_dir, randomize=False, down_scale=args.down_scale)
+    test_dataset   = ImageGPSDataset(test_list,   args.sat_dir,      args.mask_dir,      args.gps_dir,      randomize=False, down_scale=args.down_scale)
+    val_dataset  = ImageGPSDataset(val_list,  args.test_sat_dir, args.test_mask_dir, args.test_gps_dir, randomize=False, down_scale=args.down_scale)
 
     return train_dataset, val_dataset, test_dataset
     
