@@ -31,7 +31,7 @@ class Exchange(nn.Module):
         x1[:, bn1 < bn_threshold] = x[1][:, bn1 < bn_threshold]
         x2[:, bn2 >= bn_threshold] = x[1][:, bn2 >= bn_threshold]
         x2[:, bn2 < bn_threshold] = x[0][:, bn2 < bn_threshold]
-        print('bn',bn1 < bn_threshold)
+#         print('bn',bn1 < bn_threshold)
 
         return [x1, x2]
 class ModuleParallel(nn.Module):
