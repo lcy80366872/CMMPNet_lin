@@ -171,7 +171,7 @@ class Framework:
     def set_save_path(self, save_path):
         self.save_path = save_path
 
-    def fit(self, epochs, no_optim_epochs=4):
+    def fit(self, epochs, no_optim_epochs=10):
         val_best_metrics = test_best_metrics = [0, 0]
         no_optim = 0
 #         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer=self.solver.optimizer, T_max=epochs,
