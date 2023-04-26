@@ -68,10 +68,11 @@ class SegmentationLosses(object):
 
 
 class dice_bce_loss(nn.Module):
-    def __init__(self, batch=True):
+    def __init__(self,ssim=False, batch=True):
         super(dice_bce_loss, self).__init__()
         self.batch = batch
         self.bce_loss = nn.BCELoss()
+        self.ifssim=ssim
         self.ssim=SSIM(window_size=11,size_average=True)
 
     def soft_dice_coeff(self, y_true, y_pred):
@@ -119,9 +120,11 @@ class dice_bce_loss(nn.Module):
 
         a = self.bce_loss(y_pred, y_true)
         b = self.soft_dice_loss(y_true, y_pred)
-        c = 1- self.ssim(y_pred,y_true )
-
-        return a + b + c
+        if self.ifssim:
+            c = 1- self.ssim(y_pred,y_true )
+            return c
+        else:
+            return a + b
 
 def gaussian(window_size, sigma):
     gauss = torch.Tensor([exp(-(x - window_size//2)**2/float(2*sigma**2)) for x in range(window_size)])
