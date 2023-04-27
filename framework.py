@@ -30,8 +30,7 @@ def show_sobal(img,channels):
     plt.show()
 
 def L1_penalty(var):
-    loss=torch.where(torch.abs(var)<1, 0.5*var**2, torch.abs(var)-0.5)
-    return loss.sum()
+    return torch.abs(var).sum()
 class Solver:
     def __init__(self, net, optimizer, dataset):
         # self.net = torch.nn.DataParallel(net.cuda(), device_ids=list(range(torch.cuda.device_count())))
