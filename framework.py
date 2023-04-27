@@ -131,7 +131,7 @@ class Solver:
         # mask = self.resize(self.mask, 512, 512).cuda()
         # direct_mask=self.net_direction.forward(mask)
 
-        pred1,pred = self.net.forward(self.img)
+        pred = self.net.forward(self.img)
         slim_params = []
         for name, param in self.net.named_parameters():
             if param.requires_grad and name.endswith('weight') and 'bn2' in name:
@@ -140,8 +140,8 @@ class Solver:
                 else:
                     slim_params.append(param[len(param) // 2:])
 
-        loss = self.loss(self.mask,pred1)
-        loss += self.loss1(self.mask, pred)
+        loss = self.loss(self.mask,pred)
+        # loss += self.loss1(self.mask, pred)
         # loss += self.loss(self.mask, pred1)
         # loss +=0.2*self.loss_direction(direct_pred,direct_mask)
         L1_norm = sum([L1_penalty(m).cuda() for m in slim_params])
@@ -160,8 +160,8 @@ class Solver:
         self.data2cuda(volatile=True)
         # mask = self.resize(self.mask, 512, 512).cuda()
         # direct_mask = self.net_direction.forward(mask)
-        pred1,pred = self.net.forward(self.img)
-        loss = self.loss(self.mask, pred1)
+        pred = self.net.forward(self.img)
+        loss = self.loss(self.mask, pred)
         # loss += self.loss(self.mask, pred1)
         # loss +=0.2*self.loss_direction(direct_pred,direct_mask)
 
