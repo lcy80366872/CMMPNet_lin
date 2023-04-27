@@ -122,8 +122,8 @@ class dice_bce_loss(nn.Module):
         b = self.soft_dice_loss(y_true, y_pred)
         if self.ifssim:
             
-#             c = 1- self.ssim(y_pred,y_true )
-            return a+b
+            c = 1- self.ssim(y_pred,y_true )
+            return c
         else:
             return a + b
 
