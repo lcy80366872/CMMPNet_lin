@@ -31,7 +31,7 @@ class Exchange(nn.Module):
         x1[:, bn1 < bn_threshold] = x[1][:, bn1 < bn_threshold]
         x2[:, bn2 >= bn_threshold] = x[1][:, bn2 >= bn_threshold]
         x2[:, bn2 < bn_threshold] = x[0][:, bn2 < bn_threshold]
-#         print('bn',bn1 < bn_threshold)
+        # print('bn',bn1 < bn_threshold)
 
         return [x1, x2]
 class ModuleParallel(nn.Module):
@@ -835,6 +835,7 @@ class RefUnet(nn.Module):
         hx = self.pool3(hx3) #scale:1/8
 
         hx4 = self.relu4(self.bn4(self.conv4(hx)))
+
         hx = self.upscore2(hx4)
 
         d3 = self.relu_d3(self.bn_d3(self.conv_d3(torch.cat((hx,hx3),1))))
@@ -847,7 +848,7 @@ class RefUnet(nn.Module):
 
         residual = self.conv_d0(d1)
 
-        return torch.sigmoid(x + residual)
+        return x + residual
 
 
 
