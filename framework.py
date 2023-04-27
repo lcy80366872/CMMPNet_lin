@@ -30,7 +30,8 @@ def show_sobal(img,channels):
     plt.show()
 
 def L1_penalty(var):
-    return torch.abs(var).sum()
+    loss=torch.where(torch.abs(var)<1, 0.5*var**2, torch.abs(var)-0.5)
+    return loss.sum()
 class Solver:
     def __init__(self, net, optimizer, dataset):
         # self.net = torch.nn.DataParallel(net.cuda(), device_ids=list(range(torch.cuda.device_count())))
@@ -224,8 +225,8 @@ class Framework:
     def fit(self, epochs, no_optim_epochs=10):
         val_best_metrics = test_best_metrics = [0, 0]
         no_optim = 0
-        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer=self.solver.optimizer, T_max=30,
-                                                               verbose=True)
+        # scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer=self.solver.optimizer, T_max=30,
+        #                                                        verbose=True)
         for epoch in range(1, epochs + 1):
             print(f"epoch {epoch}/{epochs}")
 
@@ -240,7 +241,7 @@ class Framework:
                 no_optim = 0
             else:
                 no_optim += 1
-            scheduler.step()
+            # scheduler.step()
             if no_optim > no_optim_epochs:
                 if self.solver.old_lr < 1e-8:
                     print('early stop at {epoch} epoch')
