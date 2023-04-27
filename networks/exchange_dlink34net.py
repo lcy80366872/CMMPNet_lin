@@ -148,11 +148,11 @@ class ResNet(nn.Module):
         self.bn1 = BatchNorm2dParallel(64, num_parallel)
         self.relu = ModuleParallel(nn.ReLU(inplace=True))
         self.maxpool = ModuleParallel(nn.MaxPool2d(kernel_size=3, stride=2, padding=1))
-
-        self.layer1 = self._make_layer(block, 64, blocks_num[0], bn_threshold)
-        self.layer2 = self._make_layer(block, 128, blocks_num[1], bn_threshold, stride=2)
-        self.layer3 = self._make_layer(block, 256, blocks_num[2], bn_threshold, stride=2)
-        self.layer4 = self._make_layer(block, 512, blocks_num[3], bn_threshold, stride=2)
+        self.alpha = nn.Parameter(torch.tensor(bn_threshold), requires_grad=True)
+        self.layer1 = self._make_layer(block, 64, blocks_num[0], self.alpha)
+        self.layer2 = self._make_layer(block, 128, blocks_num[1], self.alpha, stride=2)
+        self.layer3 = self._make_layer(block, 256, blocks_num[2], self.alpha, stride=2)
+        self.layer4 = self._make_layer(block, 512, blocks_num[3], self.alpha, stride=2)
         # self.non_local2 = NLBlockND(filters[1], mode='embedded', dimension=2)
         # self.dropout = ModuleParallel(nn.Dropout(p=0.5))
 
@@ -177,15 +177,16 @@ class ResNet(nn.Module):
         # self.se1 = SEAttention(filters[0] // 2, reduction=4)
         # self.atten=CBAMBlock(channel=filters[0], reduction=4, kernel_size=7)
         self.finalconv = nn.Conv2d(filters[0], num_classes, 3, padding=1)
-        self.ref=RefUnet(1)
+        # self.ref=RefUnet(1)
         # self.finalconv = ModuleParallel(nn.Conv2d(filters[0] // 2, num_classes, 3, padding=1))
-        # self.alpha = nn.Parameter(torch.ones(num_parallel, requires_grad=True))
+
         # self.register_parameter('alpha', self.alpha)
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
 
     def _make_layer(self, block, planes, num_blocks, bn_threshold, stride=1):
+
         downsample = None
         if stride != 1 or self.inplanes != planes * block.expansion:
             downsample = nn.Sequential(
@@ -250,13 +251,13 @@ class ResNet(nn.Module):
         # ens = 0
         # for l in range(self.num_parallel):
         #     ens += alpha_soft[l] * out[l].detach()
-        ref=self.ref(out)
-        ref=torch.sigmoid(ref)
+        # ref=self.ref(out)
+        # ref=torch.sigmoid(ref)
         out = torch.sigmoid(out)
         # out =nn.LogSoftmax()(ens)
         # out.append(ens)#[涓や釜杈撳叆鐨刼ut浠ュ強浠栦滑鎸塧lpha鍧囪　鍚庣殑output,涓€鍏变笁涓猐
 
-        return out,ref
+        return out
 
 
 def DinkNet34_CMMPNet():
