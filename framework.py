@@ -130,7 +130,7 @@ class Solver:
         # mask = self.resize(self.mask, 512, 512).cuda()
         # direct_mask=self.net_direction.forward(mask)
 
-        pred1,pred = self.net.forward(self.img)
+        pred = self.net.forward(self.img)
         slim_params = []
         for name, param in self.net.named_parameters():
             if param.requires_grad and name.endswith('weight') and 'bn2' in name:
@@ -141,7 +141,7 @@ class Solver:
 
         loss = self.loss(self.mask,pred)
         # loss += self.loss1(self.mask, pred)
-        loss += self.loss(self.mask, pred1)
+        # loss += self.loss(self.mask, pred1)
         # loss +=0.2*self.loss_direction(direct_pred,direct_mask)
         L1_norm = sum([L1_penalty(m).cuda() for m in slim_params])
         lamda =2e-4
@@ -159,9 +159,9 @@ class Solver:
         self.data2cuda(volatile=True)
         # mask = self.resize(self.mask, 512, 512).cuda()
         # direct_mask = self.net_direction.forward(mask)
-        pred1,pred = self.net.forward(self.img)
+        pred = self.net.forward(self.img)
         loss = self.loss(self.mask, pred)
-        loss += self.loss(self.mask, pred1)
+        # loss += self.loss(self.mask, pred1)
         # loss +=0.2*self.loss_direction(direct_pred,direct_mask)
 
         batch_iou, intersection, union = self.metrics(self.mask, pred)
@@ -224,8 +224,8 @@ class Framework:
     def fit(self, epochs, no_optim_epochs=10):
         val_best_metrics = test_best_metrics = [0, 0]
         no_optim = 0
-        # scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer=self.solver.optimizer, T_max=30,
-        #                                                        verbose=True)
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer=self.solver.optimizer, T_max= epochs,
+                                                               verbose=True)
         for epoch in range(1, epochs + 1):
             print(f"epoch {epoch}/{epochs}")
 
@@ -240,7 +240,7 @@ class Framework:
                 no_optim = 0
             else:
                 no_optim += 1
-            # scheduler.step()
+            scheduler.step()
             if no_optim > no_optim_epochs:
                 if self.solver.old_lr < 1e-8:
                     print('early stop at {epoch} epoch')
