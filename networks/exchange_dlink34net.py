@@ -245,8 +245,8 @@ class ResNet(nn.Module):
         x_out[1] = self.se(x_out[1])
         # atten=self.atten(torch.cat((x_out[0], x_out[1]), 1))
         out = self.finalconv(torch.cat((x_out[0], x_out[1]), 1))
-        ref=self.ref(out)
-        ref=torch.sigmoid((ref))
+        # ref=self.ref(out)
+        # ref=torch.sigmoid((ref))
         # out=self.finalconv(x_out)
         # alpha_soft = F.softmax(self.alpha,dim=0)
         # ens = 0
@@ -256,7 +256,7 @@ class ResNet(nn.Module):
         # out =nn.LogSoftmax()(ens)
         # out.append(ens)#[涓や釜杈撳叆鐨刼ut浠ュ強浠栦滑鎸塧lpha鍧囪　鍚庣殑output,涓€鍏变笁涓猐
 
-        return out,ref
+        return out#,ref
 
 
 def DinkNet34_CMMPNet():
