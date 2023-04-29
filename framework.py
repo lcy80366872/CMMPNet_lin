@@ -7,7 +7,7 @@ import cv2
 import os
 from tqdm import tqdm
 from utils.metrics import IoU
-from loss import dice_bce_loss,SSIM
+from loss import dice_bce_loss
 import copy
 import numpy
 from networks.DirectionNet import DirectionNet
@@ -39,7 +39,7 @@ class Solver:
         self.optimizer = optimizer
         self.dataset = dataset
         self.loss1 =dice_bce_loss(ssim=True)
-        self.loss = dice_bce_loss(ssim=False)
+        self.loss = dice_bce_loss(ssim=True)
         self.metrics = IoU(threshold=0.5)
         self.old_lr = optimizer.param_groups[0]["lr"]
     def resize(self, y_true, h, w):
