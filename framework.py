@@ -35,7 +35,7 @@ class Solver:
     def __init__(self, net, optimizer, dataset):
         # self.net = torch.nn.DataParallel(net.cuda(), device_ids=list(range(torch.cuda.device_count())))
         self.net=net.cuda()
-        self.net_direction=DirectionNet().cuda()
+#         self.net_direction=DirectionNet().cuda()
         self.optimizer = optimizer
         self.dataset = dataset
         self.loss1 =dice_bce_loss(ssim=True)
