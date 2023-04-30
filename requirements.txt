@@ -6,3 +6,4 @@ torchvision
 tqdm
 torch-dct
 einops
+torch_lr_finder
