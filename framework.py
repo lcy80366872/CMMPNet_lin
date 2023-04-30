@@ -7,7 +7,7 @@ import cv2
 import os
 from tqdm import tqdm
 from utils.metrics import IoU
-from loss import dice_bce_loss
+from loss import dice_bce_loss,SSIM
 import copy
 import numpy
 from networks.DirectionNet import DirectionNet
@@ -35,7 +35,7 @@ class Solver:
     def __init__(self, net, optimizer, dataset):
         # self.net = torch.nn.DataParallel(net.cuda(), device_ids=list(range(torch.cuda.device_count())))
         self.net=net.cuda()
-#         self.net_direction=DirectionNet().cuda()
+        self.net_direction=DirectionNet().cuda()
         self.optimizer = optimizer
         self.dataset = dataset
         self.loss1 =dice_bce_loss(ssim=True)
@@ -140,7 +140,6 @@ class Solver:
                     slim_params.append(param[len(param) // 2:])
 
         loss = self.loss(self.mask,pred)
-
         # loss += self.loss1(self.mask, pred)
         # loss += self.loss(self.mask, pred1)
         # loss +=0.2*self.loss_direction(direct_pred,direct_mask)
@@ -162,7 +161,7 @@ class Solver:
         # direct_mask = self.net_direction.forward(mask)
         pred = self.net.forward(self.img)
         loss = self.loss(self.mask, pred)
-           # loss += self.loss(self.mask, pred1)
+        # loss += self.loss(self.mask, pred1)
         # loss +=0.2*self.loss_direction(direct_pred,direct_mask)
 
         batch_iou, intersection, union = self.metrics(self.mask, pred)
@@ -225,7 +224,7 @@ class Framework:
     def fit(self, epochs, no_optim_epochs=10):
         val_best_metrics = test_best_metrics = [0, 0]
         no_optim = 0
-        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer=self.solver.optimizer, T_max=epochs,
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer=self.solver.optimizer, T_max= epochs,
                                                                verbose=True)
         for epoch in range(1, epochs + 1):
             print(f"epoch {epoch}/{epochs}")
@@ -316,4 +315,3 @@ class Framework:
         metrics = [average_iou, global_iou]
 
         return epoch_loss, metrics
-
