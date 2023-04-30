@@ -197,10 +197,10 @@ class ResNet(nn.Module):
         self.finalrelu2 = ModuleParallel(nn.ReLU(inplace=True))
         self.se = SEAttention(filters[0] // 2, reduction=4)
         # self.atten=CBAMBlock(channel=filters[0], reduction=4, kernel_size=7)
-#         self.finalconv = nn.Conv2d(filters[0], num_classes, 3, padding=1)
-        self.finalconv = ModuleParallel(nn.Conv2d(filters[0] // 2, num_classes, 3, padding=1))
-        self.alpha = nn.Parameter(torch.ones(num_parallel, requires_grad=True))
-        self.register_parameter('alpha', self.alpha)
+        self.finalconv = nn.Conv2d(filters[0], num_classes, 3, padding=1)
+#         self.finalconv = ModuleParallel(nn.Conv2d(filters[0] // 2, num_classes, 3, padding=1))
+#         self.alpha = nn.Parameter(torch.ones(num_parallel, requires_grad=True))
+#         self.register_parameter('alpha', self.alpha)
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
@@ -259,13 +259,13 @@ class ResNet(nn.Module):
         x_out[0]=self.se(x_out[0])
         x_out[1] = self.se(x_out[1])
         # atten=self.atten(torch.cat((x_out[0], x_out[1]), 1))
-#         out = self.finalconv(torch.cat((x_out[0], x_out[1]), 1))
-        out=self.finalconv(x_out)
-        alpha_soft = F.softmax(self.alpha,dim=0)
-        ens = 0
-        for l in range(self.num_parallel):
-            ens += alpha_soft[l] * out[l].detach()
-        out = torch.sigmoid(ens)
+        out = self.finalconv(torch.cat((x_out[0], x_out[1]), 1))
+#         out=self.finalconv(x_out)
+#         alpha_soft = F.softmax(self.alpha,dim=0)
+#         ens = 0
+#         for l in range(self.num_parallel):
+#             ens += alpha_soft[l] * out[l].detach()
+        out = torch.sigmoid(out)
         # out =nn.LogSoftmax()(ens)
         # out.append(ens)#[涓や釜杈撳叆鐨刼ut浠ュ強浠栦滑鎸塧lpha鍧囪　鍚庣殑output,涓€鍏变笁涓猐
 
