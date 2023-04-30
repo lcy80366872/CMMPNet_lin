@@ -176,8 +176,7 @@ class ResNet(nn.Module):
         self.layer2 = self._make_layer(block, 128, blocks_num[1], bn_threshold, stride=2)
         self.layer3 = self._make_layer(block, 256, blocks_num[2], bn_threshold, stride=2)
         self.layer4 = self._make_layer(block, 512, blocks_num[3], bn_threshold, stride=2)
-
-        # self.dropout = ModuleParallel(nn.Dropout(p=0.5))
+        self.dropout = ModuleParallel(nn.Dropout(p=0.5))
 
         self.dblock = DBlock_parallel(filters[3],2)
         # self.dblock_add = DBlock(filters[3])
@@ -186,16 +185,6 @@ class ResNet(nn.Module):
         self.decoder3 = DecoderBlock_parallel(filters[2], filters[1],2)
         self.decoder2 = DecoderBlock_parallel(filters[1], filters[0],2)
         self.decoder1 = DecoderBlock_parallel(filters[0], filters[0],2)
-
-        self.outconvc = nn.Conv2d(512*2, 1, 3, padding=1)
-        self.outconv4 = nn.Conv2d(256*2, 1, 3, padding=1)
-        self.outconv3 = nn.Conv2d(128*2, 1, 3, padding=1)
-        self.outconv2 = nn.Conv2d(64*2, 1, 3, padding=1)
-
-        self.upscorec = nn.Upsample(scale_factor=16, mode='bilinear',align_corners=True)
-        self.upscore4 = nn.Upsample(scale_factor=8, mode='bilinear',align_corners=True)
-        self.upscore3 = nn.Upsample(scale_factor=4, mode='bilinear',align_corners=True)
-        self.upscore2 = nn.Upsample(scale_factor=2, mode='bilinear',align_corners=True)
         # self.finaldeconv1_add = nn.ConvTranspose2d(filters[0], filters[0] // 2, 4, 2, 1)
         # self.finalrelu1_add = nonlinearity
         # self.finalconv2_add = nn.Conv2d(filters[0] // 2, filters[0] // 2, 3, padding=1)
@@ -208,10 +197,10 @@ class ResNet(nn.Module):
         self.finalrelu2 = ModuleParallel(nn.ReLU(inplace=True))
         self.se = SEAttention(filters[0] // 2, reduction=4)
         # self.atten=CBAMBlock(channel=filters[0], reduction=4, kernel_size=7)
-        self.finalconv = nn.Conv2d(filters[0], num_classes, 3, padding=1)
-        # self.finalconv = ModuleParallel(nn.Conv2d(filters[0] // 2, num_classes, 3, padding=1))
-        # self.alpha = nn.Parameter(torch.ones(num_parallel, requires_grad=True))
-        # self.register_parameter('alpha', self.alpha)
+        # self.finalconv = nn.Conv2d(filters[0], num_classes, 3, padding=1)
+        self.finalconv = ModuleParallel(nn.Conv2d(filters[0] // 2, num_classes, 3, padding=1))
+        self.alpha = nn.Parameter(torch.ones(num_parallel, requires_grad=True))
+        self.register_parameter('alpha', self.alpha)
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
@@ -252,7 +241,7 @@ class ResNet(nn.Module):
         x_3 = self.layer3(x_2)
         x_4 = self.layer4(x_3)
 
-        # x_4 =self.dropout(x_4)
+        x_4 =self.dropout(x_4)
 
         x_c = self.dblock(x_4)
         # decoder
@@ -261,15 +250,7 @@ class ResNet(nn.Module):
         x_d2 = [self.decoder2(x_d3)[l] + x_1[l] for l in range(self.num_parallel)]
         x_d1 = self.decoder1(x_d2)
 
-        out_xc=self.outconvc(torch.cat((x_c[0],x_c[1]),1))
-        out_xc=torch.sigmoid(self.upscorec(out_xc))
 
-        out_x4 = self.outconv4(torch.cat((x_d4[0], x_d4[1]), 1))
-        out_x4 = torch.sigmoid(self.upscore4(out_x4))
-        out_x3 = self.outconv3(torch.cat((x_d3[0], x_d3[1]), 1))
-        out_x3 = torch.sigmoid(self.upscore3(out_x3))
-        out_x2 = self.outconv2(torch.cat((x_d2[0], x_d2[1]), 1))
-        out_x2 = torch.sigmoid(self.upscore2(out_x2))
 
 
         x_out = self.finalrelu1(self.finaldeconv1(x_d1))
@@ -278,17 +259,17 @@ class ResNet(nn.Module):
         x_out[0]=self.se(x_out[0])
         x_out[1] = self.se(x_out[1])
         # atten=self.atten(torch.cat((x_out[0], x_out[1]), 1))
-        out = self.finalconv(torch.cat((x_out[0], x_out[1]), 1))
-        # out=self.finalconv(x_out)
-        # alpha_soft = F.softmax(self.alpha,dim=0)
-        # ens = 0
-        # for l in range(self.num_parallel):
-        #     ens += alpha_soft[l] * out[l].detach()
-        out = torch.sigmoid(out)
+        # out = self.finalconv(torch.cat((x_out[0], x_out[1]), 1))
+        out=self.finalconv(x_out)
+        alpha_soft = F.softmax(self.alpha,dim=0)
+        ens = 0
+        for l in range(self.num_parallel):
+            ens += alpha_soft[l] * out[l].detach()
+        out = torch.sigmoid(ens)
         # out =nn.LogSoftmax()(ens)
         # out.append(ens)#[涓や釜杈撳叆鐨刼ut浠ュ強浠栦滑鎸塧lpha鍧囪　鍚庣殑output,涓€鍏变笁涓猐
 
-        return out,out_xc,out_x4,out_x3,out_x2
+        return out
 
 
 def DinkNet34_CMMPNet():
