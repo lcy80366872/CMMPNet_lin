@@ -6,7 +6,7 @@ import torch.nn as nn
 from torch.nn import init
 import os
 import sys
-
+from torch_lr_finder import LRFinder
 import cv2
 from utils.model_init import model_init
 from framework import Framework
@@ -96,6 +96,13 @@ def train_val_test(args):
     framework = Framework(net, optimizer, dataset=args.dataset)
     
     train_dl, val_dl, test_dl = get_dataloader(args)
+    
+    criterion = dice_bce_loss()
+    lr_finder = LRFinder(net, optimizer, criterion, device="cuda")
+    lr_finder.range_test(train_dl, end_lr=100, num_iter=100)
+    lr_finder.plot()  # to inspect the loss-learning rate graph
+    lr_finder.reset()  # to reset the model and optimizer to their initial state
+
     framework.set_train_dl(train_dl)
     framework.set_validation_dl(val_dl)
     framework.set_test_dl(test_dl)
