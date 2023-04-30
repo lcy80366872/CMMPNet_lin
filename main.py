@@ -79,7 +79,7 @@ def train_val_test(args):
     net = get_model(args.model)
 #     with torch.no_grad():  # 必须有
 #         summary(net.to('cuda'), input_size=(4, 512, 512), batch_size=4)
-    model_init(net, 'resnet34', 3, imagenet=True)
+#     model_init(net, 'resnet34', 3, imagenet=True)
     print(net)
     print('lr:',args.lr)
     optimizer = torch.optim.Adam(params=net.parameters(), lr=args.lr)
