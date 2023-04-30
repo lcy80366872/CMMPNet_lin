@@ -241,7 +241,7 @@ class ResNet(nn.Module):
         x_3 = self.layer3(x_2)
         x_4 = self.layer4(x_3)
 
-        x_4 =self.dropout(x_4)
+#         x_4 =self.dropout(x_4)
 
         x_c = self.dblock(x_4)
         # decoder
