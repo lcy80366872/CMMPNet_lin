@@ -98,18 +98,18 @@ def train_val_test(args):
     
     train_dl, val_dl, test_dl = get_dataloader(args)
     
-    criterion = dice_bce_loss()
-    lr_finder = LRFinder(net, optimizer, criterion, device="cuda")
-    lr_finder.range_test(train_dl, end_lr=100, num_iter=100)
-    lr_finder.plot()  # to inspect the loss-learning rate graph
-    lr_finder.reset()  # to reset the model and optimizer to their initial state
+#     criterion = dice_bce_loss()
+#     lr_finder = LRFinder(net, optimizer, criterion, device="cuda")
+#     lr_finder.range_test(train_dl, end_lr=100, num_iter=100)
+#     lr_finder.plot()  # to inspect the loss-learning rate graph
+#     lr_finder.reset()  # to reset the model and optimizer to their initial state
 
-#     framework.set_train_dl(train_dl)
-#     framework.set_validation_dl(val_dl)
-#     framework.set_test_dl(test_dl)
-#     framework.set_save_path(WEIGHT_SAVE_DIR)
+    framework.set_train_dl(train_dl)
+    framework.set_validation_dl(val_dl)
+    framework.set_test_dl(test_dl)
+    framework.set_save_path(WEIGHT_SAVE_DIR)
 
-#     framework.fit(epochs=args.epochs)
+    framework.fit(epochs=args.epochs)
 
 
 if __name__ == "__main__":
