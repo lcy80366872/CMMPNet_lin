@@ -33,13 +33,13 @@ def L1_penalty(var):
     return torch.abs(var).sum()
 class Solver:
     def __init__(self, net, optimizer, dataset):
-        self.net = torch.nn.DataParallel(net.cuda(), device_ids=list(range(torch.cuda.device_count())))
+        # self.net = torch.nn.DataParallel(net.cuda(), device_ids=list(range(torch.cuda.device_count())))
         self.net=net.cuda()
-#         self.net_direction=DirectionNet().cuda()
+        self.net_direction=DirectionNet().cuda()
         self.optimizer = optimizer
         self.dataset = dataset
         self.loss1 =dice_bce_loss(ssim=True)
-        self.loss = dice_bce_loss(ssim=False)
+        self.loss = dice_bce_loss(ssim=True)
         self.metrics = IoU(threshold=0.5)
         self.old_lr = optimizer.param_groups[0]["lr"]
     def resize(self, y_true, h, w):
@@ -130,7 +130,7 @@ class Solver:
         # mask = self.resize(self.mask, 512, 512).cuda()
         # direct_mask=self.net_direction.forward(mask)
 
-        pred = self.net.forward(self.img)
+        pred,outc,out4,out3,out2 = self.net.forward(self.img)
         slim_params = []
         for name, param in self.net.named_parameters():
             if param.requires_grad and name.endswith('weight') and 'bn2' in name:
@@ -140,6 +140,10 @@ class Solver:
                     slim_params.append(param[len(param) // 2:])
 
         loss = self.loss(self.mask,pred)
+        loss += 1 / 16 * self.loss(self.mask, outc)
+        loss += 1 / 8 * self.loss(self.mask, out4)
+        loss += 1 / 4 * self.loss(self.mask, out3)
+        loss += 1 / 2 * self.loss(self.mask, out2)
         # loss += self.loss1(self.mask, pred)
         # loss += self.loss(self.mask, pred1)
         # loss +=0.2*self.loss_direction(direct_pred,direct_mask)
@@ -159,8 +163,12 @@ class Solver:
         self.data2cuda(volatile=True)
         # mask = self.resize(self.mask, 512, 512).cuda()
         # direct_mask = self.net_direction.forward(mask)
-        pred = self.net.forward(self.img)
+        pred,outc,out4,out3,out2 = self.net.forward(self.img)
         loss = self.loss(self.mask, pred)
+        loss +=1/16*self.loss(self.mask, outc)
+        loss += 1/8*self.loss(self.mask, out4)
+        loss += 1/4*self.loss(self.mask, out3)
+        loss += 1/2*self.loss(self.mask, out2)
         # loss += self.loss(self.mask, pred1)
         # loss +=0.2*self.loss_direction(direct_pred,direct_mask)
 
@@ -224,7 +232,7 @@ class Framework:
     def fit(self, epochs, no_optim_epochs=10):
         val_best_metrics = test_best_metrics = [0, 0]
         no_optim = 0
-        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer=self.solver.optimizer, T_max= epochs,
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer=self.solver.optimizer, T_max=epochs,
                                                                verbose=True)
         for epoch in range(1, epochs + 1):
             print(f"epoch {epoch}/{epochs}")
