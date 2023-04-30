@@ -130,7 +130,7 @@ class Solver:
         # mask = self.resize(self.mask, 512, 512).cuda()
         # direct_mask=self.net_direction.forward(mask)
 
-        pred,outc,out4,out3,out2 = self.net.forward(self.img)
+        pred = self.net.forward(self.img)
         slim_params = []
         for name, param in self.net.named_parameters():
             if param.requires_grad and name.endswith('weight') and 'bn2' in name:
@@ -140,10 +140,7 @@ class Solver:
                     slim_params.append(param[len(param) // 2:])
 
         loss = self.loss(self.mask,pred)
-        loss += 1 / 16 * self.loss(self.mask, outc)
-        loss += 1 / 8 * self.loss(self.mask, out4)
-        loss += 1 / 4 * self.loss(self.mask, out3)
-        loss += 1 / 2 * self.loss(self.mask, out2)
+
         # loss += self.loss1(self.mask, pred)
         # loss += self.loss(self.mask, pred1)
         # loss +=0.2*self.loss_direction(direct_pred,direct_mask)
@@ -163,13 +160,9 @@ class Solver:
         self.data2cuda(volatile=True)
         # mask = self.resize(self.mask, 512, 512).cuda()
         # direct_mask = self.net_direction.forward(mask)
-        pred,outc,out4,out3,out2 = self.net.forward(self.img)
+        pred = self.net.forward(self.img)
         loss = self.loss(self.mask, pred)
-        loss +=1/16*self.loss(self.mask, outc)
-        loss += 1/8*self.loss(self.mask, out4)
-        loss += 1/4*self.loss(self.mask, out3)
-        loss += 1/2*self.loss(self.mask, out2)
-        # loss += self.loss(self.mask, pred1)
+           # loss += self.loss(self.mask, pred1)
         # loss +=0.2*self.loss_direction(direct_pred,direct_mask)
 
         batch_iou, intersection, union = self.metrics(self.mask, pred)
