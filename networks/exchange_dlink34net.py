@@ -177,7 +177,7 @@ class ResNet(nn.Module):
         self.layer3 = self._make_layer(block, 256, blocks_num[2], bn_threshold, stride=2)
         self.layer4 = self._make_layer(block, 512, blocks_num[3], bn_threshold, stride=2)
 
-        self.dropout = ModuleParallel(nn.Dropout(p=0.5))
+#         self.dropout = ModuleParallel(nn.Dropout(p=0.5))
 
         self.dblock = DBlock_parallel(filters[3],2)
         # self.dblock_add = DBlock(filters[3])
@@ -244,7 +244,7 @@ class ResNet(nn.Module):
         x_3 = self.layer3(x_2)
         x_4 = self.layer4(x_3)
 
-        x_4 =self.dropout(x_4)
+#         x_4 =self.dropout(x_4)
 
         x_c = self.dblock(x_4)
         # decoder
