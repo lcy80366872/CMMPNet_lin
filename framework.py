@@ -7,7 +7,7 @@ import cv2
 import os
 from tqdm import tqdm
 from utils.metrics import IoU
-from loss import dice_bce_loss,SSIM
+from loss import dice_bce_loss
 import copy
 import numpy
 from networks.DirectionNet import DirectionNet
