@@ -12,6 +12,7 @@ import copy
 import numpy
 from networks.DirectionNet import DirectionNet
 from networks.SGCN import Sobel
+import wandb
 
 
 import torch_dct as DCT
@@ -248,7 +249,11 @@ class Framework:
                 else:
                     no_optim = 0
                     self.solver.update_lr(ratio=5.0)
-
+            wandb.log({"Train Loss": train_loss, 
+                   "Valid Loss": val_loss,
+                   "train_metrics": train_metrics,
+                   "val_metrics": val_metrics,
+                   "LR":scheduler.get_last_lr()[0]})
             print(f'train_loss: {train_loss:.4f} train_metrics: {train_metrics}')
             print(f'  val_loss: {val_loss:.4f}   val_metrics:   {val_metrics}')
             print(f' test_loss: {test_loss:.4f}  test_metrics:  {test_metrics}')
