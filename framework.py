@@ -229,6 +229,8 @@ class Framework:
         no_optim = 0
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer=self.solver.optimizer, T_max= epochs,
                                                                verbose=True)
+        # Define sweep config
+        
         for epoch in range(1, epochs + 1):
             print(f"epoch {epoch}/{epochs}")
 
@@ -262,6 +264,7 @@ class Framework:
              'test_loss': test_loss,
              'learning_rate':scheduler.get_last_lr()[0]
                  })
+            
             print(f'train_loss: {train_loss:.4f} train_metrics: {train_metrics}')
             print(f'  val_loss: {val_loss:.4f}   val_metrics:   {val_metrics}')
             print(f' test_loss: {test_loss:.4f}  test_metrics:  {test_metrics}')
