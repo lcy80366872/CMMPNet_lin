@@ -153,6 +153,8 @@ class Solver:
         self.optimizer.step()
 
         batch_iou, intersection, union = self.metrics(self.mask, pred)
+        wandb.log({"Train Loss": loss, 
+                   "train_metrics": batch_iou)
         return pred, loss.item(), batch_iou, intersection, union
 
     def test_batch(self):
@@ -166,6 +168,8 @@ class Solver:
         # loss +=0.2*self.loss_direction(direct_pred,direct_mask)
 
         batch_iou, intersection, union = self.metrics(self.mask, pred)
+        wandb.log({"val Loss": loss, 
+                   "val_metrics": batch_iou)
         pred = pred.cpu().data.numpy().squeeze(1)
         return pred, loss.item(), batch_iou, intersection, union
     def test_batch_exchange(self):
@@ -249,11 +253,7 @@ class Framework:
                 else:
                     no_optim = 0
                     self.solver.update_lr(ratio=5.0)
-            wandb.log({"Train Loss": train_loss, 
-                   "Valid Loss": val_loss,
-                   "train_metrics": train_metrics,
-                   "val_metrics": val_metrics,
-                   "LR":scheduler.get_last_lr()[0]})
+            
             print(f'train_loss: {train_loss:.4f} train_metrics: {train_metrics}')
             print(f'  val_loss: {val_loss:.4f}   val_metrics:   {val_metrics}')
             print(f' test_loss: {test_loss:.4f}  test_metrics:  {test_metrics}')
