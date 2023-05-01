@@ -11,6 +11,7 @@ import cv2
 from loss import dice_bce_loss
 from utils.model_init import model_init
 from framework import Framework
+import wandb
 # from framework_connect import Framework
 # from utils.datasets_connect import prepare_Beijing_dataset, prepare_TLCGIS_dataset
 from utils.datasets import prepare_Beijing_dataset, prepare_TLCGIS_dataset
@@ -161,6 +162,17 @@ if __name__ == "__main__":
     path = os.path.abspath(os.path.dirname(__file__))
     type = sys.getfilesystemencoding()
     sys.stdout = Logger(WEIGHT_SAVE_DIR+'train.log')
+    wandb.init(
+    # set the wandb project where this run will be logged
+    project="exchange_road_extraction",
+    config={
+    "lr": args.lr,
+    "model": args.model,
+    "batch_size": args.batch_size,
+    "gpu_ids":  args.gpu_ids ,
+    "epochs":  args.epochs,
+    "dataset": args.dataset
+        })
 
     train_val_test(args)
     print("[DONE] finished")
