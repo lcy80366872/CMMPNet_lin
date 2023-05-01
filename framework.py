@@ -154,7 +154,7 @@ class Solver:
 
         batch_iou, intersection, union = self.metrics(self.mask, pred)
         wandb.log({"Train Loss": loss, 
-                   "train_metrics": batch_iou)
+                   "train_metrics": batch_iou})
         return pred, loss.item(), batch_iou, intersection, union
 
     def test_batch(self):
@@ -169,7 +169,7 @@ class Solver:
 
         batch_iou, intersection, union = self.metrics(self.mask, pred)
         wandb.log({"val Loss": loss, 
-                   "val_metrics": batch_iou)
+                   "val_metrics": batch_iou})
         pred = pred.cpu().data.numpy().squeeze(1)
         return pred, loss.item(), batch_iou, intersection, union
     def test_batch_exchange(self):
