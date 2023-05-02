@@ -149,7 +149,8 @@ class Solver:
         loss += lamda * L1_norm  # this is actually counted for len(outputs) times
         for name, param in self.net.named_parameters():
             if param.requires_grad and name.endswith('weight') and 'bn2' in name:
-                wandb.log({'bn': param})
+                a=param.detach()
+                wandb.log({'bn': a})
 
         loss.backward()
         self.optimizer.step()
@@ -171,7 +172,8 @@ class Solver:
         batch_iou, intersection, union = self.metrics(self.mask, pred)
         for name, param in self.net.named_parameters():
             if param.requires_grad and name.endswith('weight') and 'bn2' in name:
-                wandb.log({'test_bn': param})
+                a=param.detach()
+                wandb.log({'test_bn': a})
        
         pred = pred.cpu().data.numpy().squeeze(1)
         return pred, loss.item(), batch_iou, intersection, union
