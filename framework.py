@@ -224,7 +224,7 @@ class Framework:
     def set_save_path(self, save_path):
         self.save_path = save_path
 
-    def fit(self, epochs, no_optim_epochs=10):
+    def fit(self, epochs=30, no_optim_epochs=10):
         val_best_metrics = test_best_metrics = [0, 0]
         no_optim = 0
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer=self.solver.optimizer, T_max= epochs,
@@ -256,11 +256,11 @@ class Framework:
                     self.solver.update_lr(ratio=5.0)
             wandb.log({
              'epoch': epoch, 
-             'train_acc': train_metrics,
+             'train_metrics': train_metrics,
              'train_loss': train_loss, 
-             'val_acc': val_metrics, 
+             'val_metrics': val_metrics, 
              'val_loss': val_loss,
-             'test_acc': test_metrics, 
+             'test_metrics': test_metrics, 
              'test_loss': test_loss,
              'learning_rate':scheduler.get_last_lr()[0]
                  })
