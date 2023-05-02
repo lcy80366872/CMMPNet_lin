@@ -109,8 +109,34 @@ def train_val_test(args):
     framework.set_validation_dl(val_dl)
     framework.set_test_dl(test_dl)
     framework.set_save_path(WEIGHT_SAVE_DIR)
+    wandb.init(
+    # set the wandb project where this run will be logged
+    project="exchange_road_extraction",
+    config={
+    "lr": args.lr,
+    "model": args.model,
+    "batch_size": args.batch_size,
+    "gpu_ids":  args.gpu_ids ,
+    "epochs":  args.epochs,
+    "dataset": args.dataset
+        })
+    sweep_configuration = {
+        'method': 'random',
+        'name': 'sweep',
+        'metric': {
+            'goal': 'maximize',
+            'name': 'test_metrics'
+        },
+        'parameters': {
+            'batch_size': {'values': [2, 4, 8]},
+            'lr': {'max': 0.1, 'min': 0.0001}
+        }
+    }
 
-    framework.fit(epochs=args.epochs)
+    sweep_id = wandb.sweep(sweep=sweep_configuration, project="exchange_search")
+    wandb.agent(sweep_id, function=framework.fit, count=8)
+
+#     framework.fit(epochs=args.epochs)
 
 
 if __name__ == "__main__":
@@ -162,17 +188,7 @@ if __name__ == "__main__":
     path = os.path.abspath(os.path.dirname(__file__))
     type = sys.getfilesystemencoding()
     sys.stdout = Logger(WEIGHT_SAVE_DIR+'train.log')
-    wandb.init(
-    # set the wandb project where this run will be logged
-    project="exchange_road_extraction",
-    config={
-    "lr": args.lr,
-    "model": args.model,
-    "batch_size": args.batch_size,
-    "gpu_ids":  args.gpu_ids ,
-    "epochs":  args.epochs,
-    "dataset": args.dataset
-        })
+    
 
     train_val_test(args)
     print("[DONE] finished")
