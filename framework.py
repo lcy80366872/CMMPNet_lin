@@ -167,6 +167,9 @@ class Solver:
         # loss +=0.2*self.loss_direction(direct_pred,direct_mask)
 
         batch_iou, intersection, union = self.metrics(self.mask, pred)
+        for name, param in self.net.named_parameters():
+            if param.requires_grad and name.endswith('weight') and 'bn2' in name:
+                wandb.log({'bn': param})
        
         pred = pred.cpu().data.numpy().squeeze(1)
         return pred, loss.item(), batch_iou, intersection, union
@@ -254,16 +257,17 @@ class Framework:
                 else:
                     no_optim = 0
                     self.solver.update_lr(ratio=5.0)
-            wandb.log({
-             'epoch': epoch, 
-             'train_metrics': train_metrics,
-             'train_loss': train_loss, 
-             'val_metrics': val_metrics, 
-             'val_loss': val_loss,
-             'test_metrics': test_metrics, 
-             'test_loss': test_loss,
-             'learning_rate':scheduler.get_last_lr()[0]
-                 })
+#             wandb.log({
+#              'epoch': epoch, 
+#              'train_metrics': train_metrics,
+#              'train_loss': train_loss, 
+#              'val_metrics': val_metrics, 
+#              'val_loss': val_loss,
+#              'test_metrics': test_metrics, 
+#              'test_loss': test_loss,
+#              'learning_rate':scheduler.get_last_lr()[0]
+#                  })
+            
             
             print(f'train_loss: {train_loss:.4f} train_metrics: {train_metrics}')
             print(f'  val_loss: {val_loss:.4f}   val_metrics:   {val_metrics}')
