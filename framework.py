@@ -151,6 +151,7 @@ class Solver:
             if param.requires_grad and name.endswith('weight') and 'bn2' in name:
                 a=param.detach()
                 wandb.log({'bn': a})
+                break
 
         loss.backward()
         self.optimizer.step()
@@ -174,6 +175,7 @@ class Solver:
             if param.requires_grad and name.endswith('weight') and 'bn2' in name:
                 a=param.detach()
                 wandb.log({'test_bn': a})
+                break
        
         pred = pred.cpu().data.numpy().squeeze(1)
         return pred, loss.item(), batch_iou, intersection, union
