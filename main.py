@@ -111,7 +111,7 @@ def train_val_test(args):
     framework.set_save_path(WEIGHT_SAVE_DIR)
     wandb.init(
     # set the wandb project where this run will be logged
-    project="exchange_bnthrold_search",
+    project="exchange_bnthrold",
     config={
     "lr": args.lr,
     "model": args.model,
@@ -120,23 +120,23 @@ def train_val_test(args):
     "epochs":  args.epochs,
     "dataset": args.dataset
         })
-    sweep_configuration = {
-        'method': 'random',
-        'name': 'sweep',
-        'metric': {
-            'goal': 'maximize',
-            'name': 'test_metrics'
-        },
-        'parameters': {
-            'batch_size': {'values': [2, 4, 8]},
-            'lr': {'max': 0.1, 'min': 0.0001}
-        }
-    }
+#     sweep_configuration = {
+#         'method': 'random',
+#         'name': 'sweep',
+#         'metric': {
+#             'goal': 'maximize',
+#             'name': 'test_metrics'
+#         },
+#         'parameters': {
+#             'batch_size': {'values': [2, 4, 8]},
+#             'lr': {'max': 0.1, 'min': 0.0001}
+#         }
+#     }
 
-    sweep_id = wandb.sweep(sweep=sweep_configuration, project="exchange_search")
-    wandb.agent(sweep_id, function=framework.fit, count=8)
+#     sweep_id = wandb.sweep(sweep=sweep_configuration, project="exchange_search")
+#     wandb.agent(sweep_id, function=framework.fit, count=8)
 
-#     framework.fit(epochs=args.epochs)
+    framework.fit(epochs=args.epochs)
 
 
 if __name__ == "__main__":
