@@ -111,7 +111,7 @@ def train_val_test(args):
     framework.set_save_path(WEIGHT_SAVE_DIR)
     wandb.init(
     # set the wandb project where this run will be logged
-    project="exchange_road_extraction",
+    project="exchange_bnthrold_search",
     config={
     "lr": args.lr,
     "model": args.model,
