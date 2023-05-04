@@ -151,8 +151,10 @@ class Solver:
             if param.requires_grad and name.endswith('weight') and 'bn2' in name:
                 a=param.detach()
 #                 b=list(filter(lambda x: x <0.02, a))
-                wandb.log({'bn': wandb.plot.line_series(a[0],a[1],a[2],a[3],a[4],a[5],a[6],a[7],a[8],a[9],a[10],a[11],a[12],a[13],a[14],a[15],a[16],a[17],a[18],a[19],a[20],a[21],a[22],a[23])})
-#                 break
+#                 wandb.log({'bn': wandb.plot.line_series(a[0],a[1],a[2],a[3],a[4],a[5],a[6],a[7],a[8],a[9],a[10],a[11],a[12],a[13],a[14],a[15],a[16],a[17],a[18],a[19],a[20],a[21],a[22],a[23])})
+                table=wandb.Table(data=a)
+                wandb.log({'bn': wandb.plot.line(table)})
+                break
 
         loss.backward()
         self.optimizer.step()
@@ -176,8 +178,9 @@ class Solver:
             if param.requires_grad and name.endswith('weight') and 'bn2' in name:
                 a=param.detach()
 #                 b=list(filter(lambda x: x <0.02, a))
-                wandb.log({'bn': wandb.plot.line_series(a[0],a[1],a[2],a[3],a[4],a[5],a[6],a[7],a[8],a[9],a[10],a[11],a[12],a[13],a[14],a[15],a[16],a[17],a[18],a[19],a[20],a[21],a[22],a[23])})
-#                 break
+                table=wandb.Table(data=a)
+                wandb.log({'bn': wandb.plot.line(table)})
+                break
        
         pred = pred.cpu().data.numpy().squeeze(1)
         return pred, loss.item(), batch_iou, intersection, union
