@@ -151,8 +151,8 @@ class Solver:
             if param.requires_grad and name.endswith('weight') and 'bn2' in name:
                 a=param.detach()
 #                 b=list(filter(lambda x: x <0.02, a))
-                a=list(numpy.array(a))
-                wandb.log({'bn': wandb.plot.line_series(a[0],a[1],a[2],a[3],a[4])})
+                #a=list(numpy.array(a))
+                wandb.log({'bn0': a[0],'bn1': a[1],'bn2': a[2],'bn3': a[3],'bn4': a[4]})
 #                 a=list(numpy.array(a))
 #                 table=wandb.Table(data=a)
 #                 wandb.log({'bn': wandb.plot.line(table)})
@@ -180,9 +180,7 @@ class Solver:
             if param.requires_grad and name.endswith('weight') and 'bn2' in name:
                 a=param.detach()
 #                 b=list(filter(lambda x: x <0.02, a))
-                a=list(numpy.array(a))
-
-                wandb.log({'bn': wandb.plot.line_series(a[0],a[1],a[2],a[3],a[4])})
+                wandb.log({'bn0': a[0],'bn1': a[1],'bn2': a[2],'bn3': a[3],'bn4': a[4]})
                 break
        
         pred = pred.cpu().data.numpy().squeeze(1)
