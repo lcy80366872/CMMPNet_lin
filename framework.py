@@ -150,7 +150,8 @@ class Solver:
         for name, param in self.net.named_parameters():
             if param.requires_grad and name.endswith('weight') and 'bn2' in name:
                 a=param.detach()
-                wandb.log({'bn': a})
+                b=list(filter(lambda x: x <0.02, a))
+                wandb.log({'bn': b})
                 break
 
         loss.backward()
@@ -174,7 +175,8 @@ class Solver:
         for name, param in self.net.named_parameters():
             if param.requires_grad and name.endswith('weight') and 'bn2' in name:
                 a=param.detach()
-                wandb.log({'test_bn': a})
+                b=list(filter(lambda x: x <0.02, a))
+                wandb.log({'test_bn': b})
                 break
        
         pred = pred.cpu().data.numpy().squeeze(1)
