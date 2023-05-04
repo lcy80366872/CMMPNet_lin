@@ -152,7 +152,7 @@ class Solver:
                 a=param.detach()
                 b=list(filter(lambda x: x <0.02, a))
                 wandb.log({'bn': b})
-                break
+#                 break
 
         loss.backward()
         self.optimizer.step()
@@ -177,7 +177,7 @@ class Solver:
                 a=param.detach()
                 b=list(filter(lambda x: x <0.02, a))
                 wandb.log({'test_bn': b})
-                break
+#                 break
        
         pred = pred.cpu().data.numpy().squeeze(1)
         return pred, loss.item(), batch_iou, intersection, union
