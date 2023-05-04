@@ -151,7 +151,7 @@ class Solver:
             if param.requires_grad and name.endswith('weight') and 'bn2' in name:
                 a=param.detach()
                 b=list(filter(lambda x: x <0.02, a))
-                wandb.log({'bn': b})
+                wandb.log({'bn': wandb.plot.line_series(b[0],b[1],b[2],b[3],b[4])})
 #                 break
 
         loss.backward()
@@ -176,7 +176,7 @@ class Solver:
             if param.requires_grad and name.endswith('weight') and 'bn2' in name:
                 a=param.detach()
                 b=list(filter(lambda x: x <0.02, a))
-                wandb.log({'test_bn': b})
+                wandb.log({'bn': wandb.plot.line_series(b[0],b[1],b[2],b[3],b[4])})
 #                 break
        
         pred = pred.cpu().data.numpy().squeeze(1)
