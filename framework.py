@@ -134,7 +134,7 @@ class Solver:
         pred = self.net.forward(self.img)
         slim_params = []
         for name, param in self.net.named_parameters():
-            if param.requires_grad and name.endswith('weight') and ('bn1' or 'bn2') in name:
+            if param.requires_grad and name.endswith('weight') and ('bn1' in name or 'bn2' in name):
                 if len(slim_params) % 2 == 0:
                     slim_params.append(param[:len(param) // 2])
                 else:
