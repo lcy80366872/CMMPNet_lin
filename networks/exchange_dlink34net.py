@@ -69,6 +69,10 @@ class BasicBlock(nn.Module):
         for module in self.bn2.modules():
             if isinstance(module, nn.BatchNorm2d):
                 self.bn2_list.append(module)
+        self.bn1_list = []
+        for module in self.bn1.modules():
+            if isinstance(module, nn.BatchNorm2d):
+                self.bn1_list.append(module)
 
     def forward(self, x):
         residual = x
@@ -77,7 +81,8 @@ class BasicBlock(nn.Module):
         # print('conv1',out[1].shape)
         out = self.bn1(out)
         out = self.relu(out)
-
+        if len(x) > 1:
+            out = self.exchange(out, self.bn1_list, self.bn_threshold)
         out = self.conv2(out)
         out = self.bn2(out)
         if len(x) > 1:
