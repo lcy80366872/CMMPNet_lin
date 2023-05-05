@@ -62,12 +62,16 @@ class ImageLidarDataset(data.Dataset):
         if self.randomize:
             sat = randomHueSaturationValue(sat)
             img = self._concat_images(sat, lidar)
+            ycb = cv2.cvtColor(sat, cv2.COLOR_BGR2YCrCb)
+            img = self._concat_images(img, ycb)
             img, mask = randomShiftScaleRotate(img, mask)
             img, mask = randomHorizontalFlip(img, mask)
             img, mask = randomVerticleFlip(img, mask)
             img, mask = randomRotate90(img, mask)
         else:
             img = self._concat_images(sat, lidar)
+            ycb = cv2.cvtColor(sat, cv2.COLOR_BGR2YCrCb)
+            img = self._concat_images(img, ycb)
 
         if mask.ndim == 2:
             mask = np.expand_dims(mask, axis=2)
@@ -163,6 +167,7 @@ class ImageGPSDataset(data.Dataset):
             img = self._concat_images(sat, gps)
             ycb = cv2.cvtColor(sat, cv2.COLOR_BGR2YCrCb)
             img = self._concat_images(img, ycb)
+            # print('shape:',img.shape)
 
         # The image's resolution of BJRoad is too high. To reduce memory consumption, we reduce the resolution of input images to 512*512
         # But the resolution of masks is maintained. For a fair comparison, the final predicted maps would be resized to the resolution of masks during testing.
