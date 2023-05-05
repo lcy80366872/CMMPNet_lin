@@ -139,6 +139,7 @@ class Solver:
                     slim_params.append(param[:len(param) // 2])
                 else:
                     slim_params.append(param[len(param) // 2:])
+                print(len(param))
 
         loss = self.loss(self.mask,pred)
         # loss += self.loss1(self.mask, pred)
