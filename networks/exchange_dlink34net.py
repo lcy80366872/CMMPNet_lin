@@ -157,14 +157,7 @@ class ResNet(nn.Module):
         self.num_parallel=num_parallel
 
         filters = [64, 128, 256, 512]
-        self.conv1 = nn.Conv2d(3, self.inplanes, kernel_size=7, stride=2,
-                               padding=3, bias=False)
-        self.conv1_g = nn.Conv2d(1, self.inplanes, kernel_size=7, stride=2,
-                                 padding=3, bias=False)
-        self.bn1 = nn.BatchNorm2d(self.inplanes)#BatchNorm2dParallel(self.inplanes, num_parallel)
-        self.bn1_g = nn.BatchNorm2d(self.inplanes)
-        self.relu = nn.ReLU(inplace=True)
-        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+        
 
         resnet = models.resnet34(pretrained=True)
         self.firstconv1 = resnet.conv1
