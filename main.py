@@ -15,7 +15,7 @@ import wandb
 # from framework_connect import Framework
 # from utils.datasets_connect import prepare_Beijing_dataset, prepare_TLCGIS_dataset
 from utils.datasets import prepare_Beijing_dataset, prepare_TLCGIS_dataset
-from networks.exchange_dlink34net import DinkNet34_CMMPNet
+from networks.CMMPNet import DinkNet34_CMMPNet
 os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
 class Logger(object):
     def __init__(self, filename="Default.log"):
@@ -109,17 +109,17 @@ def train_val_test(args):
     framework.set_validation_dl(val_dl)
     framework.set_test_dl(test_dl)
     framework.set_save_path(WEIGHT_SAVE_DIR)
-    wandb.init(
-    # set the wandb project where this run will be logged
-    project="exchange_bnthrold",
-    config={
-    "lr": args.lr,
-    "model": args.model,
-    "batch_size": args.batch_size,
-    "gpu_ids":  args.gpu_ids ,
-    "epochs":  args.epochs,
-    "dataset": args.dataset
-        })
+#     wandb.init(
+#     # set the wandb project where this run will be logged
+#     project="exchange_bnthrold",
+#     config={
+#     "lr": args.lr,
+#     "model": args.model,
+#     "batch_size": args.batch_size,
+#     "gpu_ids":  args.gpu_ids ,
+#     "epochs":  args.epochs,
+#     "dataset": args.dataset
+#         })
 #     sweep_configuration = {
 #         'method': 'random',
 #         'name': 'sweep',
