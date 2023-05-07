@@ -120,6 +120,7 @@ class ImageGPSDataset(data.Dataset):
         img  = cv2.imread(img_path)
         mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
         gps  = cv2.imread(gps_path,  cv2.IMREAD_GRAYSCALE)
+
         
         assert (img is not None),  img_path
         assert (mask is not None), mask_path
@@ -147,6 +148,8 @@ class ImageGPSDataset(data.Dataset):
         if self.randomize:
             sat = randomHueSaturationValue(sat)
             img = self._concat_images(sat, gps)
+#             ycb = cv2.cvtColor(sat, cv2.COLOR_BGR2YCrCb)
+#             img = self._concat_images(img, ycb)
             img, mask = randomShiftScaleRotate(img, mask)
             img, mask = randomRotate180(img, mask)
             img, mask = randomHorizontalFlip(img, mask)
@@ -156,17 +159,26 @@ class ImageGPSDataset(data.Dataset):
             img, mask = randomcrop(img,mask)
         else:
             img = self._concat_images(sat, gps)
+#             ycb = cv2.cvtColor(sat, cv2.COLOR_BGR2YCrCb)
+#             img = self._concat_images(img, ycb)
     
         # The image's resolution of BJRoad is too high. To reduce memory consumption, we reduce the resolution of input images to 512*512
         # But the resolution of masks is maintained. For a fair comparison, the final predicted maps would be resized to the resolution of masks during testing.
         if self.down_scale:
-           img = cv2.resize(img, (self.down_resolution, self.down_resolution))
+#             ycbr = img[:, :, 3:]
+
+#             img = img[:, :, :4]
+            img = cv2.resize(img, (self.down_resolution, self.down_resolution))
+
+
         
         if mask.ndim == 2:
-           mask = np.expand_dims(mask, axis=2)
+            mask = np.expand_dims(mask, axis=2)
 
         try:
             img = np.array(img, np.float32).transpose(2, 0, 1) / 255.0 * 3.2 - 1.6
+#             ycbr = np.array(ycbr, np.float32).transpose(2, 0, 1) / 255.0 * 3.2 - 1.6
+
             mask = np.array(mask, np.float32).transpose(2, 0, 1) / 255.0
         except Exception as e:
             print(e)
@@ -179,10 +191,10 @@ class ImageGPSDataset(data.Dataset):
 
     def __getitem__(self, index):
         image_id = self.image_list[index]
-        img, mask, gps= self._read_data(image_id) 
-        img, mask = self._data_augmentation(img, mask, gps)
-        img, mask = torch.Tensor(img), torch.Tensor(mask)
-        return img, mask
+        img, mask, gps= self._read_data(image_id)
+        img,mask = self._data_augmentation(img, mask, gps)
+        img,mask = torch.Tensor(img),torch.Tensor(mask)
+        return img,mask
 
     def __len__(self):
         return len(self.image_list)
