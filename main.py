@@ -109,29 +109,29 @@ def train_val_test(args):
     framework.set_validation_dl(val_dl)
     framework.set_test_dl(test_dl)
     framework.set_save_path(WEIGHT_SAVE_DIR)
-#     wandb.init(
-#     # set the wandb project where this run will be logged
-#     project="exchange_bnthrold",
-#     config={
-#     "lr": args.lr,
-#     "model": args.model,
-#     "batch_size": args.batch_size,
-#     "gpu_ids":  args.gpu_ids ,
-#     "epochs":  args.epochs,
-#     "dataset": args.dataset
-#         })
-#     sweep_configuration = {
-#         'method': 'random',
-#         'name': 'sweep',
-#         'metric': {
-#             'goal': 'maximize',
-#             'name': 'test_metrics'
-#         },
-#         'parameters': {
-#             'batch_size': {'values': [2, 4, 8]},
-#             'lr': {'max': 0.1, 'min': 0.0001}
-#         }
-#     }
+    wandb.init(
+    # set the wandb project where this run will be logged
+    project="exchange_bnthrold",
+    config={
+    "lr": args.lr,
+    "model": args.model,
+    "batch_size": args.batch_size,
+    "gpu_ids":  args.gpu_ids ,
+    "epochs":  args.epochs,
+    "dataset": args.dataset
+        })
+    sweep_configuration = {
+        'method': 'random',
+        'name': 'sweep',
+        'metric': {
+            'goal': 'maximize',
+            'name': 'test_metrics'
+        },
+        'parameters': {
+            'batch_size': {'values': [2, 4, 8]},
+            'lr': {'max': 0.1, 'min': 0.0001}
+        }
+    }
 
 #     sweep_id = wandb.sweep(sweep=sweep_configuration, project="exchange_search")
 #     wandb.agent(sweep_id, function=framework.fit, count=8)
