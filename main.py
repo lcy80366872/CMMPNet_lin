@@ -165,7 +165,7 @@ if __name__ == "__main__":
     parser.add_argument('--gpu_ids',  type=str, default='0')
     parser.add_argument('--workers',  type=int, default=0)
     parser.add_argument('--epochs',  type=int, default=1)
-    parser.add_argument('--random_seed', type=int, default=1234)
+    parser.add_argument('--random_seed', type=int, default=12345)
     parser.add_argument('--dataset', type=str, default='BJRoad')
     parser.add_argument('--down_scale', type=bool, default=False)
     args = parser.parse_args()
