@@ -69,6 +69,10 @@ class BasicBlock(nn.Module):
         for module in self.bn2.modules():
             if isinstance(module, nn.BatchNorm2d):
                 self.bn2_list.append(module)
+        self.bn1_list = []
+        for module in self.bn1.modules():
+            if isinstance(module, nn.BatchNorm2d):
+                self.bn1_list.append(module)
 
     def forward(self, x):
         residual = x
@@ -77,7 +81,8 @@ class BasicBlock(nn.Module):
         # print('conv1',out[1].shape)
         out = self.bn1(out)
         out = self.relu(out)
-
+        if len(x) > 1:
+            out = self.exchange(out, self.bn1_list, self.bn_threshold)
         out = self.conv2(out)
         out = self.bn2(out)
         if len(x) > 1:
@@ -152,14 +157,7 @@ class ResNet(nn.Module):
         self.num_parallel=num_parallel
 
         filters = [64, 128, 256, 512]
-        self.conv1 = nn.Conv2d(3, self.inplanes, kernel_size=7, stride=2,
-                               padding=3, bias=False)
-        self.conv1_g = nn.Conv2d(1, self.inplanes, kernel_size=7, stride=2,
-                                 padding=3, bias=False)
-        self.bn1 = nn.BatchNorm2d(self.inplanes)#BatchNorm2dParallel(self.inplanes, num_parallel)
-        self.bn1_g = nn.BatchNorm2d(self.inplanes)
-        self.relu = nn.ReLU(inplace=True)
-        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+        
 
         resnet = models.resnet34(pretrained=True)
         self.firstconv1 = resnet.conv1
@@ -177,7 +175,7 @@ class ResNet(nn.Module):
         self.layer3 = self._make_layer(block, 256, blocks_num[2], bn_threshold, stride=2)
         self.layer4 = self._make_layer(block, 512, blocks_num[3], bn_threshold, stride=2)
 
-        self.dropout = ModuleParallel(nn.Dropout(p=0.5))
+        # self.dropout = ModuleParallel(nn.Dropout(p=0.5))
 
         self.dblock = DBlock_parallel(filters[3],2)
         # self.dblock_add = DBlock(filters[3])
@@ -244,7 +242,7 @@ class ResNet(nn.Module):
         x_3 = self.layer3(x_2)
         x_4 = self.layer4(x_3)
 
-       # x_4 =self.dropout(x_4)
+        # x_4 =self.dropout(x_4)
 
         x_c = self.dblock(x_4)
         # decoder
@@ -268,7 +266,7 @@ class ResNet(nn.Module):
         #     ens += alpha_soft[l] * out[l].detach()
         out = torch.sigmoid(out)
         # out =nn.LogSoftmax()(ens)
-        # out.append(ens)#[濞戞挶鍊撻柌婊勬綇閹惧啿寮抽柣銊ュ煟ut濞寸姰鍎卞閿嬬閺嶏附绮﹂柟绋柯╨pha闁秆冩穿閵嗏偓闁告艾娴峰▓鎲僽tput,濞戞挴鍋撻柛蹇撳綁缁椾焦绋夐悮锟�
+        # out.append(ens)#[å¨‘æ’±å€“é–²æ»„æ½éŽ¾å†²å¼³é–»ã„¥åŸ£utå¨´çŠ®å„±å¯®é”‹ç¦’éï¸½ç²¦é–¹ç¨¿Â¨lphaé–¸Ñƒæ´©éŠ†â‚¬é–¸æ°¬æµ·å¨ˆæ†ƒutput,å¨‘æ’¯å“é–¸å¿“å½‰ç»—ä½¹ç¨‰éšï¿½
 
         return out
 
