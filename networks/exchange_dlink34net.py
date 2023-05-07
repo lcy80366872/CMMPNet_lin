@@ -69,10 +69,6 @@ class BasicBlock(nn.Module):
         for module in self.bn2.modules():
             if isinstance(module, nn.BatchNorm2d):
                 self.bn2_list.append(module)
-        self.bn1_list = []
-        for module in self.bn1.modules():
-            if isinstance(module, nn.BatchNorm2d):
-                self.bn1_list.append(module)
 
     def forward(self, x):
         residual = x
@@ -81,12 +77,11 @@ class BasicBlock(nn.Module):
         # print('conv1',out[1].shape)
         out = self.bn1(out)
         out = self.relu(out)
-        if len(x) > 1:
-            out = self.exchange(out, self.bn1_list, self.bn_threshold)
+
         out = self.conv2(out)
         out = self.bn2(out)
-        if len(x) > 1:
-            out = self.exchange(out, self.bn2_list, self.bn_threshold)
+        # if len(x) > 1:
+        #     out = self.exchange(out, self.bn2_list, self.bn_threshold)
 
         if self.downsample is not None:
             residual = self.downsample(x)
@@ -157,7 +152,14 @@ class ResNet(nn.Module):
         self.num_parallel=num_parallel
 
         filters = [64, 128, 256, 512]
-        
+        self.conv1 = nn.Conv2d(3, self.inplanes, kernel_size=7, stride=2,
+                               padding=3, bias=False)
+        self.conv1_g = nn.Conv2d(1, self.inplanes, kernel_size=7, stride=2,
+                                 padding=3, bias=False)
+        self.bn1 = nn.BatchNorm2d(self.inplanes)#BatchNorm2dParallel(self.inplanes, num_parallel)
+        self.bn1_g = nn.BatchNorm2d(self.inplanes)
+        self.relu = nn.ReLU(inplace=True)
+        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
 
         resnet = models.resnet34(pretrained=True)
         self.firstconv1 = resnet.conv1
@@ -266,7 +268,7 @@ class ResNet(nn.Module):
         #     ens += alpha_soft[l] * out[l].detach()
         out = torch.sigmoid(out)
         # out =nn.LogSoftmax()(ens)
-        # out.append(ens)#[å¨‘æ’±å€“é–²æ»„æ½éŽ¾å†²å¼³é–»ã„¥åŸ£utå¨´çŠ®å„±å¯®é”‹ç¦’éï¸½ç²¦é–¹ç¨¿Â¨lphaé–¸Ñƒæ´©éŠ†â‚¬é–¸æ°¬æµ·å¨ˆæ†ƒutput,å¨‘æ’¯å“é–¸å¿“å½‰ç»—ä½¹ç¨‰éšï¿½
+        # out.append(ens)#[涓や釜杈撳叆鐨刼ut浠ュ強浠栦滑鎸塧lpha鍧囪　鍚庣殑output,涓€鍏变笁涓猐
 
         return out
 
