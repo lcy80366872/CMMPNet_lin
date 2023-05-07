@@ -12,7 +12,7 @@ import copy
 import numpy
 from networks.DirectionNet import DirectionNet
 from networks.SGCN import Sobel
-import wandb
+
 
 
 import torch_dct as DCT
@@ -134,7 +134,7 @@ class Solver:
         pred = self.net.forward(self.img)
         slim_params = []
         for name, param in self.net.named_parameters():
-            if param.requires_grad and name.endswith('weight') and 'bn2' in name:
+            if param.requires_grad and name.endswith('weight') and ('bn1' in name or 'bn2' in name):
                 if len(slim_params) % 2 == 0:
                     slim_params.append(param[:len(param) // 2])
                 else:
@@ -153,8 +153,7 @@ class Solver:
         self.optimizer.step()
 
         batch_iou, intersection, union = self.metrics(self.mask, pred)
-        wandb.log({"Train Loss": loss, 
-                   "train_metrics": batch_iou})
+       
         return pred, loss.item(), batch_iou, intersection, union
 
     def test_batch(self):
@@ -168,8 +167,7 @@ class Solver:
         # loss +=0.2*self.loss_direction(direct_pred,direct_mask)
 
         batch_iou, intersection, union = self.metrics(self.mask, pred)
-        wandb.log({"val Loss": loss, 
-                   "val_metrics": batch_iou})
+       
         pred = pred.cpu().data.numpy().squeeze(1)
         return pred, loss.item(), batch_iou, intersection, union
     def test_batch_exchange(self):
