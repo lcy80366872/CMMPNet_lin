@@ -146,7 +146,7 @@ class Solver:
         # loss += self.loss(self.mask, pred1)
         # loss +=0.2*self.loss_direction(direct_pred,direct_mask)
         L1_norm = sum([L1_penalty(m).cuda() for m in slim_params])
-        lamda =2e-4
+        lamda =5e-3
         loss += lamda * L1_norm  # this is actually counted for len(outputs) times
 
 
