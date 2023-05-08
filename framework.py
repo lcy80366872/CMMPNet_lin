@@ -148,6 +148,7 @@ class Solver:
         L1_norm = sum([L1_penalty(m).cuda() for m in slim_params])
         lamda =2e-4
         loss += lamda * L1_norm  # this is actually counted for len(outputs) times
+        print('l1:',lamda * L1_norm)
 
 
         loss.backward()
