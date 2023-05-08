@@ -135,18 +135,18 @@ class Solver:
         slim_params = []
         for name, param in self.net.named_parameters():
             if param.requires_grad and name.endswith('weight') and 'bn2' in name:
-#                 if len(slim_params) % 2 == 0:
-#                     slim_params.append(param[:len(param) // 2])
-#                 else:
-#                     slim_params.append(param[len(param) // 2:])
-                slim_params.append(param)
+                if len(slim_params) % 2 == 0:
+                    slim_params.append(param[:len(param) // 2])
+                else:
+                    slim_params.append(param[len(param) // 2:])
+#                 slim_params.append(param)
 
         loss = self.loss(self.mask,pred)
         # loss += self.loss1(self.mask, pred)
         # loss += self.loss(self.mask, pred1)
         # loss +=0.2*self.loss_direction(direct_pred,direct_mask)
         L1_norm = sum([L1_penalty(m).cuda() for m in slim_params])
-        lamda =2e-4
+        lamda =5e-3
 #         loss += lamda * L1_norm  # this is actually counted for len(outputs) times
 
 
