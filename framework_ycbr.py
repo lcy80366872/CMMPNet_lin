@@ -7,6 +7,7 @@ from tqdm import tqdm
 from utils.metrics import IoU
 from loss import dice_bce_loss
 import copy
+import cv2
 import numpy
 from networks.Freq import DCT_Operation
 
@@ -30,59 +31,38 @@ class Solver:
         self.metrics = IoU(threshold=0.5)
         self.old_lr = optimizer.param_groups[0]["lr"]
 
+    def resize(self, y_true, h, w):
+        b = y_true.shape[0]
+        y = numpy.zeros((b, h, w, y_true.shape[1]))
+        # print('y_t:', y_true.shape)
+        # y_true = np.array(y_true.cpu())
+        y_true = numpy.array(y_true.cpu())
+        for id in range(b):
+            y1 = y_true[id, :, :, :].transpose(1, 2, 0)
+            # print('y1:', y1.shape)
+            a = cv2.resize(y1, (h, w))
+
+            if a.ndim == 2:
+                a = numpy.expand_dims(a, axis=-1)
+            # print('a:', a.shape)
+            y[id, :, :, :] = a
+        # print(y.shape)
+        y = y.transpose(0, 3, 1,2)
+
+        return torch.Tensor(y)
     def DCTloss(self,img,pred,mask):
         num_batchsize = img.shape[0]
         size = img.shape[2]
-        pred = pred.repeat([1, 3, 1, 1])
+        pred = pred.repeat([1, 4, 1, 1])
+
+        if mask.shape[2] != pred.shape[2] or mask.shape[3] != pred.shape[3]:
+            mask = self.resize(mask, pred.shape[2], pred.shape[3]).cuda()
+
         x=img*pred
 
         y=img*mask
-        ycbcr_x = x.reshape(num_batchsize, 3, size // 8, 8, size // 8, 8).permute(0, 2, 4, 1, 3, 5)
-        ycbcr_y = y.reshape(num_batchsize, 3, size // 8, 8, size // 8, 8).permute(0, 2, 4, 1, 3, 5)
-        ycbcr_dctx = DCT.dct_2d(ycbcr_x, norm='ortho')
-        ycbcr_dcty = DCT.dct_2d(ycbcr_y, norm='ortho')
-        ycbcr_dctx = ycbcr_dctx.reshape(num_batchsize, size // 8, size // 8, -1).permute(0, 3, 1, 2)
-        ycbcr_dcty = ycbcr_dcty.reshape(num_batchsize, size // 8, size // 8, -1).permute(0, 3, 1, 2)
-        # print('ycbcr_shape:', ycbcr_dcty.shape)
-        # print('ycbcr:',ycbcr_dcty)
-        # print('cha:',torch.sqrt((ycbcr_dctx-ycbcr_dcty)**2))
-        # print('sum:', torch.sum(torch.sqrt((ycbcr_dctx-ycbcr_dcty)**2)))
-        eps=1e-6
-        a=torch.sqrt((ycbcr_dctx - ycbcr_dcty) ** 2+eps)
-        loss = torch.sum(a)/a.numel()
-        # print('loss',loss)
-        return loss
-    def DCTloss(self,img,pred,mask):
-        num_batchsize = img.shape[0]
-        size = img.shape[2]
-        pred = pred.repeat([1, 3, 1, 1])
-        x=img*pred
-
-        y=img*mask
-        ycbcr_x = x.reshape(num_batchsize, 3, size // 8, 8, size // 8, 8).permute(0, 2, 4, 1, 3, 5)
-        ycbcr_y = y.reshape(num_batchsize, 3, size // 8, 8, size // 8, 8).permute(0, 2, 4, 1, 3, 5)
-        ycbcr_dctx = DCT.dct_2d(ycbcr_x, norm='ortho')
-        ycbcr_dcty = DCT.dct_2d(ycbcr_y, norm='ortho')
-        ycbcr_dctx = ycbcr_dctx.reshape(num_batchsize, size // 8, size // 8, -1).permute(0, 3, 1, 2)
-        ycbcr_dcty = ycbcr_dcty.reshape(num_batchsize, size // 8, size // 8, -1).permute(0, 3, 1, 2)
-        # print('ycbcr_shape:', ycbcr_dcty.shape)
-        # print('ycbcr:',ycbcr_dcty)
-        # print('cha:',torch.sqrt((ycbcr_dctx-ycbcr_dcty)**2))
-        # print('sum:', torch.sum(torch.sqrt((ycbcr_dctx-ycbcr_dcty)**2)))
-        eps=1e-6
-        a=torch.sqrt((ycbcr_dctx - ycbcr_dcty) ** 2+eps)
-        loss = torch.sum(a)/a.numel()
-        # print('loss',loss)
-        return loss
-    def DCTloss(self,img,pred,mask):
-        num_batchsize = img.shape[0]
-        size = img.shape[2]
-        pred = pred.repeat([1, 3, 1, 1])
-        x=img*pred
-
-        y=img*mask
-        ycbcr_x = x.reshape(num_batchsize, 3, size // 8, 8, size // 8, 8).permute(0, 2, 4, 1, 3, 5)
-        ycbcr_y = y.reshape(num_batchsize, 3, size // 8, 8, size // 8, 8).permute(0, 2, 4, 1, 3, 5)
+        ycbcr_x = x.reshape(num_batchsize, 4, size // 8, 8, size // 8, 8).permute(0, 2, 4, 1, 3, 5)
+        ycbcr_y = y.reshape(num_batchsize, 4, size // 8, 8, size // 8, 8).permute(0, 2, 4, 1, 3, 5)
         ycbcr_dctx = DCT.dct_2d(ycbcr_x, norm='ortho')
         ycbcr_dcty = DCT.dct_2d(ycbcr_y, norm='ortho')
         ycbcr_dctx = ycbcr_dctx.reshape(num_batchsize, size // 8, size // 8, -1).permute(0, 3, 1, 2)
@@ -154,33 +134,6 @@ class Solver:
         batch_iou, intersection, union = self.metrics(self.mask, pred)
         return pred, loss.item(), batch_iou, intersection, union
 
-    #
-    # def optimize_exchange(self):
-    #     self.net.train()
-    #     self.data2cuda()
-    #
-    #     self.optimizer.zero_grad()
-    #     outs = self.net.forward(self.img)
-    #     slim_params = []
-    #     for name, param in self.net.named_parameters():
-    #         if param.requires_grad and name.endswith('weight') and 'bn2' in name:
-    #             if len(slim_params) % 2 == 0:
-    #                 slim_params.append(param[:len(param) // 2])
-    #             else:
-    #                 slim_params.append(param[len(param) // 2:])
-    #     loss=0
-    #     for output in outs:
-    #         soft_output = nn.LogSoftmax()(output)
-    #         loss += self.loss(self.mask,soft_output)
-    #         L1_norm = sum([L1_penalty(m).cuda() for m in slim_params])
-    #         lamda =2e-4
-    #         loss += lamda * L1_norm  # this is actually counted for len(outputs) times
-    #
-    #     loss.backward()
-    #     self.optimizer.step()
-    #
-    #     batch_iou, intersection, union = self.metrics(self.mask, outs[0])
-    #     return outs[0], loss.item(), batch_iou, intersection, union
 
     def optimize_exchange(self):
         self.net.train()
@@ -188,23 +141,16 @@ class Solver:
 
         self.optimizer.zero_grad()
         pred = self.net.forward(self.img,self.ycbr)
-#         print('img_shape:',self.img.shape)
-#         print('img:',self.img)
-#         print('pred_shape:',pred.shape)
-#         print('pred:',pred)
-#         print('self.ycbr_shape:',self.ycbr.shape)
-#         print('self.ycbr:',self.ycbr)
         slim_params = []
         for name, param in self.net.named_parameters():
             if param.requires_grad and name.endswith('weight') and 'bn2' in name:
-                if len(slim_params) % 3 == 0:
-                    slim_params.append(param[:len(param) // 3])
-                elif len(slim_params) % 3 == 1:
-                    slim_params.append(param[len(param) // 3:2*len(param) // 3])
+                if len(slim_params) % 2 == 0:
+                    slim_params.append(param[:len(param) // 2])
                 else:
-                    slim_params.append(param[2*len(param) // 3:])
+                    slim_params.append(param[len(param) // 2:])
 
-        loss = self.loss(self.mask,pred)
+        loss = self.DCTloss(self.img,pred,self.mask)
+        loss += self.loss(self.mask, pred)
         L1_norm = sum([L1_penalty(m).cuda() for m in slim_params])
         lamda =2e-4
         loss += lamda * L1_norm  # this is actually counted for len(outputs) times
@@ -333,9 +279,7 @@ class Framework:
 
         for i, (img, ycbr,mask) in progress_bar:
             # print('ycbr_data:',ycbr.shape)
-#             ycbr = DCT_Operation(ycbr)
-#             print('ycbr:',ycbr.shape)
-#             print('ycbr:',ycbr)
+
             self.solver.set_input(img, ycbr,mask)
             # print('img_data:',img.shape)
             if mode == 'training':
