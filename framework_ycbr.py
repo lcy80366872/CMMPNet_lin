@@ -150,7 +150,7 @@ class Solver:
                     slim_params.append(param[len(param) // 2:])
 
         loss = self.DCTloss(self.img,pred,self.mask)
-        print(loss)
+#         print(loss)
         loss += self.loss(self.mask, pred)
         L1_norm = sum([L1_penalty(m).cuda() for m in slim_params])
         lamda =2e-4
