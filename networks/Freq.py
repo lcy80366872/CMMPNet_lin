@@ -231,7 +231,7 @@ def DCT_Operation(x):
     num_batchsize = x.shape[0]
     size = x.shape[2]
 
-    ycbcr_image = x.reshape(num_batchsize, 3, size // 8, 8, size // 8, 8).permute(0, 2, 4, 1, 3, 5)
+    ycbcr_image = x.reshape(num_batchsize, 4, size // 8, 8, size // 8, 8).permute(0, 2, 4, 1, 3, 5)
     ycbcr_image = DCT.dct_2d(ycbcr_image, norm='ortho')
     ycbcr_image = ycbcr_image.reshape(num_batchsize, size // 8, size // 8, -1).permute(0, 3, 1, 2)
     return ycbcr_image
