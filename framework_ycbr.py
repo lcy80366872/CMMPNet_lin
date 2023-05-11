@@ -321,4 +321,3 @@ class Framework:
         metrics = [average_iou, global_iou]
 
         return epoch_loss, metrics
-
