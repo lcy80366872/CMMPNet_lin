@@ -257,8 +257,8 @@ class ResNet(nn.Module):
         x_out = self.finalrelu1(self.finaldeconv1(x_d1))
         x_out = self.finalrelu2(self.finalconv2(x_out))
 
-        x_out[0]=self.se(x_out[0])
-        x_out[1] = self.se(x_out[1])
+#         x_out[0]=self.se(x_out[0])
+#         x_out[1] = self.se(x_out[1])
         # atten=self.atten(torch.cat((x_out[0], x_out[1]), 1))
         out = self.finalconv(torch.cat((x_out[0], x_out[1]), 1))
         # out=self.finalconv(x_out)
