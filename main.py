@@ -79,13 +79,13 @@ def pre_image(net):
 
 def train_val_test(args):
     net = get_model(args.model)
-#     with torch.no_grad():  # 必须有
+#     with torch.no_grad():  # 蹇呴』鏈�
 #         summary(net.to('cuda'), input_size=(4, 512, 512), batch_size=4)
     model_init(net, 'resnet34', 2, imagenet=True)
 #     print(net)
     print('lr:',args.lr)
     optimizer = torch.optim.Adam(params=net.parameters(), lr=args.lr)
-    # 多gpu得到的模型dict前面会加module
+    # 澶歡pu寰楀埌鐨勬ā鍨媎ict鍓嶉潰浼氬姞module
 #     new_state = {} 
 #     state_dict = torch.load('/kaggle/input/connect-v2-model/connect_v2_epoch19_val0.6588_test0.6342.pth', map_location=torch.device('cpu'))
 #     for key, value in state_dict.items():
@@ -192,4 +192,3 @@ if __name__ == "__main__":
 
     train_val_test(args)
     print("[DONE] finished")
-
