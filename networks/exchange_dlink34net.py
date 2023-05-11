@@ -262,7 +262,7 @@ class ResNet(nn.Module):
         #     ens += alpha_soft[l] * out[l].detach()
         out = torch.sigmoid(out)
         # out =nn.LogSoftmax()(ens)
-        # out.append(ens)#[娑撱倓閲滄潏鎾冲弳閻ㄥ埣ut娴犮儱寮锋禒鏍︽粦閹稿¨lpha閸у洩銆€閸氬海娈憃utput,娑撯偓閸忓彉绗佹稉鐚�
+        # out.append(ens)#[濞戞挶鍊撻柌婊勬綇閹惧啿寮抽柣銊ュ煟ut濞寸姰鍎卞閿嬬閺嶏附绮﹂柟绋柯╨pha闁秆冩穿閵嗏偓闁告艾娴峰▓鎲僽tput,濞戞挴鍋撻柛蹇撳綁缁椾焦绋夐悮锟�
 
         return out#,freq_output_1,freq_output_2,freq_output_3
 
