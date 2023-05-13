@@ -151,14 +151,14 @@ class ResNet(nn.Module):
         self.dblock = DBlock_parallel(filters[3],2)
         # self.dblock_add = DBlock(filters[3])
         # decoder
-        self.decoder4 = DecoderBlock_parallel(filters[3], filters[2],2)
-        self.decoder3 = DecoderBlock_parallel(filters[2], filters[1],2)
-        self.decoder2 = DecoderBlock_parallel(filters[1], filters[0],2)
-        self.decoder1 = DecoderBlock_parallel(filters[0], filters[0],2)
-#         self.decoder4 = DecoderBlock_parallel_exchange(filters[3], filters[2], 2,bn_threshold)
-#         self.decoder3 = DecoderBlock_parallel_exchange(filters[2], filters[1], 2,bn_threshold)
-#         self.decoder2 = DecoderBlock_parallel_exchange(filters[1], filters[0], 2,bn_threshold)
-#         self.decoder1 = DecoderBlock_parallel_exchange(filters[0], filters[0], 2,bn_threshold)
+#         self.decoder4 = DecoderBlock_parallel(filters[3], filters[2],2)
+#         self.decoder3 = DecoderBlock_parallel(filters[2], filters[1],2)
+#         self.decoder2 = DecoderBlock_parallel(filters[1], filters[0],2)
+#         self.decoder1 = DecoderBlock_parallel(filters[0], filters[0],2)
+        self.decoder4 = DecoderBlock_parallel_exchange(filters[3], filters[2], 2,bn_threshold)
+        self.decoder3 = DecoderBlock_parallel_exchange(filters[2], filters[1], 2,bn_threshold)
+        self.decoder2 = DecoderBlock_parallel_exchange(filters[1], filters[0], 2,bn_threshold)
+        self.decoder1 = DecoderBlock_parallel_exchange(filters[0], filters[0], 2,bn_threshold)
 
 
 
