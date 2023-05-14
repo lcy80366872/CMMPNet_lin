@@ -15,12 +15,12 @@ class DinkNet34_CMMPNet(nn.Module):
         # img
         resnet = models.resnet34(pretrained=True)
        
-        self.firstconv1 = resnet.conv1
+#         self.firstconv1 = resnet.conv1
         self.firstbn = resnet.bn1
         self.firstrelu = resnet.relu
         self.firstmaxpool = resnet.maxpool
 
-        self.firstconv1_add = nn.Conv2d(1, filters[0], kernel_size=7, stride=2, padding=3)
+        self.firstconv1 = nn.Conv2d(1, filters[0], kernel_size=7, stride=2, padding=3)
 
         self.encoder1 = resnet.layer1
         self.encoder2 = resnet.layer2
@@ -45,8 +45,8 @@ class DinkNet34_CMMPNet(nn.Module):
         self.finalconv = nn.Conv2d(filters[0], 1, 3, padding=1)
 
     def forward(self, inputs):
-        x = inputs[:, :3, :, :]  # image
-        add = inputs[:, 3:, :, :]  # gps_map or lidar_map
+#         x = inputs[:, :3, :, :]  # image
+        x = inputs[:, 3:, :, :]  # gps_map or lidar_map
         # 进入编码-解码结构前有个将原图像做卷积步骤
         x = self.firstconv1(x)
         x = self.firstmaxpool(self.firstrelu(self.firstbn(x)))
