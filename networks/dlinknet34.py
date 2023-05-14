@@ -20,7 +20,7 @@ class DinkNet34_CMMPNet(nn.Module):
         self.firstrelu = resnet.relu
         self.firstmaxpool = resnet.maxpool
 
-        self.firstconv1 = nn.Conv2d(1, filters[0], kernel_size=7, stride=2, padding=3)
+        self.firstconv1 = nn.Conv2d(4, filters[0], kernel_size=7, stride=2, padding=3)
 
         self.encoder1 = resnet.layer1
         self.encoder2 = resnet.layer2
@@ -46,7 +46,8 @@ class DinkNet34_CMMPNet(nn.Module):
 
     def forward(self, inputs):
 #         x = inputs[:, :3, :, :]  # image
-        x = inputs[:, 3:, :, :]  # gps_map or lidar_map
+#         add = inputs[:, 3:, :, :]  # gps_map or lidar_map
+        x = inputs
         # 进入编码-解码结构前有个将原图像做卷积步骤
         x = self.firstconv1(x)
         x = self.firstmaxpool(self.firstrelu(self.firstbn(x)))
