@@ -27,10 +27,10 @@ class Exchange(nn.Module):
         bn1, bn2 = bn[0].weight.abs(), bn[1].weight.abs()
         #就是大于阈值的那些通道保留，小于阈值的那些通道取另外一个的值
         x1, x2 = torch.zeros_like(x[0]), torch.zeros_like(x[1])
-        x1[:, torch.abs(bn1) >= bn_threshold] = x[0][:, torch.abs(bn1) >= bn_threshold]
-        x1[:, torch.abs(bn1) < bn_threshold] = x[1][:, torch.abs(bn1) < bn_threshold]
-        x2[:, torch.abs(bn2) >= bn_threshold] = x[1][:, torch.abs(bn2)  >= bn_threshold]
-        x2[:, torch.abs(bn2) < bn_threshold] = x[0][:, torch.abs(bn2) < bn_threshold]
+        x1[:, bn1 >= bn_threshold] = x[0][:, bn1 >= bn_threshold]
+        x1[:, bn1 < bn_threshold] = x[1][:, bn1 < bn_threshold]
+        x2[:, bn2 >= bn_threshold] = x[1][:, bn2  >= bn_threshold]
+        x2[:, bn2 < bn_threshold] = x[0][:, bn2 < bn_threshold]
         # print('bn',bn1 < bn_threshold)
 
         return [x1, x2]
