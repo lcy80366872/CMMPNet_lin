@@ -15,7 +15,7 @@ import wandb
 # from framework_connect import Framework
 # from utils.datasets_connect import prepare_Beijing_dataset, prepare_TLCGIS_dataset
 from utils.datasets import prepare_Beijing_dataset, prepare_TLCGIS_dataset
-from networks.dlinknet34 import DinkNet34_CMMPNet
+from networks.exchange_dlink34net import DinkNet34_CMMPNet
 os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
 class Logger(object):
     def __init__(self, filename="Default.log"):
