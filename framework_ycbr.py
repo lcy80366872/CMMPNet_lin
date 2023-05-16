@@ -143,9 +143,9 @@ class Solver:
         pred = self.net.forward(self.img,self.ycbr)
 
 
-        # loss = self.DCTloss(self.img,pred,self.mask)
+        loss = self.DCTloss(self.img,pred,self.mask)
 #         print(loss)
-        loss = self.loss(self.mask, pred)
+        loss += self.loss(self.mask, pred)
         loss.backward()
         self.optimizer.step()
 
