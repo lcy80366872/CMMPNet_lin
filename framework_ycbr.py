@@ -141,20 +141,11 @@ class Solver:
 
         self.optimizer.zero_grad()
         pred = self.net.forward(self.img,self.ycbr)
-        slim_params = []
-        for name, param in self.net.named_parameters():
-            if param.requires_grad and name.endswith('weight') and 'bn2' in name:
-                if len(slim_params) % 2 == 0:
-                    slim_params.append(param[:len(param) // 2])
-                else:
-                    slim_params.append(param[len(param) // 2:])
 
-        loss = self.DCTloss(self.img,pred,self.mask)
+
+        # loss = self.DCTloss(self.img,pred,self.mask)
 #         print(loss)
-        loss += self.loss(self.mask, pred)
-        L1_norm = sum([L1_penalty(m).cuda() for m in slim_params])
-        lamda =2e-4
-        loss += lamda * L1_norm  # this is actually counted for len(outputs) times
+        loss = self.loss(self.mask, pred)
         loss.backward()
         self.optimizer.step()
 
@@ -228,8 +219,8 @@ class Framework:
     def fit(self, epochs, no_optim_epochs=4):
         val_best_metrics = test_best_metrics = [0, 0]
         no_optim = 0
-#         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer=self.solver.optimizer, T_max=epochs,
-#                                                                verbose=True)
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer=self.solver.optimizer, T_max=epochs,
+                                                               verbose=True)
         for epoch in range(1, epochs + 1):
             print(f"epoch {epoch}/{epochs}")
 
@@ -244,7 +235,7 @@ class Framework:
                 no_optim = 0
             else:
                 no_optim += 1
-#             scheduler.step()
+            scheduler.step()
             if no_optim > no_optim_epochs:
                 if self.solver.old_lr < 1e-8:
                     print('early stop at {epoch} epoch')
