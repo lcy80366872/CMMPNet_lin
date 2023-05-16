@@ -10,12 +10,12 @@ from torch_lr_finder import LRFinder
 import cv2
 from loss import dice_bce_loss
 from utils.model_init import model_init
-from framework_ycbr import Framework
+from framework import Framework
 import wandb
 # from framework_connect import Framework
 # from utils.datasets_connect import prepare_Beijing_dataset, prepare_TLCGIS_dataset
 from utils.datasets import prepare_Beijing_dataset, prepare_TLCGIS_dataset
-from networks.dlink34_freq import DinkNet34_CMMPNet
+from networks.exchange_dlink34net import DinkNet34_CMMPNet
 os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
 class Logger(object):
     def __init__(self, filename="Default.log"):
