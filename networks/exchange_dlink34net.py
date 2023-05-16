@@ -2,9 +2,41 @@ import torch.nn as nn
 import torch
 from networks.CondConv import CondConv, DynamicConv
 from .basic_blocks import *
+from .attention_block import *
 from torchvision import models
 from networks.attention_block import CBAMBlock,SEAttention
+class Exchange(nn.Module):
+    def __init__(self):
+        super(Exchange, self).__init__()
 
+    def forward(self, x, bn, bn_threshold):
+        bn1, bn2 = bn[0].weight.abs(), bn[1].weight.abs()
+        x1, x2 = torch.zeros_like(x[0]), torch.zeros_like(x[1])
+        x1[:, bn1 >= bn_threshold] = x[0][:, bn1 >= bn_threshold]
+        x1[:, bn1 < bn_threshold] = x[1][:, bn1 < bn_threshold]
+        x2[:, bn2 >= bn_threshold] = x[1][:, bn2 >= bn_threshold]
+        x2[:, bn2 < bn_threshold] = x[0][:, bn2 < bn_threshold]
+        return [x1, x2]
+
+
+class ModuleParallel(nn.Module):
+    def __init__(self, module):
+        super(ModuleParallel, self).__init__()
+        self.module = module
+
+    def forward(self, x_parallel):
+        return [self.module(x) for x in x_parallel]
+
+
+class BatchNorm2dParallel(nn.Module):
+    def __init__(self, num_features, num_parallel=2,):
+        super(BatchNorm2dParallel, self).__init__()
+        for i in range(int(num_parallel)):
+
+            setattr(self, 'bn_' + str(i), nn.BatchNorm2d(num_features))
+
+    def forward(self, x_parallel):
+        return [getattr(self, 'bn_' + str(i))(x) for i, x in enumerate(x_parallel)]
 
 
 def conv3x3(in_planes, out_planes, stride=1, bias=False):
@@ -140,6 +172,7 @@ class ResNet(nn.Module):
         self.firstbn_g = resnet1.bn1
         self.firstrelu_g = resnet1.relu
         self.firstmaxpool_g = resnet1.maxpool
+        self.spatten=CBAMBlock(64,4,7)
 
         self.layer1 = self._make_layer(block, 64, blocks_num[0], bn_threshold)
         self.layer2 = self._make_layer(block, 128, blocks_num[1], bn_threshold, stride=2)
@@ -155,11 +188,11 @@ class ResNet(nn.Module):
         self.decoder3 = DecoderBlock_parallel(filters[2], filters[1],2)
         self.decoder2 = DecoderBlock_parallel(filters[1], filters[0],2)
         self.decoder1 = DecoderBlock_parallel(filters[0], filters[0],2)
-#         self.decoder4 = DecoderBlock_parallel_exchange(filters[3], filters[2], 2,bn_threshold)
-#         self.decoder3 = DecoderBlock_parallel_exchange(filters[2], filters[1], 2,bn_threshold)
-#         self.decoder2 = DecoderBlock_parallel_exchange(filters[1], filters[0], 2,bn_threshold)
-#         self.decoder1 = DecoderBlock_parallel_exchange(filters[0], filters[0], 2,bn_threshold)
 
+        # self.decoder4 = DecoderBlock_parallel_exchange(filters[3], filters[2], 2,bn_threshold)
+        # self.decoder3 = DecoderBlock_parallel_exchange(filters[2], filters[1], 2,bn_threshold)
+        # self.decoder2 = DecoderBlock_parallel_exchange(filters[1], filters[0], 2,bn_threshold)
+        # self.decoder1 = DecoderBlock_parallel_exchange(filters[0], filters[0], 2,bn_threshold)
 
 
         # self.finaldeconv1_add = nn.ConvTranspose2d(filters[0], filters[0] // 2, 4, 2, 1)
@@ -201,7 +234,7 @@ class ResNet(nn.Module):
     def forward(self, inputs):
 
         x = inputs[:, :3, :, :]
-        g = inputs[:, 3:, :, :]
+        g = inputs[:, 3:4, :, :]
 
         ##stem layer
         x = self.firstconv1(x)
@@ -214,6 +247,7 @@ class ResNet(nn.Module):
 
         ##layers:
         x_1 = self.layer1(out)
+        x_1[0]=self.spatten(x_1[0],x_1[1])
         x_2 = self.layer2(x_1)
         x_3 = self.layer3(x_2)
         x_4 = self.layer4(x_3)
@@ -242,7 +276,7 @@ class ResNet(nn.Module):
         #     ens += alpha_soft[l] * out[l].detach()
         out = torch.sigmoid(out)
         # out =nn.LogSoftmax()(ens)
-        # out.append(ens)#[娑撱倓閲滄潏鎾冲弳閻ㄥ埣ut娴犮儱寮锋禒鏍︽粦閹稿¨lpha閸у洩銆€閸氬海娈憃utput,娑撯偓閸忓彉绗佹稉鐚�
+        # out.append(ens)#[涓や釜杈撳叆鐨刼ut浠ュ強浠栦滑鎸塧lpha鍧囪　鍚庣殑output,涓€鍏变笁涓猐
 
         return out
 
