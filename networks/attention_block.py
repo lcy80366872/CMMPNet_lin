@@ -107,11 +107,11 @@ class CBAMBlock(nn.Module):
                 if m.bias is not None:
                     init.constant_(m.bias, 0)
 
-    def forward(self, x):
+    def forward(self, x,add):
         b, c, _, _ = x.size()
         residual = x
-        out = x * self.ca(x)
-        out = out * self.sa(out)
+        # out = x * self.ca(x)
+        out = x * self.sa(add)
         return out + residual
 
 
