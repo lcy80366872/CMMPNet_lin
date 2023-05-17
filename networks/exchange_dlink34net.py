@@ -247,7 +247,7 @@ class ResNet(nn.Module):
 
         ##layers:
         x_1 = self.layer1(out)
-        x_1[0]=self.spatten(x_1[0],x_1[1])
+#         x_1[0]=self.spatten(x_1[0],x_1[1])
         x_2 = self.layer2(x_1)
         x_3 = self.layer3(x_2)
         x_4 = self.layer4(x_3)
