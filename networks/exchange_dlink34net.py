@@ -240,5 +240,5 @@ class ResNet(nn.Module):
 
 
 def DinkNet34_CMMPNet():
-    model = ResNet(block=BasicBlock, blocks_num=[3, 4, 6, 3],num_parallel=2,num_classes=1,bn_threshold=4e-2)
+    model = ResNet(block=BasicBlock, blocks_num=[3, 4, 6, 3],num_parallel=2,num_classes=1,bn_threshold=6e-2)
     return model
