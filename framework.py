@@ -283,7 +283,7 @@ class Framework:
             self.solver.set_input(img, mask)
             # print('img_data:',img.shape)
             if mode == 'training':
-                pred_map, iter_loss, batch_iou, samples_intersection, samples_union = self.solver.optimize_exchange()
+                pred_map, iter_loss, batch_iou, samples_intersection, samples_union = self.solver.optimize()#optimize_exchange()
             else:
                 pred_map, iter_loss, batch_iou, samples_intersection, samples_union = self.solver.test_batch()
 
