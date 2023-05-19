@@ -28,7 +28,7 @@ def prepare_Beijing_dataset(args):
     val_list = [x[:-9] for x in os.listdir(args.test_mask_dir) if x.find('mask.png') != -1]
     train_list, test_list = train_test_split(image_list, test_size=args.val_size, random_state=args.random_seed)
 
-    train_dataset = ImageGPSDataset(train_list, args.sat_dir,      args.mask_dir,      args.gps_dir,      randomize=True,  down_scale=args.down_scale)
+    train_dataset = ImageGPSDataset(train_list, args.sat_dir,      args.mask_dir,      args.gps_dir,      randomize=False,  down_scale=args.down_scale)
     # val_dataset   = ImageGPSDataset(val_list,   args.sat_dir,      args.mask_dir,      args.gps_dir,      randomize=False, down_scale=args.down_scale)
     # test_dataset  = ImageGPSDataset(test_list,  args.test_sat_dir, args.test_mask_dir, args.test_gps_dir, randomize=False, down_scale=args.down_scale)
     test_dataset   = ImageGPSDataset(test_list,   args.sat_dir,      args.mask_dir,      args.gps_dir,      randomize=False, down_scale=args.down_scale)
@@ -60,7 +60,7 @@ def prepare_TLCGIS_dataset(args):
     with open(os.path.join(args.split_train_val_test,'test.txt'),'r') as f:
         test_list = [x[:-1] for x in f]
 
-    train_dataset = ImageLidarDataset(train_list, args.sat_dir, args.mask_dir, args.lidar_dir, randomize=False,  mask_transform=mask_transform, adjust_resolution=adjust_resolution)
+    train_dataset = ImageLidarDataset(train_list, args.sat_dir, args.mask_dir, args.lidar_dir, randomize=True,  mask_transform=mask_transform, adjust_resolution=adjust_resolution)
     val_dataset   = ImageLidarDataset(val_list,   args.sat_dir, args.mask_dir, args.lidar_dir, randomize=False, mask_transform=mask_transform, adjust_resolution=adjust_resolution)
     test_dataset  = ImageLidarDataset(test_list,  args.sat_dir, args.mask_dir, args.lidar_dir, randomize=False, mask_transform=mask_transform, adjust_resolution=adjust_resolution)
 
