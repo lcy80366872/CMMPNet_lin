@@ -19,14 +19,20 @@ def prepare_Beijing_dataset(args):
     print("test_gps_dir: ", args.test_gps_dir)    
     print("test_mask_dir: ", args.test_mask_dir)
     print("")
-    
+    #listdir 返回指定路径下的文件和文件夹列表。
+    #取这个图像的名字，取存在mask的图片，取它倒数第9位前面的那些
+    #例如   2_16_mask.png , 取出来的名字就是2_16
     image_list = [x[:-9] for x in os.listdir(args.mask_dir)      if x.find('mask.png') != -1]
-    test_list  = [x[:-9] for x in os.listdir(args.test_mask_dir) if x.find('mask.png') != -1]
-    train_list, val_list = train_test_split(image_list, test_size=args.val_size, random_state=args.random_seed)
-    
+    # test_list  = [x[:-9] for x in os.listdir(args.test_mask_dir) if x.find('mask.png') != -1]
+    # train_list, val_list = train_test_split(image_list, test_size=args.val_size, random_state=args.random_seed)
+    val_list = [x[:-9] for x in os.listdir(args.test_mask_dir) if x.find('mask.png') != -1]
+    train_list, test_list = train_test_split(image_list, test_size=args.val_size, random_state=args.random_seed)
+
     train_dataset = ImageGPSDataset(train_list, args.sat_dir,      args.mask_dir,      args.gps_dir,      randomize=True,  down_scale=args.down_scale)
-    val_dataset   = ImageGPSDataset(val_list,   args.sat_dir,      args.mask_dir,      args.gps_dir,      randomize=False, down_scale=args.down_scale)
-    test_dataset  = ImageGPSDataset(test_list,  args.test_sat_dir, args.test_mask_dir, args.test_gps_dir, randomize=False, down_scale=args.down_scale)
+    # val_dataset   = ImageGPSDataset(val_list,   args.sat_dir,      args.mask_dir,      args.gps_dir,      randomize=False, down_scale=args.down_scale)
+    # test_dataset  = ImageGPSDataset(test_list,  args.test_sat_dir, args.test_mask_dir, args.test_gps_dir, randomize=False, down_scale=args.down_scale)
+    test_dataset   = ImageGPSDataset(test_list,   args.sat_dir,      args.mask_dir,      args.gps_dir,      randomize=False, down_scale=args.down_scale)
+    val_dataset  = ImageGPSDataset(val_list,  args.test_sat_dir, args.test_mask_dir, args.test_gps_dir, randomize=False, down_scale=args.down_scale)
 
     return train_dataset, val_dataset, test_dataset
     
@@ -54,9 +60,10 @@ def prepare_TLCGIS_dataset(args):
     with open(os.path.join(args.split_train_val_test,'test.txt'),'r') as f:
         test_list = [x[:-1] for x in f]
 
-    train_dataset = ImageLidarDataset(train_list, args.sat_dir, args.mask_dir, args.lidar_dir, randomize=False,  mask_transform=mask_transform, adjust_resolution=adjust_resolution)
-    val_dataset   = ImageLidarDataset(val_list,   args.sat_dir, args.mask_dir, args.lidar_dir, randomize=False, mask_transform=mask_transform, adjust_resolution=adjust_resolution)
-    test_dataset  = ImageLidarDataset(test_list,  args.sat_dir, args.mask_dir, args.lidar_dir, randomize=False, mask_transform=mask_transform, adjust_resolution=adjust_resolution)
+    train_dataset = ImageLidarDataset(train_list, args.sat_dir, args.mask_dir, args.lidar_dir, randomize=True,  mask_transform=mask_transform, adjust_resolution=adjust_resolution)
+    val_dataset   = ImageLidarDataset(val_list,   args.sat_dir, args.mask_dir, args.lidar_dir, randomize=True, mask_transform=mask_transform, adjust_resolution=adjust_resolution)
+    test_dataset  = ImageLidarDataset(test_list,  args.sat_dir, args.mask_dir, args.lidar_dir, randomize=True, mask_transform=mask_transform, adjust_resolution=adjust_resolution)
 
     return train_dataset, val_dataset, test_dataset
+
 
