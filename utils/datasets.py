@@ -35,7 +35,7 @@ def prepare_TLCGIS_dataset(args):
     print("")
     print("Dataset: ", args.dataset)
     mask_transform = True if args.dataset == 'TLCGIS' else False
-    adjust_resolution =512 if args.dataset == 'TLCGIS' else -1
+    adjust_resolution =512 #if args.dataset == 'TLCGIS' else -1
     
     print("")
     print("sat_dir: ", args.sat_dir)
