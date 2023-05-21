@@ -2,10 +2,9 @@ import torch.nn as nn
 import torch
 from networks.CondConv import CondConv, DynamicConv
 from .basic_blocks import *
+from .attention_block import *
 from torchvision import models
 from networks.attention_block import CBAMBlock,SEAttention
-
-
 
 
 
@@ -131,6 +130,7 @@ class ResNet(nn.Module):
         self.firstbn_g = resnet1.bn1
         self.firstrelu_g = resnet1.relu
         self.firstmaxpool_g = resnet1.maxpool
+        self.spatten=CBAMBlock(64,4,7)
 
         self.layer1 = self._make_layer(block, 64, blocks_num[0], bn_threshold)
         self.layer2 = self._make_layer(block, 128, blocks_num[1], bn_threshold, stride=2)
@@ -147,6 +147,11 @@ class ResNet(nn.Module):
         self.decoder2 = DecoderBlock_parallel(filters[1], filters[0],2)
         self.decoder1 = DecoderBlock_parallel(filters[0], filters[0],2)
 
+        # self.decoder4 = DecoderBlock_parallel_exchange(filters[3], filters[2], 2,bn_threshold)
+        # self.decoder3 = DecoderBlock_parallel_exchange(filters[2], filters[1], 2,bn_threshold)
+        # self.decoder2 = DecoderBlock_parallel_exchange(filters[1], filters[0], 2,bn_threshold)
+        # self.decoder1 = DecoderBlock_parallel_exchange(filters[0], filters[0], 2,bn_threshold)
+
 
         # self.finaldeconv1_add = nn.ConvTranspose2d(filters[0], filters[0] // 2, 4, 2, 1)
         # self.finalrelu1_add = nonlinearity
@@ -161,9 +166,6 @@ class ResNet(nn.Module):
         self.se = SEAttention(filters[0] // 2, reduction=4)
         # self.atten=CBAMBlock(channel=filters[0], reduction=4, kernel_size=7)
         self.finalconv = nn.Conv2d(filters[0], num_classes, 3, padding=1)
-
-        self.DConv = nn.Conv2d(filters[0], 5, kernel_size=1)
-        self.Ref = RefUnet(1)
         # self.finalconv = ModuleParallel(nn.Conv2d(filters[0] // 2, num_classes, 3, padding=1))
         # self.alpha = nn.Parameter(torch.ones(num_parallel, requires_grad=True))
         # self.register_parameter('alpha', self.alpha)
@@ -190,7 +192,7 @@ class ResNet(nn.Module):
     def forward(self, inputs):
 
         x = inputs[:, :3, :, :]
-        g = inputs[:, 3:, :, :]
+        g = inputs[:, 3:4, :, :]
 
         ##stem layer
         x = self.firstconv1(x)
@@ -203,6 +205,7 @@ class ResNet(nn.Module):
 
         ##layers:
         x_1 = self.layer1(out)
+#         x_1[0]=self.spatten(x_1[0],x_1[1])
         x_2 = self.layer2(x_1)
         x_3 = self.layer3(x_2)
         x_4 = self.layer4(x_3)
@@ -224,20 +227,16 @@ class ResNet(nn.Module):
         x_out[1] = self.se(x_out[1])
         # atten=self.atten(torch.cat((x_out[0], x_out[1]), 1))
         out = self.finalconv(torch.cat((x_out[0], x_out[1]), 1))
-        out_direct=self.DConv(torch.cat((x_out[0], x_out[1]), 1))
-        out_direct= nn.LogSoftmax(dim=1)(out_direct)
-        out1 = torch.sigmoid(self.Ref(out))
-        out = torch.sigmoid(out)
         # out=self.finalconv(x_out)
         # alpha_soft = F.softmax(self.alpha,dim=0)
         # ens = 0
         # for l in range(self.num_parallel):
         #     ens += alpha_soft[l] * out[l].detach()
-
+        out = torch.sigmoid(out)
         # out =nn.LogSoftmax()(ens)
-        # out.append(ens)#[忙露鈥溍ｂ€氣€灻┾€∨撁β澦喢︹€櫬趁ヂ忊€犆┞惵ニ喡紆t忙碌 茫茠楼氓录路忙碌 忙 娄忙禄鈥樏┡铰该ヂ÷pha茅聧搂氓鈥郝ｂ偓鈧┞嵟∶ヂ郝Ｃβ€榦utput,忙露鈥溍⑩€毬┞嵚徝ヂ徦溍伱β垛€溍捖�
+        # out.append(ens)#[æ¶“ã‚„é‡œæˆæ’³å†é¨åˆ¼utæµ ãƒ¥å¼·æµ æ ¦æ»‘éŽ¸å¡§lphaé§å›ªã€€éšåº£æ®‘output,æ¶“â‚¬éå˜ç¬æ¶“çŒ
 
-        return out,out1,out_direct
+        return out
 
 
 def DinkNet34_CMMPNet():
