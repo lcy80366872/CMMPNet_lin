@@ -19,33 +19,33 @@ class Exchange_3(nn.Module):
         x3[:, bn3 < bn_threshold] = (x[0][:, bn3 < bn_threshold] + x[1][:, bn3 < bn_threshold]) / 2.0
 
         return [x1, x2,x3]
-class Exchange(nn.Module):
-    def __init__(self):
-        super(Exchange, self).__init__()
-
-    def forward(self, x, bn, bn_threshold):
-        bn1, bn2 = bn[0].weight.abs(), bn[1].weight.abs()
-        #就是大于阈值的那些通道保留，小于阈值的那些通道取另外一个的值
-        x1, x2 = torch.zeros_like(x[0]), torch.zeros_like(x[1])
-        x1[:,torch.abs( bn1) >= bn_threshold] = x[0][:,  torch.abs( bn1)>= bn_threshold]
-        x1[:, torch.abs( bn1) < bn_threshold] = x[1][:, torch.abs( bn1)< bn_threshold]
-        x2[:, torch.abs( bn2) >= bn_threshold] = x[1][:, torch.abs( bn2)>= bn_threshold]
-        x2[:, torch.abs( bn2) < bn_threshold] = x[0][:, torch.abs( bn2)< bn_threshold]
-        # print('bn',bn1 < bn_threshold)
-
-        return [x1, x2]
 # class Exchange(nn.Module):
 #     def __init__(self):
 #         super(Exchange, self).__init__()
 
 #     def forward(self, x, bn, bn_threshold):
 #         bn1, bn2 = bn[0].weight.abs(), bn[1].weight.abs()
+#         #就是大于阈值的那些通道保留，小于阈值的那些通道取另外一个的值
 #         x1, x2 = torch.zeros_like(x[0]), torch.zeros_like(x[1])
-#         x1[:, bn1 >= bn_threshold] = x[0][:, bn1 >= bn_threshold]
-#         x1[:, bn1 < bn_threshold] = x[1][:, bn1 < bn_threshold]
-#         x2[:, bn2 >= bn_threshold] = x[1][:, bn2 >= bn_threshold]
-#         x2[:, bn2 < bn_threshold] = x[0][:, bn2 < bn_threshold]
+#         x1[:,torch.abs( bn1) >= bn_threshold] = x[0][:,  torch.abs( bn1)>= bn_threshold]
+#         x1[:, torch.abs( bn1) < bn_threshold] = x[1][:, torch.abs( bn1)< bn_threshold]
+#         x2[:, torch.abs( bn2) >= bn_threshold] = x[1][:, torch.abs( bn2)>= bn_threshold]
+#         x2[:, torch.abs( bn2) < bn_threshold] = x[0][:, torch.abs( bn2)< bn_threshold]
+#         # print('bn',bn1 < bn_threshold)
+
 #         return [x1, x2]
+class Exchange(nn.Module):
+    def __init__(self):
+        super(Exchange, self).__init__()
+
+    def forward(self, x, bn, bn_threshold):
+        bn1, bn2 = bn[0].weight.abs(), bn[1].weight.abs()
+        x1, x2 = torch.zeros_like(x[0]), torch.zeros_like(x[1])
+        x1[:, bn1 >= bn_threshold] = x[0][:, bn1 >= bn_threshold]
+        x1[:, bn1 < bn_threshold] = x[1][:, bn1 < bn_threshold]
+        x2[:, bn2 >= bn_threshold] = x[1][:, bn2 >= bn_threshold]
+        x2[:, bn2 < bn_threshold] = x[0][:, bn2 < bn_threshold]
+        return [x1, x2]
 class ModuleParallel(nn.Module):
     def __init__(self, module):
         super(ModuleParallel, self).__init__()
