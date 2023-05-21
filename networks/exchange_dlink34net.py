@@ -226,7 +226,7 @@ class ResNet(nn.Module):
         out = self.finalconv(torch.cat((x_out[0], x_out[1]), 1))
         out_direct=self.DConv(torch.cat((x_out[0], x_out[1]), 1))
         out_direct= nn.LogSoftmax(dim=1)(out_direct)
-        out1 = self.Ref(out)
+        out1 = torch.sigmoid(self.Ref(out))
         out = torch.sigmoid(out)
         # out=self.finalconv(x_out)
         # alpha_soft = F.softmax(self.alpha,dim=0)
