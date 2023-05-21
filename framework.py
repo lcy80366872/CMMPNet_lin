@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -6,14 +7,28 @@ import cv2
 import os
 from tqdm import tqdm
 from utils.metrics import IoU
-from loss import dice_bce_loss,SSIM
+from loss import dice_bce_loss
 import copy
 import numpy
 from networks.DirectionNet import DirectionNet
+from networks.SGCN import Sobel
+
 
 
 import torch_dct as DCT
 
+def show_sobal(img,channels):
+    sobal=Sobel(channels, channels)
+    img_sobal=sobal(img)
+    print('img', img.shape)
+    print('sobla',img_sobal)
+    plt.subplot(1, 2, 1)
+    plt.imshow(img[0,0, :, :].cpu())
+    plt.subplot(1, 2, 2)
+    plt.imshow(img_sobal[0,:,:].cpu())
+    # plt.subplot(1, 3, 3)
+    # plt.imshow(b[0, 0, :, :].cpu())
+    plt.show()
 
 def L1_penalty(var):
     return torch.abs(var).sum()
@@ -24,8 +39,8 @@ class Solver:
         self.net_direction=DirectionNet().cuda()
         self.optimizer = optimizer
         self.dataset = dataset
-        self.loss_direction=nn.NLLLoss()
-        self.loss = dice_bce_loss()
+        self.loss1 =dice_bce_loss(ssim=True)
+        self.loss = dice_bce_loss(ssim=False)
         self.metrics = IoU(threshold=0.5)
         self.old_lr = optimizer.param_groups[0]["lr"]
     def resize(self, y_true, h, w):
@@ -113,13 +128,10 @@ class Solver:
         self.data2cuda()
 
         self.optimizer.zero_grad()
-        mask = self.resize(self.mask, 512, 512).cuda()
-        direct_mask=self.net_direction.forward(mask)
-        # print('ss',direct_mask.shape)
-        # print(direct_mask)
+        # mask = self.resize(self.mask, 512, 512).cuda()
+        # direct_mask=self.net_direction.forward(mask)
 
-
-        pred1,pred,direct_pred = self.net.forward(self.img)
+        pred = self.net.forward(self.img)
         slim_params = []
         for name, param in self.net.named_parameters():
             if param.requires_grad and name.endswith('weight') and 'bn2' in name:
@@ -127,32 +139,37 @@ class Solver:
                     slim_params.append(param[:len(param) // 2])
                 else:
                     slim_params.append(param[len(param) // 2:])
+#                 slim_params.append(param)
 
         loss = self.loss(self.mask,pred)
-        loss += self.loss(self.mask, pred1)
-        loss +=0.2*self.loss_direction(direct_pred,direct_mask)
+        # loss += self.loss1(self.mask, pred)
+        # loss += self.loss(self.mask, pred1)
+        # loss +=0.2*self.loss_direction(direct_pred,direct_mask)
         L1_norm = sum([L1_penalty(m).cuda() for m in slim_params])
         lamda =2e-4
         loss += lamda * L1_norm  # this is actually counted for len(outputs) times
+#         print('l1:',lamda * L1_norm)
 
 
         loss.backward()
         self.optimizer.step()
 
         batch_iou, intersection, union = self.metrics(self.mask, pred)
+       
         return pred, loss.item(), batch_iou, intersection, union
 
     def test_batch(self):
         self.net.eval()
         self.data2cuda(volatile=True)
-        mask = self.resize(self.mask, 512, 512).cuda()
-        direct_mask = self.net_direction.forward(mask)
-        pred1, pred, direct_pred = self.net.forward(self.img)
+        # mask = self.resize(self.mask, 512, 512).cuda()
+        # direct_mask = self.net_direction.forward(mask)
+        pred = self.net.forward(self.img)
         loss = self.loss(self.mask, pred)
-        loss += self.loss(self.mask, pred1)
-        loss +=0.2*self.loss_direction(direct_pred,direct_mask)
+        # loss += self.loss(self.mask, pred1)
+        # loss +=0.2*self.loss_direction(direct_pred,direct_mask)
 
         batch_iou, intersection, union = self.metrics(self.mask, pred)
+       
         pred = pred.cpu().data.numpy().squeeze(1)
         return pred, loss.item(), batch_iou, intersection, union
     def test_batch_exchange(self):
@@ -209,10 +226,10 @@ class Framework:
     def set_save_path(self, save_path):
         self.save_path = save_path
 
-    def fit(self, epochs, no_optim_epochs=4):
+    def fit(self, epochs, no_optim_epochs=5):
         val_best_metrics = test_best_metrics = [0, 0]
         no_optim = 0
-        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer=self.solver.optimizer, T_max=epochs,
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer=self.solver.optimizer, T_max= epochs,
                                                                verbose=True)
         for epoch in range(1, epochs + 1):
             print(f"epoch {epoch}/{epochs}")
@@ -236,7 +253,7 @@ class Framework:
                 else:
                     no_optim = 0
                     self.solver.update_lr(ratio=5.0)
-
+            
             print(f'train_loss: {train_loss:.4f} train_metrics: {train_metrics}')
             print(f'  val_loss: {val_loss:.4f}   val_metrics:   {val_metrics}')
             print(f' test_loss: {test_loss:.4f}  test_metrics:  {test_metrics}')
