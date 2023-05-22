@@ -54,7 +54,7 @@ def prepare_TLCGIS_dataset(args):
     with open(os.path.join(args.split_train_val_test,'test.txt'),'r') as f:
         test_list = [x[:-1] for x in f]
 
-    train_dataset = ImageLidarDataset(train_list, args.sat_dir, args.mask_dir, args.lidar_dir, randomize=True,  mask_transform=mask_transform, adjust_resolution=adjust_resolution)
+    train_dataset = ImageLidarDataset(train_list, args.sat_dir, args.mask_dir, args.lidar_dir, randomize=False,  mask_transform=mask_transform, adjust_resolution=adjust_resolution)
     val_dataset   = ImageLidarDataset(val_list,   args.sat_dir, args.mask_dir, args.lidar_dir, randomize=False, mask_transform=mask_transform, adjust_resolution=adjust_resolution)
     test_dataset  = ImageLidarDataset(test_list,  args.sat_dir, args.mask_dir, args.lidar_dir, randomize=False, mask_transform=mask_transform, adjust_resolution=adjust_resolution)
 
