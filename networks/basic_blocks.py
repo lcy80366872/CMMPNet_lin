@@ -19,33 +19,52 @@ class Exchange_3(nn.Module):
         x3[:, bn3 < bn_threshold] = (x[0][:, bn3 < bn_threshold] + x[1][:, bn3 < bn_threshold]) / 2.0
 
         return [x1, x2,x3]
-# class Exchange(nn.Module):
-#     def __init__(self):
-#         super(Exchange, self).__init__()
-
-#     def forward(self, x, bn, bn_threshold):
-#         bn1, bn2 = bn[0].weight.abs(), bn[1].weight.abs()
-#         #就是大于阈值的那些通道保留，小于阈值的那些通道取另外一个的值
-#         x1, x2 = torch.zeros_like(x[0]), torch.zeros_like(x[1])
-#         x1[:,torch.abs( bn1) >= bn_threshold] = x[0][:,  torch.abs( bn1)>= bn_threshold]
-#         x1[:, torch.abs( bn1) < bn_threshold] = x[1][:, torch.abs( bn1)< bn_threshold]
-#         x2[:, torch.abs( bn2) >= bn_threshold] = x[1][:, torch.abs( bn2)>= bn_threshold]
-#         x2[:, torch.abs( bn2) < bn_threshold] = x[0][:, torch.abs( bn2)< bn_threshold]
-#         # print('bn',bn1 < bn_threshold)
-
-#         return [x1, x2]
 class Exchange(nn.Module):
     def __init__(self):
         super(Exchange, self).__init__()
 
     def forward(self, x, bn, bn_threshold):
         bn1, bn2 = bn[0].weight.abs(), bn[1].weight.abs()
+        #就是大于阈值的那些通道保留，小于阈值的那些通道取另外一个的值
         x1, x2 = torch.zeros_like(x[0]), torch.zeros_like(x[1])
         x1[:, bn1 >= bn_threshold] = x[0][:, bn1 >= bn_threshold]
-        x1[:, bn1 < bn_threshold] = x[0][:, bn1 < bn_threshold]+x[1][:, bn1 < bn_threshold]
+        x1[:, bn1 < bn_threshold] = x[1][:, bn1 < bn_threshold]
         x2[:, bn2 >= bn_threshold] = x[1][:, bn2 >= bn_threshold]
-        x2[:, bn2 < bn_threshold] = x[0][:, bn2 < bn_threshold]+x[1][:, bn2 < bn_threshold]
+        x2[:, bn2 < bn_threshold] = x[1][:, bn2 < bn_threshold]
+        # print('bn',bn1 < bn_threshold)
+
         return [x1, x2]
+class SpatialAttention(nn.Module):
+    def __init__(self, kernel_size=7):
+        super().__init__()
+        self.conv = nn.Conv2d(2, 1, kernel_size=kernel_size, padding=kernel_size // 2)
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, x):
+        max_result, _ = torch.max(x, dim=1, keepdim=True)
+        avg_result = torch.mean(x, dim=1, keepdim=True)
+        result = torch.cat([max_result, avg_result], 1)
+        output = self.conv(result)
+        output = self.sigmoid(output)
+        return output
+class Spatial_Exchange(nn.Module):
+    def __init__(self):
+        super(Spatial_Exchange, self).__init__()
+        self.sa=SpatialAttention(kernel_size=3)
+
+    def forward(self, x, threshold):
+        n,c,h,w =x[0].shape
+        xa1=self.sa(x[0]).repeat([1,c,1,1])
+        xa2=self.sa(x[1]).repeat([1,c,1,1])
+
+        # print('shape:',xa1.shape)
+        x1, x2 = torch.zeros_like(x[0]), torch.zeros_like(x[1])
+        x1[xa1 >= threshold] = x[0][xa1 >= threshold]
+        x1[xa1 < threshold] = x[1][xa1 < threshold]
+        x2[xa2 >= threshold] = x[1][xa2 >= threshold]
+        x2[xa2 < threshold] = x[0][xa2 < threshold]
+        return [x1, x2]
+
 class ModuleParallel(nn.Module):
     def __init__(self, module):
         super(ModuleParallel, self).__init__()
@@ -670,11 +689,10 @@ class DeformConv2d(nn.Module):
         grad_output = (grad_output[i] * 0.1 for i in range(len(grad_output)))
 
     def forward(self, x):
-        
-        offset = self.p_conv(x[1])
+        offset = self.p_conv(x)
         if self.modulation:
-            m = torch.sigmoid(self.m_conv(x[1]))
-        x=x[0]
+            m = torch.sigmoid(self.m_conv(x))
+
         dtype = offset.data.type()
         ks = self.kernel_size
         N = offset.size(1) // 2
