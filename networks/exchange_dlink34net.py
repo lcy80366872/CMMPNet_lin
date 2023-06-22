@@ -47,7 +47,7 @@ class BasicBlock(nn.Module):
         out = self.bn1(out)
         out = self.relu(out)
         if len(x) > 1:
-            out = self.sp_exchange(out,0.1)
+            out = self.sp_exchange(out,0.05)
         out = self.conv2(out)
         out = self.bn2(out)
         # if len(x) > 1:
