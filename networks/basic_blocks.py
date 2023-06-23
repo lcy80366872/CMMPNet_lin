@@ -65,6 +65,51 @@ class Spatial_Exchange(nn.Module):
         x2[xa2 < threshold] = x[0][xa2 < threshold]
         return [x1, x2]
 
+class AlignModule(nn.Module):
+    def __init__(self, inplane):
+        super(AlignModule, self).__init__()
+        # self.down_h = nn.Conv2d(inplane, outplane, 1, bias=False)
+        # self.down_l = nn.Conv2d(inplane, outplane, 1, bias=False)
+        self.flow_make = nn.Conv2d(inplane * 2, 4, kernel_size=3, padding=1, bias=False)
+
+    def forward(self, x):
+        x1, x2 = x  # low_feature 对应分辨率较高的特征图，h_feature即为低分辨率的high-level feature
+
+        h, w = x1.size()[2:]
+        size = (h, w)
+
+        # 预测语义流场 === 其实就是输入一个3x3的卷积
+        #flow有两层，一层代表x方向的偏移，一层是y的偏移
+        flow = self.flow_make(torch.cat([x1, x2], 1))
+        # 将Flow Field warp 到当前的 high-level feature中
+        f1, f2 = torch.chunk(flow, 2, dim=1)
+        x1_feat = self.flow_warp(x1, f1,size)
+        x2_feat = self.flow_warp(x2, f2,size)
+
+        return x1_feat,x2_feat
+
+    @staticmethod
+    def flow_warp(inputs, flow, size):
+        out_h, out_w = size  # 对应高分辨率的low-level feature的特征图尺寸
+        n, c, h, w = inputs.size()  # 对应低分辨率的high-level feature的4个输入维度
+
+        norm = torch.tensor([[[[out_w, out_h]]]]).type_as(inputs).to(inputs.device)
+        # 从-1到1等距离生成out_h个点，每一行重复out_w个点，最终生成(out_h, out_w)的像素点
+        w = torch.linspace(-1.0, 1.0, out_h).view(-1, 1).repeat(1, out_w)
+        # 生成w的转置矩阵
+        h = torch.linspace(-1.0, 1.0, out_w).repeat(out_h, 1)
+        # 展开后进行合并
+        grid = torch.cat((h.unsqueeze(2), w.unsqueeze(2)), 2)
+        grid = grid.repeat(n, 1, 1, 1).type_as(inputs).to(inputs.device)
+        grid = grid + flow.permute(0, 2, 3, 1) / norm
+        # grid指定由input空间维度归一化的采样像素位置，其大部分值应该在[ -1, 1]的范围内
+        # 如x=-1,y=-1是input的左上角像素，x=1,y=1是input的右下角像素。
+        # 具体可以参考《Spatial Transformer Networks》
+        #grid_sample函数做的就是根据grid坐标，从input的pixels里采样。 如果此坐标下没有对应的input pixel，就要用bilinear interpolation从周围的pixels采样。
+        output = F.grid_sample(inputs, grid)
+        #输出大小等于grid大小
+        return output
+
 class ModuleParallel(nn.Module):
     def __init__(self, module):
         super(ModuleParallel, self).__init__()
