@@ -72,8 +72,8 @@ class AlignModule(nn.Module):
         # self.down_l = nn.Conv2d(inplane, outplane, 1, bias=False)
         self.flow_make = nn.Conv2d(inplane * 2, 4, kernel_size=3, padding=1, bias=False)
 
-    def forward(self, x):
-        x1, x2 = x  # low_feature 对应分辨率较高的特征图，h_feature即为低分辨率的high-level feature
+    def forward(self, x,y):
+        x1, x2 = x,y  # low_feature 对应分辨率较高的特征图，h_feature即为低分辨率的high-level feature
 
         h, w = x1.size()[2:]
         size = (h, w)
@@ -86,7 +86,7 @@ class AlignModule(nn.Module):
         x1_feat = self.flow_warp(x1, f1,size)
         x2_feat = self.flow_warp(x2, f2,size)
 
-        return x1_feat,x2_feat
+        return x1_feat#,x2_feat
 
     @staticmethod
     def flow_warp(inputs, flow, size):
@@ -109,7 +109,49 @@ class AlignModule(nn.Module):
         output = F.grid_sample(inputs, grid)
         #输出大小等于grid大小
         return output
+class Align_Module(nn.Module):
+    def __init__(self, inplane, outplane):
+        super(Align_Module, self).__init__()
+        self.down_h = nn.Conv2d(inplane, outplane, 1, bias=False)
+        self.down_l = nn.Conv2d(inplane, outplane, 1, bias=False)
+        self.flow_make = nn.Conv2d(outplane * 2, 2, kernel_size=3, padding=1, bias=False)
 
+    def forward(self, x):
+        low_feature, h_feature = x  # low_feature 对应分辨率较高的特征图，h_feature即为低分辨率的high-level feature
+        h_feature_orign = h_feature
+        h, w = low_feature.size()[2:]
+        size = (h, w)
+        # 将high-level 和 low-level feature分别通过两个1x1卷积进行压缩
+        low_feature = self.down_l(low_feature)
+        h_feature = self.down_h(h_feature)
+        # 将high-level feature进行双线性上采样
+        h_feature = F.interpolate(h_feature, size=size, mode="bilinear", align_corners=False)
+        # 预测语义流场 === 其实就是输入一个3x3的卷积
+        flow = self.flow_make(torch.cat([h_feature, low_feature], 1))
+        # 将Flow Field warp 到当前的 high-level feature中
+        h_feature = self.flow_warp(h_feature_orign, flow, size=size)
+
+        return h_feature
+
+    @staticmethod
+    def flow_warp(inputs, flow, size):
+        out_h, out_w = size  # 对应高分辨率的low-level feature的特征图尺寸
+        n, c, h, w = inputs.size()  # 对应低分辨率的high-level feature的4个输入维度
+
+        norm = torch.tensor([[[[out_w, out_h]]]]).type_as(inputs).to(inputs.device)
+        # 从-1到1等距离生成out_h个点，每一行重复out_w个点，最终生成(out_h, out_w)的像素点
+        w = torch.linspace(-1.0, 1.0, out_h).view(-1, 1).repeat(1, out_w)
+        # 生成w的转置矩阵
+        h = torch.linspace(-1.0, 1.0, out_w).repeat(out_h, 1)
+        # 展开后进行合并
+        grid = torch.cat((h.unsqueeze(2), w.unsqueeze(2)), 2)
+        grid = grid.repeat(n, 1, 1, 1).type_as(inputs).to(inputs.device)
+        grid = grid + flow.permute(0, 2, 3, 1) / norm
+        # grid指定由input空间维度归一化的采样像素位置，其大部分值应该在[ -1, 1]的范围内
+        # 如x=-1,y=-1是input的左上角像素，x=1,y=1是input的右下角像素。
+        # 具体可以参考《Spatial Transformer Networks》，下方参考文献[2]
+        output = F.grid_sample(inputs, grid)
+        return output
 class ModuleParallel(nn.Module):
     def __init__(self, module):
         super(ModuleParallel, self).__init__()
@@ -188,124 +230,6 @@ class DBlock_parallel(nn.Module):
 
         return out
 
-class ResidualBlock(nn.Module):
-    expansion = 1
-
-    def __init__(self, inplanes, planes, stride=1, downsample=True, bias=False):
-        super(ResidualBlock, self).__init__()
-        dim_out = planes
-        self.stride = stride
-        self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=3, stride=stride,
-                               padding=1, bias=bias)
-        self.bn1 = nn.BatchNorm2d(planes)
-        self.relu = nn.ReLU(inplace=True)
-        self.conv2 = nn.Conv2d(dim_out, dim_out, kernel_size=(3, 3),
-                               stride=1, padding=1)
-        self.bn2 = nn.BatchNorm2d(planes)
-        if downsample == True:
-            self.downsample = nn.Sequential(
-                nn.Conv2d(inplanes, planes, kernel_size=1, stride=stride, bias=bias),
-                nn.BatchNorm2d(planes),
-            )
-        elif isinstance(downsample, nn.Module):
-            self.downsample = downsample
-        else:
-            self.downsample = None
-
-    def forward(self, x):
-        residual = x
-        x = self.conv1(x)
-        x = self.bn1(x)
-        x = self.relu(x)
-        x = self.conv2(x)
-        out = self.bn2(x)
-        if self.downsample is not None:
-            residual = self.downsample(residual)
-        out += residual
-        out = self.relu(out)
-        return out
-
-
-class BasicBlock1DConv(nn.Module):
-    expansion = 1
-
-    def __init__(self, inplanes, planes, stride=1, downsample=None, bias=False):
-        super(BasicBlock1DConv, self).__init__()
-        dim_out = planes
-        self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=3, stride=stride,
-                               padding=1, bias=bias)
-        self.bn1 = nn.BatchNorm2d(planes)
-        self.relu = nn.ReLU(inplace=True)
-        self.conv2 = nn.Conv2d(dim_out, dim_out, kernel_size=(3, 3),
-                               stride=1, padding=1)
-        self.conv2_1 = nn.Conv2d(dim_out, dim_out // 4, kernel_size=(1, 9),
-                                 stride=1, padding=(0, 4), bias=bias)
-        self.conv2_2 = nn.Conv2d(dim_out, dim_out // 4, kernel_size=(9, 1),
-                                 stride=1, padding=(4, 0), bias=bias)
-        self.conv2_3 = nn.Conv2d(dim_out, dim_out // 4, kernel_size=(9, 1),
-                                 stride=1, padding=(4, 0), bias=bias)
-        self.conv2_4 = nn.Conv2d(dim_out, dim_out // 4, kernel_size=(1, 9),
-                                 stride=1, padding=(0, 4), bias=bias)
-        self.bn2 = nn.BatchNorm2d(planes)
-        self.downsample = downsample
-        self.stride = stride
-
-    def forward(self, x):
-        residual = x
-        x = self.conv1(x)
-        x = self.bn1(x)
-        x = self.relu(x)
-
-        x0 = self.conv2(x)
-        x1 = self.conv2_1(x)
-        x2 = self.conv2_2(x)
-        x3 = self.conv2_3(self.h_transform(x))
-        x3 = self.inv_h_transform(x3)
-        x4 = self.conv2_4(self.v_transform(x))
-        x4 = self.inv_v_transform(x4)
-
-        x = x0 + torch.cat((x1, x2, x3, x4), 1)
-        out = self.bn2(x)
-
-        if self.downsample is not None:
-            residual = self.downsample(residual)
-
-        out += residual
-        out = self.relu(out)
-        return out
-
-    def h_transform(self, x):
-        shape = x.size()
-        x = torch.nn.functional.pad(x, (0, shape[-1]))
-        x = x.reshape(shape[0], shape[1], -1)[..., :-shape[-1]]
-        x = x.reshape(shape[0], shape[1], shape[2], 2*shape[3]-1)
-        return x
-
-    def inv_h_transform(self, x):
-        shape = x.size()
-        x = x.reshape(shape[0], shape[1], -1).contiguous()
-        x = torch.nn.functional.pad(x, (0, shape[-2]))
-        x = x.reshape(shape[0], shape[1], shape[-2], 2*shape[-2])
-        x = x[..., 0: shape[-2]]
-        return x
-
-    def v_transform(self, x):
-        x = x.permute(0, 1, 3, 2)
-        shape = x.size()
-        x = torch.nn.functional.pad(x, (0, shape[-1]))
-        x = x.reshape(shape[0], shape[1], -1)[..., :-shape[-1]]
-        x = x.reshape(shape[0], shape[1], shape[2], 2*shape[3]-1)
-        return x.permute(0, 1, 3, 2)
-
-    def inv_v_transform(self, x):
-        x = x.permute(0, 1, 3, 2)
-        shape = x.size()
-        x = x.reshape(shape[0], shape[1], -1)
-        x = torch.nn.functional.pad(x, (0, shape[-2]))
-        x = x.reshape(shape[0], shape[1], shape[-2], 2*shape[-2])
-        x = x[..., 0: shape[-2]]
-        return x.permute(0, 1, 3, 2)
-
 
 class DecoderBlock_parallel(nn.Module):
     def __init__(self, in_channels, n_filters,num_parallel):
@@ -314,6 +238,7 @@ class DecoderBlock_parallel(nn.Module):
         self.conv1 = conv1x1(in_channels, in_channels // 4, 1)
         self.norm1 = BatchNorm2dParallel(in_channels // 4, num_parallel)
         self.relu1 =  ModuleParallel(nn.ReLU(inplace=True))
+
         self.deconv2 = ModuleParallel(nn.ConvTranspose2d(
             in_channels // 4, in_channels // 4, 3, stride=2, padding=1, output_padding=1
         ))
