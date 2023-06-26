@@ -97,7 +97,7 @@ class AlignModule(nn.Module):
         x1_feat = self.flow_warp(x1, f1,size)
         x2_feat = self.flow_warp(x2, f2,size)
 
-        return x1_feat#,x2_feat
+        return x1_feat,x2_feat
 
     @staticmethod
     def flow_warp(inputs, flow, size):
