@@ -31,7 +31,7 @@ class BasicBlock(nn.Module):
         self.num_parallel = num_parallel
         self.downsample = downsample
         self.stride = stride
-        self.sp_exchange=Spatial_Exchange()
+        # self.sp_exchange=Spatial_Exchange()
         self.exchange = Exchange()
         self.bn_threshold = bn_threshold
         self.bn2_list = []
@@ -226,17 +226,11 @@ class ResNet(nn.Module):
 
         x_c = self.dblock(x_4)
         # decoder
-        # x_d4 = [self.decoder4(x_c)[l] + x_3[l] for l in range(self.num_parallel)]
-        # x_d3 = [self.decoder3(x_d4)[l] + x_2[l] for l in range(self.num_parallel)]
-        # x_d2 = [self.decoder2(x_d3)[l] + x_1[l] for l in range(self.num_parallel)]
-        # x_d1 = self.decoder1(x_d2)
-        x_d4=  [self.out_align1(self.decoder4(x_c)[l],x_3[l]) for l in range(self.num_parallel)]
-        x_d4 = [x_d4[l] + x_3[l] for l in range(self.num_parallel)]
-        x_d3 = [self.out_align2(self.decoder3(x_d4)[l], x_2[l]) for l in range(self.num_parallel)]
-        x_d3 = [x_d3[l] + x_2[l] for l in range(self.num_parallel)]
-        x_d2 = [self.out_align3(self.decoder2(x_d3)[l], x_1[l]) for l in range(self.num_parallel)]
-        x_d2 = [x_d2[l] + x_1[l] for l in range(self.num_parallel)]
+        x_d4 = [self.decoder4(x_c)[l] + x_3[l] for l in range(self.num_parallel)]
+        x_d3 = [self.decoder3(x_d4)[l] + x_2[l] for l in range(self.num_parallel)]
+        x_d2 = [self.decoder2(x_d3)[l] + x_1[l] for l in range(self.num_parallel)]
         x_d1 = self.decoder1(x_d2)
+        
 
 
         x_out = self.finalrelu1(self.finaldeconv1(x_d1))
