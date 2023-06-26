@@ -26,13 +26,13 @@ class Exchange(nn.Module):
     def forward(self, x, bn, bn_threshold):
         bn1, bn2 = bn[0].weight.abs(), bn[1].weight.abs()
         #就是大于阈值的那些通道保留，小于阈值的那些通道取另外一个的值
-        # x1, x2 = torch.zeros_like(x[0]), torch.zeros_like(x[1])
-        # x1[:, bn1 >= bn_threshold] = x[0][:, bn1 >= bn_threshold]
-        # x1[:, bn1 < bn_threshold] = x[1][:, bn1 < bn_threshold]
-        # x2[:, bn2 >= bn_threshold] = x[1][:, bn2 >= bn_threshold]
-        # x2[:, bn2 < bn_threshold] = x[0][:, bn2 < bn_threshold]
-        x[0][:, bn1 < bn_threshold] = x[1][:, bn1 < bn_threshold]
-        x[1][:, bn2 < bn_threshold] = x[0][:, bn2 < bn_threshold]
+        x1, x2 = torch.zeros_like(x[0]), torch.zeros_like(x[1])
+        x1[:, bn1 >= bn_threshold] = x[0][:, bn1 >= bn_threshold]
+        x1[:, bn1 < bn_threshold] = x[1][:, bn1 < bn_threshold]
+        x2[:, bn2 >= bn_threshold] = x[1][:, bn2 >= bn_threshold]
+        x2[:, bn2 < bn_threshold] = x[0][:, bn2 < bn_threshold]
+        # x[0][:, bn1 < bn_threshold] = x[1][:, bn1 < bn_threshold]
+        # x[1][:, bn2 < bn_threshold] = x[0][:, bn2 < bn_threshold]
         # print('bn',bn1 < bn_threshold)
 
         return x
@@ -83,8 +83,8 @@ class AlignModule(nn.Module):
         # self.down_l = nn.Conv2d(inplane, outplane, 1, bias=False)
         self.flow_make = nn.Conv2d(inplane * 2, 4, kernel_size=3, padding=1, bias=False)
 
-    def forward(self, x,y):
-        x1, x2 = x,y  # low_feature 对应分辨率较高的特征图，h_feature即为低分辨率的high-level feature
+    def forward(self, x):
+        x1, x2 = x  # low_feature 对应分辨率较高的特征图，h_feature即为低分辨率的high-level feature
 
         h, w = x1.size()[2:]
         size = (h, w)
