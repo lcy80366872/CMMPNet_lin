@@ -26,14 +26,16 @@ class Exchange(nn.Module):
     def forward(self, x, bn, bn_threshold):
         bn1, bn2 = bn[0].weight.abs(), bn[1].weight.abs()
         #就是大于阈值的那些通道保留，小于阈值的那些通道取另外一个的值
-        x1, x2 = torch.zeros_like(x[0]), torch.zeros_like(x[1])
-        x1[:, bn1 >= bn_threshold] = x[0][:, bn1 >= bn_threshold]
-        x1[:, bn1 < bn_threshold] = x[1][:, bn1 < bn_threshold]
-        x2[:, bn2 >= bn_threshold] = x[1][:, bn2 >= bn_threshold]
-        x2[:, bn2 < bn_threshold] = x[1][:, bn2 < bn_threshold]
+        # x1, x2 = torch.zeros_like(x[0]), torch.zeros_like(x[1])
+        # x1[:, bn1 >= bn_threshold] = x[0][:, bn1 >= bn_threshold]
+        # x1[:, bn1 < bn_threshold] = x[1][:, bn1 < bn_threshold]
+        # x2[:, bn2 >= bn_threshold] = x[1][:, bn2 >= bn_threshold]
+        # x2[:, bn2 < bn_threshold] = x[0][:, bn2 < bn_threshold]
+        x[0][:, bn1 < bn_threshold] = x[1][:, bn1 < bn_threshold]
+        x[1][:, bn2 < bn_threshold] = x[0][:, bn2 < bn_threshold]
         # print('bn',bn1 < bn_threshold)
 
-        return [x1, x2]
+        return x
 class SpatialAttention(nn.Module):
     def __init__(self, kernel_size=7):
         super().__init__()
@@ -56,6 +58,15 @@ class Spatial_Exchange(nn.Module):
         n,c,h,w =x[0].shape
         xa1=self.sa(x[0]).repeat([1,c,1,1])
         xa2=self.sa(x[1]).repeat([1,c,1,1])
+        # a = torch.lt(xa1, 0.2)
+        # print(a.shape)
+        # b = torch.lt(xa2, 0.2)
+        # print('xa1',a.nonzero())
+        # print('xa2', b.nonzero())
+        # print('xa1:', xa1)
+        # print('xa2:', xa2)
+        # print('xa1',torch.mean(xa1))
+        # print('xa2', torch.mean(xa2))
 
         # print('shape:',xa1.shape)
         x1, x2 = torch.zeros_like(x[0]), torch.zeros_like(x[1])
