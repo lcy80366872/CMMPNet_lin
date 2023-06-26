@@ -31,7 +31,7 @@ class BasicBlock(nn.Module):
         self.num_parallel = num_parallel
         self.downsample = downsample
         self.stride = stride
-        # self.sp_exchange=Spatial_Exchange()
+        self.sp_exchange=Spatial_Exchange()
         self.exchange = Exchange()
         self.bn_threshold = bn_threshold
         self.bn2_list = []
@@ -160,10 +160,9 @@ class ResNet(nn.Module):
         # self.decoder3 = DecoderBlock_parallel_exchange(filters[2], filters[1],2,bn_threshold)
         # self.decoder2 = DecoderBlock_parallel_exchange(filters[1], filters[0],2,bn_threshold)
         # self.decoder1 = DecoderBlock_parallel_exchange(filters[0], filters[0],2,bn_threshold)
-
-        self.out_align1 = AlignModule(inplane=filters[2])
-        self.out_align2 = AlignModule(inplane=filters[1])
-        self.out_align3 = AlignModule(inplane=filters[0])
+        self.out_align = AlignModule(inplane=filters[0]//2)
+        # self.out_align2 = AlignModule(inplane=filters[1], outplane=filters[1])
+        # self.out_align3 = AlignModule(inplane=filters[2], outplane=filters[2])
 
 
         # self.finaldeconv1_add = nn.ConvTranspose2d(filters[0], filters[0] // 2, 4, 2, 1)
@@ -226,19 +225,19 @@ class ResNet(nn.Module):
 
         x_c = self.dblock(x_4)
         # decoder
+
         x_d4 = [self.decoder4(x_c)[l] + x_3[l] for l in range(self.num_parallel)]
         x_d3 = [self.decoder3(x_d4)[l] + x_2[l] for l in range(self.num_parallel)]
         x_d2 = [self.decoder2(x_d3)[l] + x_1[l] for l in range(self.num_parallel)]
         x_d1 = self.decoder1(x_d2)
-        
 
 
         x_out = self.finalrelu1(self.finaldeconv1(x_d1))
         x_out = self.finalrelu2(self.finalconv2(x_out))
 
-        x_out[0]=self.se(x_out[0])
-        x_out[1] = self.se(x_out[1])
-        # x_out=self.out_align(x_out)
+        # x_out[0]=self.se(x_out[0])
+        # x_out[1] = self.se(x_out[1])
+        x_out=self.out_align(x_out)
         # atten=self.atten(torch.cat((x_out[0], x_out[1]), 1))
         out = self.finalconv(torch.cat((x_out[0], x_out[1]), 1))
         # out=self.finalconv(x_out)
@@ -248,7 +247,7 @@ class ResNet(nn.Module):
         #     ens += alpha_soft[l] * out[l].detach()
         out = torch.sigmoid(out)
         # out =nn.LogSoftmax()(ens)
-        # out.append(ens)#[å¨‘æ’±å€“é–²æ»„æ½éŽ¾å†²å¼³é–»ã„¥åŸ£utå¨´çŠ®å„±å¯®é”‹ç¦’éï¸½ç²¦é–¹ç¨¿Â¨lphaé–¸Ñƒæ´©éŠ†â‚¬é–¸æ°¬æµ·å¨ˆæ†ƒutput,å¨‘æ’¯å“é–¸å¿“å½‰ç»—ä½¹ç¨‰éšï¿½
+        # out.append(ens)#[Ã¥Â¨â€˜Ã¦â€™Â±Ã¥â‚¬â€œÃ©â€“Â²Ã¦Â»â€žÃ¦Â½ÂÃ©Å½Â¾Ã¥â€ Â²Ã¥Â¼Â³Ã©â€“Â»Ã£â€žÂ¥Ã¥Å¸Â£utÃ¥Â¨Â´Ã§Å Â®Ã¥â€žÂ±Ã¥Â¯Â®Ã©â€â€¹Ã§Â¦â€™Ã©ÂÂÃ¯Â¸Â½Ã§Â²Â¦Ã©â€“Â¹Ã§Â¨Â¿Ã‚Â¨lphaÃ©â€“Â¸Ã‘Æ’Ã¦Â´Â©Ã©Å â€ Ã¢â€šÂ¬Ã©â€“Â¸Ã¦Â°Â¬Ã¦ÂµÂ·Ã¥Â¨Ë†Ã¦â€ Æ’utput,Ã¥Â¨â€˜Ã¦â€™Â¯Ã¥Ââ€œÃ©â€“Â¸Ã¥Â¿â€œÃ¥Â½â€°Ã§Â»â€”Ã¤Â½Â¹Ã§Â¨â€°Ã©ÂÅ¡Ã¯Â¿Â½
 
         return out
 
