@@ -46,8 +46,8 @@ class BasicBlock(nn.Module):
         # print('conv1',out[1].shape)
         out = self.bn1(out)
         out = self.relu(out)
-        # if len(x) > 1:
-        #     out = self.sp_exchange(out,0.1)
+        if len(x) > 1:
+            out = self.sp_exchange(out,0.2)
         out = self.conv2(out)
         out = self.bn2(out)
         if len(x) > 1:
