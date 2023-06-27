@@ -160,7 +160,7 @@ class ResNet(nn.Module):
         # self.decoder3 = DecoderBlock_parallel_exchange(filters[2], filters[1],2,bn_threshold)
         # self.decoder2 = DecoderBlock_parallel_exchange(filters[1], filters[0],2,bn_threshold)
         # self.decoder1 = DecoderBlock_parallel_exchange(filters[0], filters[0],2,bn_threshold)
-        self.out_align = AlignModule(inplane=filters[0]//2)
+        # self.out_align = AlignModule(inplane=filters[0]//2)
         # self.out_align2 = AlignModule(inplane=filters[1], outplane=filters[1])
         # self.out_align3 = AlignModule(inplane=filters[2], outplane=filters[2])
 
@@ -235,9 +235,9 @@ class ResNet(nn.Module):
         x_out = self.finalrelu1(self.finaldeconv1(x_d1))
         x_out = self.finalrelu2(self.finalconv2(x_out))
 
-        # x_out[0]=self.se(x_out[0])
-        # x_out[1] = self.se(x_out[1])
-        x_out=self.out_align(x_out)
+        x_out[0]=self.se(x_out[0])
+        x_out[1] = self.se(x_out[1])
+        # x_out=self.out_align(x_out)
         # atten=self.atten(torch.cat((x_out[0], x_out[1]), 1))
         out = self.finalconv(torch.cat((x_out[0], x_out[1]), 1))
         # out=self.finalconv(x_out)
