@@ -31,7 +31,7 @@ class BasicBlock(nn.Module):
         self.num_parallel = num_parallel
         self.downsample = downsample
         self.stride = stride
-        self.sp_exchange=Spatial_Exchange()
+        # self.sp_exchange=Spatial_Exchange()
         self.exchange = Exchange()
         self.bn_threshold = bn_threshold
         self.bn2_list = []
@@ -46,8 +46,8 @@ class BasicBlock(nn.Module):
         # print('conv1',out[1].shape)
         out = self.bn1(out)
         out = self.relu(out)
-        if len(x) > 1:
-            out = self.sp_exchange(out,0.2)
+        # if len(x) > 1:
+        #     out = self.sp_exchange(out,0.6)
         out = self.conv2(out)
         out = self.bn2(out)
         if len(x) > 1:
@@ -160,9 +160,6 @@ class ResNet(nn.Module):
         # self.decoder3 = DecoderBlock_parallel_exchange(filters[2], filters[1],2,bn_threshold)
         # self.decoder2 = DecoderBlock_parallel_exchange(filters[1], filters[0],2,bn_threshold)
         # self.decoder1 = DecoderBlock_parallel_exchange(filters[0], filters[0],2,bn_threshold)
-        # self.out_align = AlignModule(inplane=filters[0]//2)
-        # self.out_align2 = AlignModule(inplane=filters[1], outplane=filters[1])
-        # self.out_align3 = AlignModule(inplane=filters[2], outplane=filters[2])
 
 
         # self.finaldeconv1_add = nn.ConvTranspose2d(filters[0], filters[0] // 2, 4, 2, 1)
@@ -177,7 +174,8 @@ class ResNet(nn.Module):
         self.finalrelu2 = ModuleParallel(nn.ReLU(inplace=True))
         self.se = SEAttention(filters[0] // 2, reduction=4)
         # self.atten=CBAMBlock(channel=filters[0], reduction=4, kernel_size=7)
-        self.finalconv = nn.Conv2d(filters[0], num_classes, 3, padding=1)
+        self.allgin=AlignModule(filters[0] // 2)
+        self.finalconv = nn.Conv2d(filters[0]//2, num_classes, 3, padding=1)
         # self.finalconv = ModuleParallel(nn.Conv2d(filters[0] // 2, num_classes, 3, padding=1))
         # self.alpha = nn.Parameter(torch.ones(num_parallel, requires_grad=True))
         # self.register_parameter('alpha', self.alpha)
@@ -225,7 +223,6 @@ class ResNet(nn.Module):
 
         x_c = self.dblock(x_4)
         # decoder
-
         x_d4 = [self.decoder4(x_c)[l] + x_3[l] for l in range(self.num_parallel)]
         x_d3 = [self.decoder3(x_d4)[l] + x_2[l] for l in range(self.num_parallel)]
         x_d2 = [self.decoder2(x_d3)[l] + x_1[l] for l in range(self.num_parallel)]
@@ -237,10 +234,10 @@ class ResNet(nn.Module):
 
         x_out[0]=self.se(x_out[0])
         x_out[1] = self.se(x_out[1])
-        # x_out=self.out_align(x_out)
         # atten=self.atten(torch.cat((x_out[0], x_out[1]), 1))
-        out = self.finalconv(torch.cat((x_out[0], x_out[1]), 1))
-        # out=self.finalconv(x_out)
+        x_out =self.allgin(x_out)
+        # out = self.finalconv(torch.cat((x_out[0], x_out[1]), 1))
+        out=self.finalconv(x_out)
         # alpha_soft = F.softmax(self.alpha,dim=0)
         # ens = 0
         # for l in range(self.num_parallel):
