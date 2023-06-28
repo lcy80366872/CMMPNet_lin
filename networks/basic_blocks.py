@@ -96,9 +96,9 @@ class AlignModule(nn.Module):
         f1, f2 = torch.chunk(flow, 2, dim=1)
         x1_feat = self.flow_warp(x1, f1,size)
         x2_feat = self.flow_warp(x2, f2,size)
-        out = x1_feat+x2_feat
+        # out = x1_feat+x2_feat
 
-        return out#x1_feat#,x2_feat
+        return x1_feat,x2_feat
 
     @staticmethod
     def flow_warp(inputs, flow, size):
