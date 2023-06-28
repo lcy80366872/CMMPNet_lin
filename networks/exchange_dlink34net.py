@@ -174,8 +174,13 @@ class ResNet(nn.Module):
         self.finalrelu2 = ModuleParallel(nn.ReLU(inplace=True))
         self.se = SEAttention(filters[0] // 2, reduction=4)
         # self.atten=CBAMBlock(channel=filters[0], reduction=4, kernel_size=7)
-        self.allgin=AlignModule(filters[0] // 2)
-        self.finalconv = nn.Conv2d(filters[0]//2, num_classes, 3, padding=1)
+        self.allgin1=AlignModule(filters[0])
+        self.allgin11 = AlignModule(filters[0])
+
+        self.allgin2 = AlignModule(filters[1])
+        self.allgin3 = AlignModule(filters[2])
+        self.allgin4 = AlignModule(filters[3])
+        self.finalconv = nn.Conv2d(filters[0], num_classes, 3, padding=1)
         # self.finalconv = ModuleParallel(nn.Conv2d(filters[0] // 2, num_classes, 3, padding=1))
         # self.alpha = nn.Parameter(torch.ones(num_parallel, requires_grad=True))
         # self.register_parameter('alpha', self.alpha)
@@ -214,9 +219,13 @@ class ResNet(nn.Module):
         # out = torch.cat((out, out_g), 1)
 
         ##layers:
+        out = self.allgin1(out)
         x_1 = self.layer1(out)
+        x_1 = self.allgin11(x_1)
         x_2 = self.layer2(x_1)
+        x_2 = self.allgin2(x_2)
         x_3 = self.layer3(x_2)
+        x_3 = self.allgin3(x_3)
         x_4 = self.layer4(x_3)
 
         # x_4 =self.dropout(x_4)
@@ -235,8 +244,8 @@ class ResNet(nn.Module):
         x_out[0]=self.se(x_out[0])
         x_out[1] = self.se(x_out[1])
         # atten=self.atten(torch.cat((x_out[0], x_out[1]), 1))
-        x_out =self.allgin(x_out)
-        # out = self.finalconv(torch.cat((x_out[0], x_out[1]), 1))
+        # x_out =self.allgin(x_out)
+        out = self.finalconv(torch.cat((x_out[0], x_out[1]), 1))
         out=self.finalconv(x_out)
         # alpha_soft = F.softmax(self.alpha,dim=0)
         # ens = 0
