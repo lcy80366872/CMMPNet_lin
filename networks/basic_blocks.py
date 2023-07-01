@@ -26,16 +26,16 @@ class Exchange(nn.Module):
     def forward(self, x, bn, bn_threshold):
         bn1, bn2 = bn[0].weight.abs(), bn[1].weight.abs()
         #就是大于阈值的那些通道保留，小于阈值的那些通道取另外一个的值
-        x1, x2 = torch.zeros_like(x[0]), torch.zeros_like(x[1])
-        x1[:, bn1 >= bn_threshold] = x[0][:, bn1 >= bn_threshold]
-        x1[:, bn1 < bn_threshold] = x[1][:, bn1 < bn_threshold]
-        x2[:, bn2 >= bn_threshold] = x[1][:, bn2 >= bn_threshold]
-        x2[:, bn2 < bn_threshold] = x[0][:, bn2 < bn_threshold]
-        # x[0][:, bn1 < bn_threshold] = x[1][:, bn1 < bn_threshold]
-        # x[1][:, bn2 < bn_threshold] = x[0][:, bn2 < bn_threshold]
+        # x1, x2 = torch.zeros_like(x[0]), torch.zeros_like(x[1])
+        # x1[:, bn1 >= bn_threshold] = x[0][:, bn1 >= bn_threshold]
+        # x1[:, bn1 < bn_threshold] = x[1][:, bn1 < bn_threshold]
+        # x2[:, bn2 >= bn_threshold] = x[1][:, bn2 >= bn_threshold]
+        # x2[:, bn2 < bn_threshold] = x[0][:, bn2 < bn_threshold]
+        x[0][:, bn1 < bn_threshold] = x[1][:, bn1 < bn_threshold]
+        x[1][:, bn2 < bn_threshold] = x[0][:, bn2 < bn_threshold]
         # print('bn',bn1 < bn_threshold)
 
-        return x1,x2
+        return x
 class SpatialAttention(nn.Module):
     def __init__(self, kernel_size=7):
         super().__init__()
@@ -291,10 +291,10 @@ class DecoderBlock_parallel_exchange(nn.Module):
         self.relu3 = ModuleParallel(nn.ReLU(inplace=True))
         self.exchange = Exchange()
         self.bn_threshold = bn_threshold
-        self.bn2_list = []
-        for module in self.bn2.modules():
+        self.bn3_list = []
+        for module in self.bn3.modules():
             if isinstance(module, nn.BatchNorm2d):
-                self.bn2_list.append(module)
+                self.bn3_list.append(module)
 
     def forward(self, x):
         x = self.conv1(x)
@@ -302,11 +302,12 @@ class DecoderBlock_parallel_exchange(nn.Module):
         x = self.relu1(x)
         x = self.deconv2(x)
         x = self.bn2(x)
-        if len(x) > 1:
-            x = self.exchange(x, self.bn2_list, self.bn_threshold)
+
         x = self.relu2(x)
         x = self.conv3(x)
         x = self.bn3(x)
+        if len(x) > 1:
+            x = self.exchange(x, self.bn3_list, self.bn_threshold)
         x = self.relu3(x)
         return x
 BatchNorm2d = nn.BatchNorm2d
