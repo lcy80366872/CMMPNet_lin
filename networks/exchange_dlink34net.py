@@ -38,14 +38,14 @@ class BasicBlock(nn.Module):
 
         out = self.conv2(out)
         out = self.bn2(out)
-        if len(x) > 1:
-            out = self.exchange(out, self.bn2_list, self.bn_threshold)
 
         if self.downsample is not None:
             residual = self.downsample(x)
 
         out = [out[l] + residual[l] for l in range(self.num_parallel)]
-        
+        if len(x) > 1:
+            out = self.exchange(out, self.bn2_list, self.bn_threshold)
+
         out = self.relu(out)
 
         return out
@@ -141,10 +141,10 @@ class ResNet(nn.Module):
         self.dblock = DBlock_parallel(filters[3],2)
         # self.dblock_add = DBlock(filters[3])
         # decoder
-        self.decoder4 = DecoderBlock_parallel_exchange(filters[3], filters[2],2,bn_threshold)
-        self.decoder3 = DecoderBlock_parallel_exchange(filters[2], filters[1],2,bn_threshold)
-        self.decoder2 = DecoderBlock_parallel_exchange(filters[1], filters[0],2,bn_threshold)
-        self.decoder1 = DecoderBlock_parallel_exchange(filters[0], filters[0],2,bn_threshold)
+        self.decoder4 = DecoderBlock_parallel(filters[3], filters[2],2)
+        self.decoder3 = DecoderBlock_parallel(filters[2], filters[1],2)
+        self.decoder2 = DecoderBlock_parallel(filters[1], filters[0],2)
+        self.decoder1 = DecoderBlock_parallel(filters[0], filters[0],2)
 
 
         # self.finaldeconv1_add = nn.ConvTranspose2d(filters[0], filters[0] // 2, 4, 2, 1)
@@ -227,7 +227,7 @@ class ResNet(nn.Module):
         #     ens += alpha_soft[l] * out[l].detach()
         out = torch.sigmoid(out)
         # out =nn.LogSoftmax()(ens)
-        # out.append(ens)#[ä¸¤ä¸ªè¾“å…¥çš„outä»¥åŠä»–ä»¬æŒ‰alphaå‡è¡¡åŽçš„output,ä¸€å…±ä¸‰ä¸ª]
+        # out.append(ens)#[Ã¤Â¸Â¤Ã¤Â¸ÂªÃ¨Â¾â€œÃ¥â€¦Â¥Ã§Å¡â€žoutÃ¤Â»Â¥Ã¥ÂÅ Ã¤Â»â€“Ã¤Â»Â¬Ã¦Å’â€°alphaÃ¥Ââ€¡Ã¨Â¡Â¡Ã¥ÂÅ½Ã§Å¡â€žoutput,Ã¤Â¸â‚¬Ã¥â€¦Â±Ã¤Â¸â€°Ã¤Â¸Âª]
 
         return out
 
