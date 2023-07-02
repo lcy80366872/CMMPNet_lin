@@ -26,13 +26,13 @@ class Exchange(nn.Module):
     def forward(self, x, bn, bn_threshold):
         bn1, bn2 = bn[0].weight.abs(), bn[1].weight.abs()
         #就是大于阈值的那些通道保留，小于阈值的那些通道取另外一个的值
-        # x1, x2 = torch.zeros_like(x[0]), torch.zeros_like(x[1])
-        # x1[:, bn1 >= bn_threshold] = x[0][:, bn1 >= bn_threshold]
-        # x1[:, bn1 < bn_threshold] = x[1][:, bn1 < bn_threshold]
-        # x2[:, bn2 >= bn_threshold] = x[1][:, bn2 >= bn_threshold]
-        # x2[:, bn2 < bn_threshold] = x[0][:, bn2 < bn_threshold]
-        x[0][:, bn1 < bn_threshold] = x[1][:, bn1 < bn_threshold]
-        x[1][:, bn2 < bn_threshold] = x[0][:, bn2 < bn_threshold]
+        x1, x2 = torch.zeros_like(x[0]), torch.zeros_like(x[1])
+        x1[:, bn1 >= bn_threshold] = x[0][:, bn1 >= bn_threshold]
+        x1[:, bn1 < bn_threshold] = x[1][:, bn1 < bn_threshold]
+        x2[:, bn2 >= bn_threshold] = x[1][:, bn2 >= bn_threshold]
+        x2[:, bn2 < bn_threshold] = x[0][:, bn2 < bn_threshold]
+        # x[0][:, bn1 < bn_threshold] = x[1][:, bn1 < bn_threshold]
+        # x[1][:, bn2 < bn_threshold] = x[0][:, bn2 < bn_threshold]
         # print('bn',bn1 < bn_threshold)
 
         return x
@@ -548,97 +548,46 @@ class SEfuse(torch.nn.Module):  # Dual Enhancement Module
         return rgb_out, hha_out
 
 
-class SPPLayer(torch.nn.Module):
-    def __init__(self, block_size=[1, 2, 4], pool_type='max_pool'):
-        super(SPPLayer, self).__init__()
-        self.block_size = block_size
-        self.pool_type = pool_type
-        self.spp = self.make_spp(out_pool_size=self.block_size, pool_type=self.pool_type)
-
-    def make_spp(self, out_pool_size, pool_type='maxpool'):
-        func = []
-        for i in range(len(out_pool_size)):
-            if pool_type == 'max_pool':
-                func.append(nn.AdaptiveMaxPool2d(output_size=(out_pool_size[i], out_pool_size[i])))
-            if pool_type == 'avg_pool':
-                func.append(nn.AdaptiveAvgPool2d(output_size=(out_pool_size[i], out_pool_size[i])))
-        return func
-
-    def forward(self, x):
-        num = x.size(0)
-        for i in range(len(self.block_size)):
-            # view：返回一个有相同数据但大小不同的tensor。 返回的tensor必须有与原tensor相同的数据和相同数目的元素，但可以有不同的大小，大小可以自己选
-            # 将spp每个分支展成一维向量，再拼接
-            tensor = self.spp[i](x).view(num, -1)
-            if (i == 0):
-                x_flatten = tensor.view(num, -1)
-            else:
-                # 在第1维度拼接，也就是横向拼接成长条
-                x_flatten = torch.cat((x_flatten, tensor.view(num, -1)), 1)
-
-        return x_flatten
-
-
 class DEM(torch.nn.Module):  # Dual Enhancement Module
-    def __init__(self, channel, block_size=[1, 2, 4]):
-        super(DEM, self).__init__()
-        # 这里相当于1*1卷积了 ，padding=0
-        self.rgb_local_message = self.local_message_prepare(channel, 1, 1, 0)  # 文中的L
-        self.add_local_message = self.local_message_prepare(channel, 1, 1, 0)
+    def __init__(self, in_planes, out_planes, reduction=16, bn_momentum=0.0003):
+        self.init__ = super(DEM, self).__init__()
+        self.in_planes = in_planes
+        self.bn_momentum = bn_momentum
 
-        self.rgb_spp = SPPLayer(block_size=block_size)
-        self.add_spp = SPPLayer(block_size=block_size)
-        self.rgb_global_message = self.global_message_prepare(block_size, channel)  # 文中的G
-        self.add_global_message = self.global_message_prepare(block_size, channel)
+        self.fsp_rgb = FSP(in_planes, out_planes, reduction)
+        self.fsp_hha = FSP(in_planes, out_planes, reduction)
 
-        self.rgb_local_gate = self.gate_build(channel * 2, channel, 1, 1, 0)
-        self.rgb_global_gate = self.gate_build(channel * 2, channel, 1, 1, 0)
+        self.gate_rgb = nn.Conv2d(in_planes*2, 1, kernel_size=1, bias=True)
+        self.gate_hha = nn.Conv2d(in_planes*2, 1, kernel_size=1, bias=True)
 
-        self.add_local_gate = self.gate_build(channel * 2, channel, 1, 1, 0)
-        self.add_global_gate = self.gate_build(channel * 2, channel, 1, 1, 0)
-
-    def local_message_prepare(self, dim, kernel_size=3, stride=1, padding=1, bias=True):
-        return nn.Sequential(
-            nn.Conv2d(dim, dim, kernel_size, stride=stride, padding=padding),
-            nn.BatchNorm2d(dim)
-        )
-
-    # 下面做的是spp得到拼接向量之后的步骤FC+relu
-    def global_message_prepare(self, block_size, dim):
-        num_block = 0
-        for i in block_size:
-            num_block += i * i
-        return nn.Sequential(
-            nn.Linear(num_block * dim, dim),
-            nn.ReLU()
-        )
-
-    def gate_build(self, in_dim, out_dim, kernel_size=1, stride=1, padding=0, bias=True):
-        return nn.Sequential(
-            nn.Conv2d(in_dim, out_dim, kernel_size, stride=stride, padding=padding),
-            nn.Sigmoid()
-        )
+        self.relu1 = nn.ReLU()
+        self.relu2 = nn.ReLU()
+        self.softmax = nn.Softmax(dim=1)
 
     def forward(self, x):
-        rgb_info,add_info=x
-        rgb_local_info = self.rgb_local_message(rgb_info)
-        add_local_info = self.add_local_message(add_info)
-        # 就是在指定的位置插入一个维度，有两个参数，input是输入的tensor,dim是要插到的维度
-        # https://blog.csdn.net/ljwwjl/article/details/115342632
-        # SPP+FC+RELU+扩展成（N*c*1*1）+复制成N*c*h*w
-        rgb_global_info = torch.unsqueeze(torch.unsqueeze(self.rgb_global_message(self.rgb_spp(rgb_local_info)), -1),
-                                          -1).expand(rgb_local_info.size())
-        add_global_info = torch.unsqueeze(torch.unsqueeze(self.add_global_message(self.add_spp(add_local_info)), -1),
-                                          -1).expand(add_local_info.size())
-        # add_local_gate的输出大小也为N*C*H*W
-        rgb_info = rgb_info + add_local_info * self.add_local_gate(
-            torch.cat((add_local_info, add_global_info), 1)) + add_global_info * self.add_global_gate(
-            torch.cat((add_local_info, add_global_info), 1))
-        add_info = add_info + rgb_local_info * self.rgb_local_gate(
-            torch.cat((rgb_local_info, rgb_global_info), 1)) + rgb_global_info * self.rgb_global_gate(
-            torch.cat((rgb_local_info, rgb_global_info), 1))
+        rgb, hha = x
+        b, c, h, w = rgb.size()
 
-        return rgb_info, add_info
+        rec_rgb = self.fsp_rgb(hha, rgb)
+        rec_hha = self.fsp_hha(rgb, hha)
+
+        cat_fea = torch.cat([rec_rgb, rec_hha], dim=1)
+
+        attention_vector_l = self.gate_rgb(cat_fea)
+        attention_vector_r = self.gate_hha(cat_fea)
+
+        attention_vector = torch.cat([attention_vector_l, attention_vector_r], dim=1)
+        attention_vector = self.softmax(attention_vector)
+        attention_vector_l, attention_vector_r = attention_vector[:, 0:1, :, :], attention_vector[:, 1:2, :, :]
+        merge_feature = rgb*attention_vector_l + hha*attention_vector_r
+
+        rgb_out = (rgb + merge_feature) / 2
+        hha_out = (hha + merge_feature) / 2
+
+        rgb_out = self.relu1(rgb_out)
+        hha_out = self.relu2(hha_out)
+
+        return rgb_out, hha_out
 import torch
 from torch import nn
 
