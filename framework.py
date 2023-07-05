@@ -33,14 +33,16 @@ def show_sobal(img,channels):
 def L1_penalty(var):
     return torch.abs(var).sum()
 
+
 def _compute_polarization_sparsity(sparse_modules: list, lbd, t, alpha, bn_weights_mean):
     sparsity_loss = 0
     for m in sparse_modules:
-        sparsity_term = t * torch.sum(torch.abs(m.weight)) - torch.sum(
-                torch.abs(m.weight - alpha * bn_weights_mean))
+        sparsity_term = t * torch.sum(torch.abs(m)) - torch.sum(
+                torch.abs(m - alpha * bn_weights_mean))
         sparsity_loss += lbd * sparsity_term
 
     return sparsity_loss
+
 class Solver:
     def __init__(self, net, optimizer, dataset):
         # self.net = torch.nn.DataParallel(net.cuda(), device_ids=list(range(torch.cuda.device_count())))
@@ -150,7 +152,7 @@ class Solver:
                 # else:
                 #     slim_params.append(param[len(param) // 2:])
                 # slim_params.append(param)
-                sparse_weights_mean=param.weight.view(-1).mean()
+                sparse_weights_mean=param.mean()
                 sparse +=_compute_polarization_sparsity(param,lbd=2e-4, t=1,alpha=1,bn_weights_mean=sparse_weights_mean)
 
         loss = self.loss(self.mask,pred)
