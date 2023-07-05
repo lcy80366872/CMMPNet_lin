@@ -152,7 +152,7 @@ class Solver:
                 # else:
                 #     slim_params.append(param[len(param) // 2:])
                 # slim_params.append(param)
-                sparse_weights_mean=param.mean()
+                sparse_weights_mean=torch.mean(param)
                 sparse +=_compute_polarization_sparsity(param,lbd=2e-4, t=1,alpha=1,bn_weights_mean=sparse_weights_mean)
 
         loss = self.loss(self.mask,pred)
