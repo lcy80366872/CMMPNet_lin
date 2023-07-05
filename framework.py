@@ -146,6 +146,7 @@ class Solver:
 
         pred = self.net.forward(self.img)
         slim_params = []
+        mean_params=[]
         sparse=0
         for name, param in self.net.named_parameters():
             if param.requires_grad and name.endswith('weight') and 'bn2' in name :
