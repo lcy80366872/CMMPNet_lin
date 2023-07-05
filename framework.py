@@ -32,6 +32,15 @@ def show_sobal(img,channels):
 
 def L1_penalty(var):
     return torch.abs(var).sum()
+
+def _compute_polarization_sparsity(sparse_modules: list, lbd, t, alpha, bn_weights_mean):
+    sparsity_loss = 0
+    for m in sparse_modules:
+        sparsity_term = t * torch.sum(torch.abs(m.weight)) - torch.sum(
+                torch.abs(m.weight - alpha * bn_weights_mean))
+        sparsity_loss += lbd * sparsity_term
+
+    return sparsity_loss
 class Solver:
     def __init__(self, net, optimizer, dataset):
         # self.net = torch.nn.DataParallel(net.cuda(), device_ids=list(range(torch.cuda.device_count())))
@@ -133,21 +142,24 @@ class Solver:
 
         pred = self.net.forward(self.img)
         slim_params = []
+        sparse=0
         for name, param in self.net.named_parameters():
-            if param.requires_grad and name.endswith('weight') and 'bn2' in name:
-                if len(slim_params) % 2 == 0:
-                    slim_params.append(param[:len(param) // 2])
-                else:
-                    slim_params.append(param[len(param) // 2:])
+            if param.requires_grad and name.endswith('weight') and 'bn2' in name :
+                # if len(slim_params) % 2 == 0:
+                #     slim_params.append(param[:len(param) // 2])
+                # else:
+                #     slim_params.append(param[len(param) // 2:])
+                # slim_params.append(param)
+                sparse_weights_mean=param.weight.view(-1).mean()
+                sparse +=_compute_polarization_sparsity(param,lbd=2e-4, t=1,alpha=1,bn_weights_mean=sparse_weights_mean)
 
         loss = self.loss(self.mask,pred)
-        # loss += self.loss1(self.mask, pred)
-        # loss += self.loss(self.mask, pred1)
-        # loss +=0.2*self.loss_direction(direct_pred,direct_mask)
-        L1_norm = sum([L1_penalty(m).cuda() for m in slim_params])
+        loss +=sparse
+        print(sparse)
+        # L1_norm = sum([L1_penalty(m).cuda() for m in slim_params])
         lamda =2e-4
-        loss += lamda * L1_norm  # this is actually counted for len(outputs) times
-#         print('l1:',lamda * L1_norm)
+        # loss += lamda * L1_norm  # this is actually counted for len(outputs) times
+
 
 
         loss.backward()
