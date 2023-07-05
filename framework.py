@@ -36,10 +36,12 @@ def L1_penalty(var):
 
 def _compute_polarization_sparsity(sparse_modules: list, lbd, t, alpha, bn_weights_mean):
     sparsity_loss = 0
+    n=0
     for m in sparse_modules:
         sparsity_term = t * torch.sum(torch.abs(m)) - torch.sum(
-                torch.abs(m - alpha * bn_weights_mean))
+                torch.abs(m - alpha * bn_weights_mean[n]))
         sparsity_loss += lbd * sparsity_term
+        n=n+1
 
     return sparsity_loss
 
@@ -151,13 +153,13 @@ class Solver:
                 #     slim_params.append(param[:len(param) // 2])
                 # else:
                 #     slim_params.append(param[len(param) // 2:])
-                # slim_params.append(param)
-                sparse_weights_mean=torch.mean(param)
-                # sparse +=_compute_polarization_sparsity(param,lbd=2e-4, t=1,alpha=1,bn_weights_mean=sparse_weights_mean)
+                slim_params.append(param)
+                mean_params.append(torch.mean(param))
 
-        loss = self.loss(self.mask,pred)
-        loss +=sparse
-        # print(sparse)
+                # sparse_weights_mean=param.mean()
+                # print(sparse_weights_mean)
+        sparse =_compute_polarization_sparsity(slim_params,lbd=2e-4, t=1,alpha=1,bn_weights_mean=mean_params)
+        print(sparse)
         # L1_norm = sum([L1_penalty(m).cuda() for m in slim_params])
         lamda =2e-4
         # loss += lamda * L1_norm  # this is actually counted for len(outputs) times
