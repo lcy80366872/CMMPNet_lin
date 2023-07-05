@@ -161,6 +161,7 @@ class Solver:
                 # print(sparse_weights_mean)
         sparse =_compute_polarization_sparsity(slim_params,lbd=2e-4, t=1,alpha=1,bn_weights_mean=mean_params)
         print(sparse)
+        loss = self.loss(self.mask,pred)
         # L1_norm = sum([L1_penalty(m).cuda() for m in slim_params])
         lamda =2e-4
         # loss += lamda * L1_norm  # this is actually counted for len(outputs) times
