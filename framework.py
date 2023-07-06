@@ -161,7 +161,7 @@ class Solver:
 
                 # sparse_weights_mean=param.mean()
                 # print(sparse_weights_mean)
-        sparse =_compute_polarization_sparsity(slim_params,lbd=2e-4, t=0.6,alpha=1,bn_weights_mean=mean_params)
+        sparse =_compute_polarization_sparsity(slim_params,lbd=2e-4, t=1,alpha=1,bn_weights_mean=mean_params)
         # print(sparse)
         loss = self.loss(self.mask,pred)
         loss +=sparse
@@ -249,8 +249,8 @@ class Framework:
     def fit(self, epochs, no_optim_epochs=5):
         val_best_metrics = test_best_metrics = [0, 0]
         no_optim = 0
-        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer=self.solver.optimizer, T_max= epochs,
-                                                               verbose=True)
+        # scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer=self.solver.optimizer, T_max= epochs,
+        #                                                        verbose=True)
         for epoch in range(1, epochs + 1):
             print(f"epoch {epoch}/{epochs}")
 
@@ -265,7 +265,7 @@ class Framework:
                 no_optim = 0
             else:
                 no_optim += 1
-            scheduler.step()
+            # scheduler.step()
             if no_optim > no_optim_epochs:
                 if self.solver.old_lr < 1e-8:
                     print('early stop at {epoch} epoch')
