@@ -134,16 +134,6 @@ class ResNet(nn.Module):
         self.layer3 = self._make_layer(block, 256, blocks_num[2], bn_threshold, stride=2)
         self.layer4 = self._make_layer(block, 512, blocks_num[3], bn_threshold, stride=2)
 
-        # self.dropout = ModuleParallel(nn.Dropout(p=0.5))
-        self.dem_e1 = DEM(filters[0], filters[0])
-        self.dem_e2 = DEM(filters[1], filters[1])
-        self.dem_e3 = DEM(filters[2], filters[2])
-        self.dem_e4 = DEM(filters[3], filters[3])
-
-        self.dem_d4 = DEM(filters[2], filters[2])
-        self.dem_d3 = DEM(filters[1], filters[1])
-        self.dem_d2 = DEM(filters[0], filters[0])
-        self.dem_d1 = DEM(filters[0], filters[0])
 
         self.dblock = DBlock_parallel(filters[3],2)
         # self.dblock_add = DBlock(filters[3])
@@ -205,23 +195,19 @@ class ResNet(nn.Module):
         # out = torch.cat((out, out_g), 1)
 
         ##layers:
-        x_1 = self.dem_e1(self.layer1(out))
-        x_2 = self.dem_e2(self.layer2(x_1))
-        x_3 = self.dem_e3(self.layer3(x_2))
-        x_4 = self.dem_e4(self.layer4(x_3))
+        x_1 = self.layer1(out)
+        x_2 = self.layer2(x_1)
+        x_3 = self.layer3(x_2)
+        x_4 = self.layer4(x_3)
 
         # x_4 =self.dropout(x_4)
 
         x_c = self.dblock(x_4)
         # decoder
         x_d4 = [self.decoder4(x_c)[l] + x_3[l] for l in range(self.num_parallel)]
-        x_d4 = self.dem_d4(x_d4)
         x_d3 = [self.decoder3(x_d4)[l] + x_2[l] for l in range(self.num_parallel)]
-        x_d3 = self.dem_d3(x_d3)
         x_d2 = [self.decoder2(x_d3)[l] + x_1[l] for l in range(self.num_parallel)]
-        x_d2 = self.dem_d2(x_d2)
         x_d1 = self.decoder1(x_d2)
-        x_d1 = self.dem_d1(x_d1)
 
         x_out = self.finalrelu1(self.finaldeconv1(x_d1))
         x_out = self.finalrelu2(self.finalconv2(x_out))
