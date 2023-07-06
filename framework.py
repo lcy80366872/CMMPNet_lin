@@ -157,7 +157,7 @@ class Solver:
                     slim_params.append(param[len(param) // 2:])
                     mean_params.append(torch.mean(param[len(param) // 2:]))
                 # slim_params.append(param)
-                mean_params.append(torch.mean(param))
+                # mean_params.append(torch.mean(param))
 
                 # sparse_weights_mean=param.mean()
                 # print(sparse_weights_mean)
