@@ -35,7 +35,7 @@ class Exchange(nn.Module):
         # x[1][:, bn2 < bn_threshold] = x[0][:, bn2 < bn_threshold]
         # print('bn',bn1 < bn_threshold)
 
-        return x
+        return [x1,x2]
 class SpatialAttention(nn.Module):
     def __init__(self, kernel_size=7):
         super().__init__()
