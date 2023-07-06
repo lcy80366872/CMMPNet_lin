@@ -6,7 +6,6 @@ from torchvision import models
 from networks.attention_block import CBAMBlock,SEAttention
 
 
-
 class BasicBlock(nn.Module):
     expansion = 1
     def __init__(self, inplanes, planes, num_parallel, bn_threshold,stride=1, downsample=None):
@@ -40,6 +39,7 @@ class BasicBlock(nn.Module):
         out = self.bn2(out)
         if len(x) > 1:
             out = self.exchange(out, self.bn2_list, self.bn_threshold)
+
         if self.downsample is not None:
             residual = self.downsample(x)
 
@@ -134,6 +134,7 @@ class ResNet(nn.Module):
         self.layer3 = self._make_layer(block, 256, blocks_num[2], bn_threshold, stride=2)
         self.layer4 = self._make_layer(block, 512, blocks_num[3], bn_threshold, stride=2)
 
+        # self.dropout = ModuleParallel(nn.Dropout(p=0.5))
 
         self.dblock = DBlock_parallel(filters[3],2)
         # self.dblock_add = DBlock(filters[3])
@@ -209,6 +210,7 @@ class ResNet(nn.Module):
         x_d2 = [self.decoder2(x_d3)[l] + x_1[l] for l in range(self.num_parallel)]
         x_d1 = self.decoder1(x_d2)
 
+
         x_out = self.finalrelu1(self.finaldeconv1(x_d1))
         x_out = self.finalrelu2(self.finalconv2(x_out))
 
@@ -223,7 +225,7 @@ class ResNet(nn.Module):
         #     ens += alpha_soft[l] * out[l].detach()
         out = torch.sigmoid(out)
         # out =nn.LogSoftmax()(ens)
-        # out.append(ens)#[Ã¤Â¸Â¤Ã¤Â¸ÂªÃ¨Â¾â€œÃ¥â€¦Â¥Ã§Å¡â€žoutÃ¤Â»Â¥Ã¥ÂÅ Ã¤Â»â€“Ã¤Â»Â¬Ã¦Å’â€°alphaÃ¥Ââ€¡Ã¨Â¡Â¡Ã¥ÂÅ½Ã§Å¡â€žoutput,Ã¤Â¸â‚¬Ã¥â€¦Â±Ã¤Â¸â€°Ã¤Â¸Âª]
+        # out.append(ens)#[ä¸¤ä¸ªè¾“å…¥çš„outä»¥åŠä»–ä»¬æŒ‰alphaå‡è¡¡åŽçš„output,ä¸€å…±ä¸‰ä¸ª]
 
         return out
 
