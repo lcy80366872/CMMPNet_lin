@@ -161,7 +161,7 @@ class Solver:
 
                 # sparse_weights_mean=param.mean()
                 # print(sparse_weights_mean)
-        sparse =_compute_polarization_sparsity(slim_params,lbd=2e-4, t=1.2,alpha=1,bn_weights_mean=mean_params)
+        sparse =_compute_polarization_sparsity(slim_params,lbd=1e-4, t=1.2,alpha=1,bn_weights_mean=mean_params)
         # print(sparse)
         loss = self.loss(self.mask,pred)
         loss +=sparse
