@@ -3,6 +3,23 @@ import torch.nn as nn
 from functools import partial
 import torch.nn.functional as F
 nonlinearity = partial(F.relu, inplace=True)
+def search_threshold(weight, alg: str,bin):
+    if alg not in ["fixed", "grad", "search"]:
+        raise NotImplementedError()
+    bn_min=torch.min(weight)
+    bn_max=torch.max(weight)
+    hist_y = torch.histc(input=weight, bins=bin)
+    if alg == "search":
+        raise ValueError(f"Deprecated pruning algorithm: {alg}")
+    elif alg == "grad":
+        hist_y_diff = torch.diff(hist_y)
+        for i in range(len(hist_y_diff) - 1):
+            if hist_y_diff[i] <= 0 <= hist_y_diff[i + 1]:
+                threshold = bn_min+(i+1)*(bn_max-bn_min)/bin
+                if threshold > 0.2:
+                    print(f"WARNING: threshold might be too large: {threshold}")
+                print('thre:', threshold)
+                return threshold
 class Exchange_3(nn.Module):
     def __init__(self):
         super(Exchange_3, self).__init__()
@@ -26,14 +43,13 @@ class Exchange(nn.Module):
     def forward(self, x, bn, bn_threshold):
         bn1, bn2 = bn[0].weight.abs(), bn[1].weight.abs()
         #就是大于阈值的那些通道保留，小于阈值的那些通道取另外一个的值
+        bn_threshold1 = search_threshold(bn1,"grad",100)
+        bn_threshold2 = search_threshold(bn2, "grad", 100)
         x1, x2 = torch.zeros_like(x[0]), torch.zeros_like(x[1])
-        x1[:, bn1 >= bn_threshold] = x[0][:, bn1 >= bn_threshold]
-        x1[:, bn1 < bn_threshold] = x[1][:, bn1 < bn_threshold]
-        x2[:, bn2 >= bn_threshold] = x[1][:, bn2 >= bn_threshold]
-        x2[:, bn2 < bn_threshold] = x[0][:, bn2 < bn_threshold]
-        # x[0][:, bn1 < bn_threshold] = x[1][:, bn1 < bn_threshold]
-        # x[1][:, bn2 < bn_threshold] = x[0][:, bn2 < bn_threshold]
-        # print('bn',bn1 < bn_threshold)
+        x1[:, bn1 >= bn_threshold1] = x[0][:, bn1 >= bn_threshold1]
+        x1[:, bn1 < bn_threshold1] = x[1][:, bn1 < bn_threshold1]
+        x2[:, bn2 >= bn_threshold2] = x[1][:, bn2 >= bn_threshold2]
+        x2[:, bn2 < bn_threshold2] = x[0][:, bn2 < bn_threshold2]
 
         return [x1,x2]
 class SpatialAttention(nn.Module):
