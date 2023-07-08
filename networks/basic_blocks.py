@@ -16,9 +16,9 @@ def search_threshold(weight, alg: str,bin):
         for i in range(len(hist_y_diff) - 1):
             if hist_y_diff[i] <= 0 <= hist_y_diff[i + 1]:
                 threshold = bn_min+(i+1)*(bn_max-bn_min)/bin
-                if threshold > 0.2:
-                    print(f"WARNING: threshold might be too large: {threshold}")
-                print('thre:', threshold)
+                # if threshold > 0.2:
+                #     print(f"WARNING: threshold might be too large: {threshold}")
+                # print('thre:', threshold)
                 return threshold
 class Exchange_3(nn.Module):
     def __init__(self):
