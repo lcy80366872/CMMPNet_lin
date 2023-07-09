@@ -46,13 +46,15 @@ class Exchange(nn.Module):
         #就是大于阈值的那些通道保留，小于阈值的那些通道取另外一个的值
         bn_threshold1 = search_threshold(bn1,"grad")
         bn_threshold2 = search_threshold(bn2, "grad")
-        x1, x2 = torch.zeros_like(x[0]), torch.zeros_like(x[1])
-        x1[:, bn1 >= bn_threshold1] = x[0][:, bn1 >= bn_threshold1]
-        x1[:, bn1 < bn_threshold1] = x[1][:, bn1 < bn_threshold1]
-        x2[:, bn2 >= bn_threshold2] = x[1][:, bn2 >= bn_threshold2]
-        x2[:, bn2 < bn_threshold2] = x[0][:, bn2 < bn_threshold2]
+        # x1, x2 = torch.zeros_like(x[0]), torch.zeros_like(x[1])
+        # x1[:, bn1 >= bn_threshold1] = x[0][:, bn1 >= bn_threshold1]
+        # x1[:, bn1 < bn_threshold1] = x[1][:, bn1 < bn_threshold1]
+        # x2[:, bn2 >= bn_threshold2] = x[1][:, bn2 >= bn_threshold2]
+        # x2[:, bn2 < bn_threshold2] = x[0][:, bn2 < bn_threshold2]
+        x[0][:, bn1 < bn_threshold1] = x[1][:, bn1 < bn_threshold1]
+        x[1][:, bn2 < bn_threshold2] = x[0][:, bn2 < bn_threshold2] 
 
-        return [x1,x2]
+        return x
 class SpatialAttention(nn.Module):
     def __init__(self, kernel_size=7):
         super().__init__()
