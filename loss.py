@@ -99,7 +99,7 @@ class dice_bce_loss(nn.Module):
         super(dice_bce_loss, self).__init__()
         self.batch = batch
         self.bce_loss = nn.BCELoss()
-        self.focal_loss = BinaryFocalLoss(gamma=2,alpha=0.75)
+        self.focal_loss = BinaryFocalLoss(gamma=2,alpha=0.25)
         self.ifssim=ssim
         self.ssim=MS_SSIM_L1_LOSS()
     def FocalLoss(self, logit, target, gamma=2, alpha=0.25):
