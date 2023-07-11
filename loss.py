@@ -16,7 +16,7 @@ class SegmentationLosses(object):
         self.batch_average = batch_average
         self.cuda = cuda
 
-    def build_loss(self, mode='ce'):
+    def build_loss(self, mode='focal'):
         """Choices: ['ce' or 'focal']"""
         if mode == 'ce':
             return self.CrossEntropyLoss
@@ -65,6 +65,33 @@ class SegmentationLosses(object):
             loss /= n
 
         return loss
+class BinaryFocalLoss(nn.Module):
+    """
+    参考 https://github.com/lonePatient/TorchBlocks
+    """
+
+    def __init__(self, gamma=2.0, alpha=0.25, epsilon=1.e-9):
+        super(BinaryFocalLoss, self).__init__()
+        self.gamma = gamma
+        self.alpha = alpha
+        self.epsilon = epsilon
+
+    def forward(self, input, target):
+        """
+        Args:
+            input: model's output, shape of [batch_size, num_cls]
+            target: ground truth labels, shape of [batch_size]
+        Returns:
+            shape of [batch_size]
+        """
+        multi_hot_key = target
+        logits = input
+        # 如果模型没有做sigmoid的话，这里需要加上
+        # logits = torch.sigmoid(logits)
+        zero_hot_key = 1 - multi_hot_key
+        loss = -self.alpha * multi_hot_key * torch.pow((1 - logits), self.gamma) * (logits + self.epsilon).log()
+        loss += -(1 - self.alpha) * zero_hot_key * torch.pow(logits, self.gamma) * (1 - logits + self.epsilon).log()
+        return loss.mean()
 
 
 class dice_bce_loss(nn.Module):
@@ -72,9 +99,26 @@ class dice_bce_loss(nn.Module):
         super(dice_bce_loss, self).__init__()
         self.batch = batch
         self.bce_loss = nn.BCELoss()
+        self.focal_loss = BinaryFocalLoss(gamma=2,alpha=0.75)
         self.ifssim=ssim
         self.ssim=MS_SSIM_L1_LOSS()
+    def FocalLoss(self, logit, target, gamma=2, alpha=0.25):
+        n, c, h, w = logit.size()
+        criterion = nn.CrossEntropyLoss(weight=self.weight,  # ignore_index=self.ignore_index,
+                                        size_average=self.size_average)
+        if self.cuda:
+            criterion = criterion.cuda()
 
+        logpt = -criterion(logit, target.long())
+        pt = torch.exp(logpt)
+        if alpha is not None:
+            logpt *= alpha
+        loss = -((1 - pt) ** gamma) * logpt
+
+        if self.batch_average:
+            loss /= n
+
+        return loss
     def soft_dice_coeff(self, y_true, y_pred):
         smooth = 1.0
         if self.batch:
@@ -96,6 +140,7 @@ class dice_bce_loss(nn.Module):
         b = y_true.shape[0]
         y = np.zeros((b, h, w, y_true.shape[1]))
         # print('y_t:', y_true.shape)
+        # y_true = np.array(y_true.cpu())
         y_true = np.array(y_true.cpu())
         for id in range(b):
             y1 = y_true[id, :, :, :].transpose(1, 2, 0)
@@ -117,12 +162,14 @@ class dice_bce_loss(nn.Module):
             y_true = self.resize(y_true, y_pred.shape[2], y_pred.shape[3]).cuda()
         # print(y_pred)
 
-
-        a = self.bce_loss(y_pred, y_true)
+        a = self.focal_loss(y_pred,y_true)
+        
+        # a = self.bce_loss(y_pred, y_true)
         b = self.soft_dice_loss(y_true, y_pred)
+        
         if self.ifssim:
             c =  self.ssim(y_pred,y_true )
-            return a+b+0.05*c
+            return a+b+c
         else:
             return a + b
 #
@@ -330,3 +377,4 @@ class MS_SSIM_L1_LOSS(nn.Module):
         loss_mix = self.compensation*loss_mix
 
         return loss_mix.mean()
+
