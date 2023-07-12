@@ -162,9 +162,9 @@ class dice_bce_loss(nn.Module):
             y_true = self.resize(y_true, y_pred.shape[2], y_pred.shape[3]).cuda()
         # print(y_pred)
 
-        a = self.focal_loss(y_pred,y_true)
+        # a = self.focal_loss(y_pred,y_true)
         
-        # a = self.bce_loss(y_pred, y_true)
+        a = self.bce_loss(y_pred, y_true)
         b = self.soft_dice_loss(y_true, y_pred)
         
         if self.ifssim:
