@@ -234,7 +234,7 @@ class ResNet(nn.Module):
         # for l in range(self.num_parallel):
         #     ens += alpha_soft[l] * out[l].detach()
         out = torch.sigmoid(out)
-        print(out)
+        # print(out)
         # out =nn.LogSoftmax()(ens)
         # out.append(ens)#[æ¶“ã‚„é‡œæˆæ’³å†é¨åˆ¼utæµ ãƒ¥å¼·æµ æ ¦æ»‘éŽ¸å¡§lphaé§å›ªã€€éšåº£æ®‘output,æ¶“â‚¬éå˜ç¬æ¶“çŒ
 
