@@ -59,13 +59,13 @@ class Exchange(nn.Module):
         bn1, bn2 = bn[0].weight.abs(), bn[1].weight.abs()
         #就是大于阈值的那些通道保留，小于阈值的那些通道取另外一个的值
         # print(bn1)
-        bn_threshold1 = search_threshold(bn1,"grad")
-        bn_threshold2 = search_threshold(bn2, "grad")
+        # bn_threshold1 = search_threshold(bn1,"grad")
+        # bn_threshold2 = search_threshold(bn2, "grad")
         x1, x2 = torch.zeros_like(x[0]), torch.zeros_like(x[1])
-        x1[:, bn1 >= bn_threshold1] = x[0][:, bn1 >= bn_threshold1]
-        x1[:, bn1 < bn_threshold1] = x[1][:, bn1 < bn_threshold1]
-        x2[:, bn2 >= bn_threshold2] = x[1][:, bn2 >= bn_threshold2]
-        x2[:, bn2 < bn_threshold2] = x[0][:, bn2 < bn_threshold2]
+        x1[:, bn1 >= bn_threshold] = x[0][:, bn1 >= bn_threshold]
+        x1[:, bn1 < bn_threshold] = x[1][:, bn1 < bn_threshold]
+        x2[:, bn2 >= bn_threshold] = x[1][:, bn2 >= bn_threshold]
+        x2[:, bn2 < bn_threshold] = x[0][:, bn2 < bn_threshold]
         # x[0][:, bn1 < bn_threshold] = x[1][:, bn1 < bn_threshold]
         # x[1][:, bn2 < bn_threshold] = x[0][:, bn2 < bn_threshold]
         # print('bn',bn1 < bn_threshold)
