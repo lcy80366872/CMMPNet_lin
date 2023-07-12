@@ -6,10 +6,22 @@ from .basic_blocks import *
 from torchvision import models
 from networks.attention_block import CBAMBlock,SEAttention
 
+def conv2d_out_dim(dim, kernel_size, padding=0, stride=1, dilation=1, ceil_mode=False):
+    if ceil_mode:
+        return int(math.ceil((dim + 2 * padding - dilation * (kernel_size - 1) - 1) / stride + 1))
+    else:
+        return int(math.floor((dim + 2 * padding - dilation * (kernel_size - 1) - 1) / stride + 1))
+
 class BasicBlock(nn.Module):
     expansion = 1
-    def __init__(self, inplanes, planes, num_parallel, bn_threshold,stride=1, downsample=None):
+    def __init__(self, inplanes, planes, num_parallel, bn_threshold, h, w,tile,stride=1, downsample=None):
         super(BasicBlock, self).__init__()
+
+        self.height = conv2d_out_dim(h, kernel_size=3, stride=stride, padding=1)
+        self.width = conv2d_out_dim(w, kernel_size=3, stride=stride, padding=1)
+        self.mask_s1 = Mask_s(self.height, self.width, inplanes,tile, tile)#8代表8*8为一个grid
+        self.mask_s2 = Mask_s(self.height, self.width, inplanes, tile, tile)
+        self.upsample = nn.Upsample(size=(self.height, self.width), mode='nearest')
 
         self.conv1 = conv3x3(inplanes, planes, stride)
         self.bn1 = BatchNorm2dParallel(planes, num_parallel)
@@ -29,16 +41,22 @@ class BasicBlock(nn.Module):
 
     def forward(self, x):
         residual = x
+        mask_s_1, norm_s, norm_s_t = self.mask_s1(x[0])
+        mask_s_2, norm_s, norm_s_t = self.mask_s2(x[1])
 
         out = self.conv1(x)
-        # print('conv1',out[1].shape)
+
         out = self.bn1(out)
         out = self.relu(out)
+        mask_s1 = self.upsample(mask_s_1)
+        mask_s2 = self.upsample(mask_s_2)
+        out[0] = out[0]  * mask_s1+out[1]*(1-mask_s1)
+        out[1] = out[1] * mask_s2 +out[0]*(1-mask_s2)
 
         out = self.conv2(out)
         out = self.bn2(out)
-        if len(x) > 1:
-            out = self.exchange(out, self.bn2_list, self.bn_threshold)
+        # if len(x) > 1:
+        #     out = self.exchange(out, self.bn2_list, self.bn_threshold)
 
         if self.downsample is not None:
             residual = self.downsample(x)
@@ -47,7 +65,6 @@ class BasicBlock(nn.Module):
         out = self.relu(out)
 
         return out
-
 class Bottleneck(nn.Module):
     expansion = 4
     def __init__(self, inplanes, planes, num_parallel, bn_threshold, stride=1, downsample=None):
@@ -109,14 +126,7 @@ class ResNet(nn.Module):
         self.num_parallel=num_parallel
 
         filters = [64, 128, 256, 512]
-        self.conv1 = nn.Conv2d(3, self.inplanes, kernel_size=7, stride=2,
-                               padding=3, bias=False)
-        self.conv1_g = nn.Conv2d(1, self.inplanes, kernel_size=7, stride=2,
-                                 padding=3, bias=False)
-        self.bn1 = nn.BatchNorm2d(self.inplanes)#BatchNorm2dParallel(self.inplanes, num_parallel)
-        self.bn1_g = nn.BatchNorm2d(self.inplanes)
-        self.relu = nn.ReLU(inplace=True)
-        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+
 
         resnet = models.resnet34(pretrained=True)
         self.firstconv1 = resnet.conv1
@@ -128,11 +138,15 @@ class ResNet(nn.Module):
         self.firstbn_g = resnet1.bn1
         self.firstrelu_g = resnet1.relu
         self.firstmaxpool_g = resnet1.maxpool
+        h = conv2d_out_dim(512, kernel_size=7, stride=2, padding=3)
+        w = conv2d_out_dim(512, kernel_size=7, stride=2, padding=3)
+        h = conv2d_out_dim(h, kernel_size=3, stride=2, padding=1)
+        w = conv2d_out_dim(w, kernel_size=3, stride=2, padding=1)
 
-        self.layer1 = self._make_layer(block, 64, blocks_num[0], bn_threshold)
-        self.layer2 = self._make_layer(block, 128, blocks_num[1], bn_threshold, stride=2)
-        self.layer3 = self._make_layer(block, 256, blocks_num[2], bn_threshold, stride=2)
-        self.layer4 = self._make_layer(block, 512, blocks_num[3], bn_threshold, stride=2)
+        self.layer1,h,w = self._make_layer(block, 64, blocks_num[0], bn_threshold,h,w,8)
+        self.layer2,h,w = self._make_layer(block, 128, blocks_num[1], bn_threshold,h,w,4, stride=2)
+        self.layer3,h,w = self._make_layer(block, 256, blocks_num[2], bn_threshold,h,w,2, stride=2)
+        self.layer4,h,w = self._make_layer(block, 512, blocks_num[3], bn_threshold,h,w,1, stride=2)
 
         # self.dropout = ModuleParallel(nn.Dropout(p=0.5))
 
@@ -144,9 +158,9 @@ class ResNet(nn.Module):
         self.decoder2 = DecoderBlock_parallel(filters[1], filters[0],2)
         self.decoder1 = DecoderBlock_parallel(filters[0], filters[0],2)
 
-        self.con1 = conv1x1(filters[0]*2,filters[0])
-        self.con2 = conv1x1(filters[1]*2, filters[1])
-        self.con3 = conv1x1(filters[2]*2, filters[2])
+        # self.con1 = conv1x1(filters[0]*2,filters[0])
+        # self.con2 = conv1x1(filters[1]*2, filters[1])
+        # self.con3 = conv1x1(filters[2]*2, filters[2])
 
 
         # self.finaldeconv1_add = nn.ConvTranspose2d(filters[0], filters[0] // 2, 4, 2, 1)
@@ -171,7 +185,7 @@ class ResNet(nn.Module):
             if isinstance(m, nn.Conv2d):
                 nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
         # self.finalconv.bias.data.fill_(-2.19)
-    def _make_layer(self, block, planes, num_blocks, bn_threshold, stride=1):
+    def _make_layer(self, block, planes, num_blocks, bn_threshold,h,w,tile, stride=1):
         downsample = None
         if stride != 1 or self.inplanes != planes * block.expansion:
             downsample = nn.Sequential(
@@ -180,12 +194,14 @@ class ResNet(nn.Module):
             )
 
         layers = []
-        layers.append(block(self.inplanes, planes, self.num_parallel, bn_threshold, stride, downsample))
+        layers.append(block(self.inplanes, planes, self.num_parallel, bn_threshold, h, w, tile, stride, downsample))
+        h = conv2d_out_dim(h, kernel_size=1, stride=stride, padding=0)
+        w = conv2d_out_dim(w, kernel_size=1, stride=stride, padding=0)
         self.inplanes = planes * block.expansion
         for i in range(1, num_blocks):
-            layers.append(block(self.inplanes, planes, self.num_parallel, bn_threshold))
+            layers.append(block(self.inplanes, planes, self.num_parallel, bn_threshold,h,w,tile))
 
-        return nn.Sequential(*layers)
+        return nn.Sequential(*layers),h,w
 
     def forward(self, inputs):
 
@@ -234,7 +250,7 @@ class ResNet(nn.Module):
         # for l in range(self.num_parallel):
         #     ens += alpha_soft[l] * out[l].detach()
         out = torch.sigmoid(out)
-        # print(out)
+        print(out)
         # out =nn.LogSoftmax()(ens)
         # out.append(ens)#[æ¶“ã‚„é‡œæˆæ’³å†é¨åˆ¼utæµ ãƒ¥å¼·æµ æ ¦æ»‘éŽ¸å¡§lphaé§å›ªã€€éšåº£æ®‘output,æ¶“â‚¬éå˜ç¬æ¶“çŒ
 
