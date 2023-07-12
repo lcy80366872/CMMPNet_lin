@@ -211,21 +211,21 @@ class ResNet(nn.Module):
 
         x_c = self.dblock(x_4)
         # decoder
-        # x_d4 = [self.decoder4(x_c)[l] + x_3[l] for l in range(self.num_parallel)]
-        # x_d3 = [self.decoder3(x_d4)[l] + x_2[l] for l in range(self.num_parallel)]
-        # x_d2 = [self.decoder2(x_d3)[l] + x_1[l] for l in range(self.num_parallel)]
-        # x_d1 = self.decoder1(x_d2)
-
-        x_d4= self.con3([torch.cat((self.decoder4(x_c)[l], x_3[l]), 1) for l in range(self.num_parallel)])
-        x_d3 = self.con2([torch.cat((self.decoder3(x_d4)[l], x_2[l]), 1) for l in range(self.num_parallel)])
-        x_d2 = self.con1([torch.cat((self.decoder2(x_d3)[l], x_1[l]), 1) for l in range(self.num_parallel)])
+        x_d4 = [self.decoder4(x_c)[l] + x_3[l] for l in range(self.num_parallel)]
+        x_d3 = [self.decoder3(x_d4)[l] + x_2[l] for l in range(self.num_parallel)]
+        x_d2 = [self.decoder2(x_d3)[l] + x_1[l] for l in range(self.num_parallel)]
         x_d1 = self.decoder1(x_d2)
+
+        # x_d4= self.con3([torch.cat((self.decoder4(x_c)[l], x_3[l]), 1) for l in range(self.num_parallel)])
+        # x_d3 = self.con2([torch.cat((self.decoder3(x_d4)[l], x_2[l]), 1) for l in range(self.num_parallel)])
+        # x_d2 = self.con1([torch.cat((self.decoder2(x_d3)[l], x_1[l]), 1) for l in range(self.num_parallel)])
+        # x_d1 = self.decoder1(x_d2)
 
         x_out = self.finalrelu1(self.finaldeconv1(x_d1))
         x_out = self.finalrelu2(self.finalconv2(x_out))
 
-        # x_out[0]=self.se(x_out[0])
-        # x_out[1] = self.se(x_out[1])
+        x_out[0]=self.se(x_out[0])
+        x_out[1] = self.se(x_out[1])
         # atten=self.atten(torch.cat((x_out[0], x_out[1]), 1))
         out = self.finalconv(torch.cat((x_out[0], x_out[1]), 1))
         # out=self.finalconv(x_out)
