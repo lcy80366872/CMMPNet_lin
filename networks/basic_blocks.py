@@ -1,14 +1,19 @@
 import torch
 import torch.nn as nn
+import numpy as np
 from functools import partial
 import torch.nn.functional as F
 nonlinearity = partial(F.relu, inplace=True)
+from torch.autograd import Variable
+
+
 def search_threshold(weight, alg: str):
     if alg not in ["fixed", "grad", "search"]:
         raise NotImplementedError()
     bn_min=torch.min(weight)
     bn_max=torch.max(weight)
     bin = len(weight)
+    # bin=100
     hist_y = torch.histc(input=weight, bins=bin)
     if alg == "search":
         raise ValueError(f"Deprecated pruning algorithm: {alg}")
@@ -19,8 +24,17 @@ def search_threshold(weight, alg: str):
                 threshold = bn_min+(i+2)*(bn_max-bn_min)/bin
                 # if threshold > 0.2:
                 #     print(f"WARNING: threshold might be too large: {threshold}")
+                # print(weight)
+
+                # print('y:',hist_y)
+                # print('len:',bin)
+                # print('min',bn_min)
+                # print('max',bn_max)
+                # print('dif:', hist_y_diff)
                 # print('thre:', threshold)
                 return threshold
+
+
 class Exchange_3(nn.Module):
     def __init__(self):
         super(Exchange_3, self).__init__()
@@ -44,17 +58,87 @@ class Exchange(nn.Module):
     def forward(self, x, bn, bn_threshold):
         bn1, bn2 = bn[0].weight.abs(), bn[1].weight.abs()
         #就是大于阈值的那些通道保留，小于阈值的那些通道取另外一个的值
-        # bn_threshold1 = search_threshold(bn1,"grad")
-        # bn_threshold2 = search_threshold(bn2, "grad")
+        # print(bn1)
+        bn_threshold1 = search_threshold(bn1,"grad")
+        bn_threshold2 = search_threshold(bn2, "grad")
         x1, x2 = torch.zeros_like(x[0]), torch.zeros_like(x[1])
-        x1[:, bn1 >= bn_threshold] = x[0][:, bn1 >= bn_threshold]
-        x1[:, bn1 < bn_threshold] = x[1][:, bn1 < bn_threshold]
-        x2[:, bn2 >= bn_threshold] = x[1][:, bn2 >= bn_threshold]
-        x2[:, bn2 < bn_threshold] = x[0][:, bn2 < bn_threshold]
-        # x[0][:, bn1 < bn_threshold1] = x[1][:, bn1 < bn_threshold1]
-        # x[1][:, bn2 < bn_threshold2] = x[0][:, bn2 < bn_threshold2] 
+        x1[:, bn1 >= bn_threshold1] = x[0][:, bn1 >= bn_threshold1]
+        x1[:, bn1 < bn_threshold1] = x[1][:, bn1 < bn_threshold1]
+        x2[:, bn2 >= bn_threshold2] = x[1][:, bn2 >= bn_threshold2]
+        x2[:, bn2 < bn_threshold2] = x[0][:, bn2 < bn_threshold2]
+        # x[0][:, bn1 < bn_threshold] = x[1][:, bn1 < bn_threshold]
+        # x[1][:, bn2 < bn_threshold] = x[0][:, bn2 < bn_threshold]
+        # print('bn',bn1 < bn_threshold)
 
-        return [x1,x2]
+        return x1,x2
+
+
+class GumbelSoftmax(nn.Module):
+    '''
+        gumbel softmax gate.
+    '''
+
+    def __init__(self, eps=1):
+        super(GumbelSoftmax, self).__init__()
+        self.eps = eps
+        self.sigmoid = nn.Sigmoid()
+
+    def gumbel_sample(self, template_tensor, eps=1e-8):
+        uniform_samples_tensor = template_tensor.clone().uniform_()
+        gumble_samples_tensor = torch.log(uniform_samples_tensor + eps) - torch.log(
+            1 - uniform_samples_tensor + eps)
+        return gumble_samples_tensor
+
+    def gumbel_softmax(self, logits):
+        """ Draw a sample from the Gumbel-Softmax distribution"""
+        gsamples = self.gumbel_sample(logits.data)
+        logits = logits + Variable(gsamples)
+        soft_samples = self.sigmoid(logits / self.eps)
+        return soft_samples, logits
+
+    def forward(self, logits):
+        if not self.training:
+            out_hard = (logits >= 0).float()
+            return out_hard
+        out_soft, prob_soft = self.gumbel_softmax(logits)
+        out_hard = ((out_soft >= 0.5).float() - out_soft).detach() + out_soft
+        return out_hard
+
+
+class Mask_s(nn.Module):
+    '''
+        Attention Mask spatial.
+    '''
+
+    def __init__(self, h, w, planes, block_w, block_h, eps=0.66667,
+                 bias=-1, **kwargs):
+        super(Mask_s, self).__init__()
+        # Parameter
+        self.width, self.height, self.channel = w, h, planes
+        self.mask_h, self.mask_w = int(np.ceil(h / block_h)), int(np.ceil(w / block_w))
+        self.eleNum_s = torch.Tensor([self.mask_h * self.mask_w])
+        # spatial attention
+        self.atten_s = nn.Conv2d(planes, 1, kernel_size=3, stride=1, bias=bias >= 0, padding=1)
+        if bias >= 0:
+            nn.init.constant_(self.atten_s.bias, bias)
+        # Gate
+        self.gate_s = GumbelSoftmax(eps=eps)
+        # Norm
+        self.norm = lambda x: torch.norm(x, p=1, dim=(1, 2, 3))
+
+    def forward(self, x):
+        batch, channel, height, width = x.size()
+        # Pooling
+        input_ds = F.adaptive_avg_pool2d(input=x, output_size=(self.mask_h, self.mask_w))
+        # spatial attention
+        s_in = self.atten_s(input_ds)  # [N, 1, h, w]
+        # spatial gate
+        mask_s = self.gate_s(s_in)  # [N, 1, h, w]
+        # norm
+        norm = self.norm(mask_s)
+        norm_t = self.eleNum_s.to(x.device)
+        return mask_s, norm, norm_t
+
 class SpatialAttention(nn.Module):
     def __init__(self, kernel_size=7):
         super().__init__()
@@ -211,6 +295,7 @@ def conv1x1(in_planes, out_planes, stride=1, bias=False):
     "1x1 convolution"
     return ModuleParallel(nn.Conv2d(in_planes, out_planes, kernel_size=1,
                                     stride=stride, padding=0, bias=bias))
+
 
 class DBlock(nn.Module):
     def __init__(self, channel):
