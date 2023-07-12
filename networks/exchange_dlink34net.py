@@ -158,13 +158,14 @@ class ResNet(nn.Module):
         self.se = SEAttention(filters[0] // 2, reduction=4)
         # self.atten=CBAMBlock(channel=filters[0], reduction=4, kernel_size=7)
         self.finalconv = nn.Conv2d(filters[0], num_classes, 3, padding=1)
+        
         # self.finalconv = ModuleParallel(nn.Conv2d(filters[0] // 2, num_classes, 3, padding=1))
         # self.alpha = nn.Parameter(torch.ones(num_parallel, requires_grad=True))
         # self.register_parameter('alpha', self.alpha)
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
-
+        self.finalconv.bias.data.fill_(-2.19)
     def _make_layer(self, block, planes, num_blocks, bn_threshold, stride=1):
         downsample = None
         if stride != 1 or self.inplanes != planes * block.expansion:
