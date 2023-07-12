@@ -174,7 +174,7 @@ class dice_bce_loss(nn.Module):
             c =  self.ssim(y_pred,y_true )
             return a+b+c
         else:
-            return a + b + 4*a1
+            return 4*a + b +a1 
 #
 #
 #
