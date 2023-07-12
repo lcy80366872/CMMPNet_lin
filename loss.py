@@ -90,7 +90,7 @@ class BinaryFocalLoss(nn.Module):
         # logits = torch.sigmoid(logits)
         zero_hot_key = 1 - multi_hot_key
         loss = -self.alpha * multi_hot_key * torch.pow((1 - logits), self.gamma) * (logits + self.epsilon).log()
-        print('loss1',loss.mean())
+        # print('loss1',loss.mean())
         loss += -(1 - self.alpha) * zero_hot_key * torch.pow(logits, self.gamma) * (1 - logits + self.epsilon).log()
         return loss.mean()
 
