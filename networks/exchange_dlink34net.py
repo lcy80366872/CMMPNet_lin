@@ -1,10 +1,10 @@
 import torch.nn as nn
 import torch
+import  math
 from networks.CondConv import CondConv, DynamicConv
 from .basic_blocks import *
 from torchvision import models
 from networks.attention_block import CBAMBlock,SEAttention
-
 
 class BasicBlock(nn.Module):
     expansion = 1
@@ -144,6 +144,10 @@ class ResNet(nn.Module):
         self.decoder2 = DecoderBlock_parallel(filters[1], filters[0],2)
         self.decoder1 = DecoderBlock_parallel(filters[0], filters[0],2)
 
+        self.con1 = conv1x1(filters[0]*2,filters[0])
+        self.con2 = conv1x1(filters[1]*2, filters[1])
+        self.con3 = conv1x1(filters[2]*2, filters[2])
+
 
         # self.finaldeconv1_add = nn.ConvTranspose2d(filters[0], filters[0] // 2, 4, 2, 1)
         # self.finalrelu1_add = nonlinearity
@@ -155,17 +159,18 @@ class ResNet(nn.Module):
         #self.finalrelu1 = nonlinearity
         self.finalconv2 = ModuleParallel(nn.Conv2d(filters[0] // 2, filters[0] // 2, 3, padding=1))
         self.finalrelu2 = ModuleParallel(nn.ReLU(inplace=True))
-        self.se = SEAttention(filters[0] // 2, reduction=4)
+        # self.se = SEAttention(filters[0] // 2, reduction=4)
         # self.atten=CBAMBlock(channel=filters[0], reduction=4, kernel_size=7)
         self.finalconv = nn.Conv2d(filters[0], num_classes, 3, padding=1)
-        
+
+         #-log((1-pi)/pi)
         # self.finalconv = ModuleParallel(nn.Conv2d(filters[0] // 2, num_classes, 3, padding=1))
         # self.alpha = nn.Parameter(torch.ones(num_parallel, requires_grad=True))
         # self.register_parameter('alpha', self.alpha)
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
-        self.finalconv.bias.data.fill_(-2.19)
+        # self.finalconv.bias.data.fill_(-2.19)
     def _make_layer(self, block, planes, num_blocks, bn_threshold, stride=1):
         downsample = None
         if stride != 1 or self.inplanes != planes * block.expansion:
@@ -206,17 +211,21 @@ class ResNet(nn.Module):
 
         x_c = self.dblock(x_4)
         # decoder
-        x_d4 = [self.decoder4(x_c)[l] + x_3[l] for l in range(self.num_parallel)]
-        x_d3 = [self.decoder3(x_d4)[l] + x_2[l] for l in range(self.num_parallel)]
-        x_d2 = [self.decoder2(x_d3)[l] + x_1[l] for l in range(self.num_parallel)]
-        x_d1 = self.decoder1(x_d2)
+        # x_d4 = [self.decoder4(x_c)[l] + x_3[l] for l in range(self.num_parallel)]
+        # x_d3 = [self.decoder3(x_d4)[l] + x_2[l] for l in range(self.num_parallel)]
+        # x_d2 = [self.decoder2(x_d3)[l] + x_1[l] for l in range(self.num_parallel)]
+        # x_d1 = self.decoder1(x_d2)
 
+        x_d4= self.con3([torch.cat((self.decoder4(x_c)[l], x_3[l]), 1) for l in range(self.num_parallel)])
+        x_d3 = self.con2([torch.cat((self.decoder3(x_d4)[l], x_2[l]), 1) for l in range(self.num_parallel)])
+        x_d2 = self.con1([torch.cat((self.decoder2(x_d3)[l], x_1[l]), 1) for l in range(self.num_parallel)])
+        x_d1 = self.decoder1(x_d2)
 
         x_out = self.finalrelu1(self.finaldeconv1(x_d1))
         x_out = self.finalrelu2(self.finalconv2(x_out))
 
-        x_out[0]=self.se(x_out[0])
-        x_out[1] = self.se(x_out[1])
+        # x_out[0]=self.se(x_out[0])
+        # x_out[1] = self.se(x_out[1])
         # atten=self.atten(torch.cat((x_out[0], x_out[1]), 1))
         out = self.finalconv(torch.cat((x_out[0], x_out[1]), 1))
         # out=self.finalconv(x_out)
@@ -225,12 +234,13 @@ class ResNet(nn.Module):
         # for l in range(self.num_parallel):
         #     ens += alpha_soft[l] * out[l].detach()
         out = torch.sigmoid(out)
+        print(out)
         # out =nn.LogSoftmax()(ens)
-        # out.append(ens)#[ä¸¤ä¸ªè¾“å…¥çš„outä»¥åŠä»–ä»¬æŒ‰alphaå‡è¡¡åŽçš„output,ä¸€å…±ä¸‰ä¸ª]
+        # out.append(ens)#[æ¶“ã‚„é‡œæˆæ’³å†é¨åˆ¼utæµ ãƒ¥å¼·æµ æ ¦æ»‘éŽ¸å¡§lphaé§å›ªã€€éšåº£æ®‘output,æ¶“â‚¬éå˜ç¬æ¶“çŒ
 
         return out
 
 
 def DinkNet34_CMMPNet():
-    model = ResNet(block=BasicBlock, blocks_num=[3, 4, 6, 3],num_parallel=2,num_classes=1,bn_threshold=0.06)
+    model = ResNet(block=BasicBlock, blocks_num=[3, 4, 6, 3],num_parallel=2,num_classes=1,bn_threshold=2e-2)
     return model
