@@ -90,6 +90,7 @@ class BinaryFocalLoss(nn.Module):
         # logits = torch.sigmoid(logits)
         zero_hot_key = 1 - multi_hot_key
         loss = -self.alpha * multi_hot_key * torch.pow((1 - logits), self.gamma) * (logits + self.epsilon).log()
+        print('loss1',loss.mean())
         loss += -(1 - self.alpha) * zero_hot_key * torch.pow(logits, self.gamma) * (1 - logits + self.epsilon).log()
         return loss.mean()
 
@@ -99,10 +100,10 @@ class dice_bce_loss(nn.Module):
         super(dice_bce_loss, self).__init__()
         self.batch = batch
         self.bce_loss = nn.BCELoss()
-        self.focal_loss = BinaryFocalLoss(gamma=2,alpha=0.25)
+        self.focal_loss = BinaryFocalLoss(gamma=2,alpha=0.75)
         self.ifssim=ssim
         self.ssim=MS_SSIM_L1_LOSS()
-    def FocalLoss(self, logit, target, gamma=2, alpha=0.25):
+    def FocalLoss(self, logit, target, gamma=2, alpha=0.75):
         n, c, h, w = logit.size()
         criterion = nn.CrossEntropyLoss(weight=self.weight,  # ignore_index=self.ignore_index,
                                         size_average=self.size_average)
@@ -162,11 +163,13 @@ class dice_bce_loss(nn.Module):
             y_true = self.resize(y_true, y_pred.shape[2], y_pred.shape[3]).cuda()
         # print(y_pred)
 
-        # a = self.focal_loss(y_pred,y_true)
-        
-        a = self.bce_loss(y_pred, y_true)
+        a = self.focal_loss(y_pred,y_true)
+        #
+        # a = self.bce_loss(y_pred, y_true)
+        # print('bce', a)
+        print('fo',a)
         b = self.soft_dice_loss(y_true, y_pred)
-        
+        print('dice', b)
         if self.ifssim:
             c =  self.ssim(y_pred,y_true )
             return a+b+c
