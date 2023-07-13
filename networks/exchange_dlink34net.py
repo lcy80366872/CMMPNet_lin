@@ -55,8 +55,8 @@ class BasicBlock(nn.Module):
 
         out = self.conv2(out)
         out = self.bn2(out)
-        # if len(x) > 1:
-        #     out = self.exchange(out, self.bn2_list, self.bn_threshold)
+        if len(x) > 1:
+            out = self.exchange(out, self.bn2_list, self.bn_threshold)
 
         if self.downsample is not None:
             residual = self.downsample(x)
