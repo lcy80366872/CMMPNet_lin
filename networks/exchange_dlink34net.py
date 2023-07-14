@@ -19,8 +19,8 @@ class BasicBlock(nn.Module):
 
         self.height = conv2d_out_dim(h, kernel_size=3, stride=stride, padding=1)
         self.width = conv2d_out_dim(w, kernel_size=3, stride=stride, padding=1)
-        self.mask_s1 = Mask_s(self.height, self.width, planes,tile, tile)#8代表8*8为一个grid
-        self.mask_s2 = Mask_s(self.height, self.width, planes, tile, tile)
+        self.mask_s1 = Mask_s(self.height, self.width, inplanes,tile, tile)#8代表8*8为一个grid
+        self.mask_s2 = Mask_s(self.height, self.width, inplanes, tile, tile)
         self.upsample = nn.Upsample(size=(self.height, self.width), mode='nearest')
 
         self.conv1 = conv3x3(inplanes, planes, stride)
