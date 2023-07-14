@@ -149,7 +149,7 @@ class Solver:
         mean_params=[]
         sparse=0
         for name, param in self.net.named_parameters():
-            if param.requires_grad and name.endswith('weight') and 'bn1' in name :
+            if param.requires_grad and name.endswith('weight') and 'bn2' in name :
                 if len(slim_params) % 2 == 0:
                     slim_params.append(param[:len(param) // 2])
                 #     mean_params.append(torch.mean(param[:len(param) // 2]))
@@ -165,9 +165,9 @@ class Solver:
         # print(sparse)
         loss = self.loss(self.mask,pred)
         # loss +=sparse
-        L1_norm = sum([L1_penalty(m).cuda() for m in slim_params])
+        # L1_norm = sum([L1_penalty(m).cuda() for m in slim_params])
         lamda =2e-4
-        loss += lamda * L1_norm  # this is actually counted for len(outputs) times
+        # loss += lamda * L1_norm  # this is actually counted for len(outputs) times
 
 
 
