@@ -59,11 +59,11 @@ class BasicBlock(nn.Module):
         # mask_s_2, norm_s, norm_s_t = self.mask_s2(out[1])
         mask_s1 = self.upsample(mask_s_1)
         mask_s2 = self.upsample(mask_s_2)
-       
-        out = self.conv2(out)
-        out = self.bn2(out)
         out[0] = out[0]  * mask_s1+out[1]*(1-mask_s1)
         out[1] = out[1] * mask_s2 +out[0]*(1-mask_s2)
+        out = self.conv2(out)
+        out = self.bn2(out)
+        
         # if len(x) > 1:
         #     out = self.exchange(out, self.bn2_list, self.bn_threshold)
 
