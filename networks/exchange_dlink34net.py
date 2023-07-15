@@ -34,10 +34,6 @@ class BasicBlock(nn.Module):
 
         self.exchange = Exchange()
         self.bn_threshold = bn_threshold
-        # self.bn1_list = []
-        # for module in self.bn1.modules():
-        #     if isinstance(module, nn.BatchNorm2d):
-        #         self.bn1_list.append(module)
         self.bn2_list = []
         for module in self.bn2.modules():
             if isinstance(module, nn.BatchNorm2d):
@@ -52,24 +48,20 @@ class BasicBlock(nn.Module):
 
         out = self.bn1(out)
         out = self.relu(out)
-        
-        # if len(x) > 1:
-        #     out = self.exchange(out, self.bn1_list, self.bn_threshold)
-        # mask_s_1, norm_s, norm_s_t = self.mask_s1(out[0])
-        # mask_s_2, norm_s, norm_s_t = self.mask_s2(out[1])
+
         mask_s1 = self.upsample(mask_s_1)
         mask_s2 = self.upsample(mask_s_2)
-        out[0] = out[0]  * mask_s1+out[1]*(1-mask_s1)
-        out[1] = out[1] * mask_s2 +out[0]*(1-mask_s2)
+        # print(mask_s1)
+
         out = self.conv2(out)
         out = self.bn2(out)
-        
-        # if len(x) > 1:
-        #     out = self.exchange(out, self.bn2_list, self.bn_threshold)
 
+        out[0] = out[0] * mask_s1 + out[1] * (1 - mask_s1)
+        out[1] = out[1] * mask_s2 + out[0] * (1 - mask_s2)
         if self.downsample is not None:
             residual = self.downsample(x)
-
+        if len(x) > 1:
+            out = self.exchange(out, self.bn2_list, self.bn_threshold)
         out = [out[l] + residual[l] for l in range(self.num_parallel)]
         out = self.relu(out)
 
