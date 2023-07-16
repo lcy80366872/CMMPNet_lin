@@ -144,7 +144,7 @@ class Mask_spatial(nn.Module):
         Attention Mask spatial.
     '''
 
-    def __init__(self, h, w, 2*planes, block_w, block_h, eps=0.66667,
+    def __init__(self, h, w, planes, block_w, block_h, eps=0.66667,
                  bias=-1, **kwargs):
         super(Mask_spatial, self).__init__()
         # Parameter
@@ -152,7 +152,7 @@ class Mask_spatial(nn.Module):
         self.mask_h, self.mask_w = int(np.ceil(h / block_h)), int(np.ceil(w / block_w))
         self.eleNum_s = torch.Tensor([self.mask_h * self.mask_w])
         # spatial attention
-        self.atten_s =nn.Conv2d(planes, 1, kernel_size=3, stride=1, bias=bias >= 0, padding=1)
+        self.atten_s =nn.Conv2d(2*planes, 1, kernel_size=3, stride=1, bias=bias >= 0, padding=1)
         if bias >= 0:
             nn.init.constant_(self.atten_s.bias, bias)
         # Gate
