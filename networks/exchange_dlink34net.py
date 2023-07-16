@@ -19,8 +19,8 @@ class BasicBlock(nn.Module):
 
         self.height = conv2d_out_dim(h, kernel_size=3, stride=stride, padding=1)
         self.width = conv2d_out_dim(w, kernel_size=3, stride=stride, padding=1)
-        self.mask_s1 = Mask_s(self.height, self.width, inplanes,tile, tile)#8代表8*8为一个grid
-        self.mask_s2 = Mask_s(self.height, self.width, inplanes, tile, tile)
+        self.mask_s1 = Mask_spatial(self.height, self.width, inplanes,tile, tile)#8代表8*8为一个grid
+        self.mask_s2 = Mask_spatial(self.height, self.width, inplanes, tile, tile)
         self.upsample = nn.Upsample(size=(self.height, self.width), mode='nearest')
 
         self.conv1 = conv3x3(inplanes, planes, stride)
@@ -52,17 +52,18 @@ class BasicBlock(nn.Module):
         mask_s1 = self.upsample(mask_s_1)
         mask_s2 = self.upsample(mask_s_2)
         # print(mask_s1)
+        out[0] = out[0] * mask_s1 + out[1] * (1 - mask_s1)
+        out[1] = out[1] * mask_s2 + out[0] * (1 - mask_s2)
 
         out = self.conv2(out)
         out = self.bn2(out)
 
-        out[0] = out[0] * mask_s1 + out[1] * (1 - mask_s1)
-        out[1] = out[1] * mask_s2 + out[0] * (1 - mask_s2)
-        # if len(x) > 1:
+               # if len(x) > 1:
         #     out = self.exchange(out, self.bn2_list, self.bn_threshold)
+
         if self.downsample is not None:
             residual = self.downsample(x)
-        
+
         out = [out[l] + residual[l] for l in range(self.num_parallel)]
         out = self.relu(out)
 
