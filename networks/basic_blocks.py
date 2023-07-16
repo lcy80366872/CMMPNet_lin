@@ -144,7 +144,7 @@ class Mask_spatial(nn.Module):
         Attention Mask spatial.
     '''
 
-    def __init__(self, h, w, planes, block_w, block_h, eps=0.66667,
+    def __init__(self, h, w, 2*planes, block_w, block_h, eps=0.66667,
                  bias=-1, **kwargs):
         super(Mask_spatial, self).__init__()
         # Parameter
