@@ -59,13 +59,13 @@ class Exchange(nn.Module):
         bn1, bn2 = bn[0].weight.abs(), bn[1].weight.abs()
         #就是大于阈值的那些通道保留，小于阈值的那些通道取另外一个的值
         # print(bn1)
-        # bn_threshold1 = search_threshold(bn1,"grad")
-        # bn_threshold2 = search_threshold(bn2, "grad")
+        bn_threshold1 = search_threshold(bn1,"grad")
+        bn_threshold2 = search_threshold(bn2, "grad")
         x1, x2 = torch.zeros_like(x[0]), torch.zeros_like(x[1])
-        x1[:, bn1 >= bn_threshold] = x[0][:, bn1 >= bn_threshold]
-        x1[:, bn1 < bn_threshold] = x[1][:, bn1 < bn_threshold]
-        x2[:, bn2 >= bn_threshold] = x[1][:, bn2 >= bn_threshold]
-        x2[:, bn2 < bn_threshold] = x[0][:, bn2 < bn_threshold]
+        x1[:, bn1 >= bn_threshold1] = x[0][:, bn1 >= bn_threshold1]
+        x1[:, bn1 < bn_threshold1] = x[1][:, bn1 < bn_threshold1]
+        x2[:, bn2 >= bn_threshold2] = x[1][:, bn2 >= bn_threshold2]
+        x2[:, bn2 < bn_threshold2] = x[0][:, bn2 < bn_threshold2]
         # x[0][:, bn1 < bn_threshold] = x[1][:, bn1 < bn_threshold]
         # x[1][:, bn2 < bn_threshold] = x[0][:, bn2 < bn_threshold]
         # print('bn',bn1 < bn_threshold)
@@ -97,7 +97,7 @@ class GumbelSoftmax(nn.Module):
         return soft_samples, logits
 
     def forward(self, logits):
-        if not self.training:
+        if not self.training:   #在设置model.train()时该值为true，设置eval()时为false
             out_hard = (logits >= 0).float()
             return out_hard
         out_soft, prob_soft = self.gumbel_softmax(logits)
@@ -122,7 +122,7 @@ class Mask_s(nn.Module):
         if bias >= 0:
             nn.init.constant_(self.atten_s.bias, bias)
         # Gate
-        self.gate_s = GumbelSoftmax(eps=eps)
+        self.gate_s = GumbelSoftmax(eps=eps) # eps越小，softmax就越接近One-hot
         # Norm
         self.norm = lambda x: torch.norm(x, p=1, dim=(1, 2, 3))
 
@@ -139,18 +139,58 @@ class Mask_s(nn.Module):
         norm_t = self.eleNum_s.to(x.device)
         return mask_s, norm, norm_t
 
-class SpatialAttention(nn.Module):
-    def __init__(self, kernel_size=7):
-        super().__init__()
-        self.conv = nn.Conv2d(2, 1, kernel_size=kernel_size, padding=kernel_size // 2)
-        self.sigmoid = nn.Sigmoid()
+class Mask_spatial(nn.Module):
+    '''
+        Attention Mask spatial.
+    '''
+
+    def __init__(self, h, w, planes, block_w, block_h, eps=0.66667,
+                 bias=-1, **kwargs):
+        super(Mask_spatial, self).__init__()
+        # Parameter
+        self.width, self.height, self.channel = w, h, planes
+        self.mask_h, self.mask_w = int(np.ceil(h / block_h)), int(np.ceil(w / block_w))
+        self.eleNum_s = torch.Tensor([self.mask_h * self.mask_w])
+        # spatial attention
+        self.atten_s =nn.Conv2d(planes, 1, kernel_size=3, stride=1, bias=bias >= 0, padding=1)
+        if bias >= 0:
+            nn.init.constant_(self.atten_s.bias, bias)
+        # Gate
+        self.gate_s = GumbelSoftmax(eps=eps) # eps越小，softmax就越接近One-hot
+        # Norm
+        self.norm = lambda x: torch.norm(x, p=1, dim=(1, 2, 3))
 
     def forward(self, x):
-        max_result, _ = torch.max(x, dim=1, keepdim=True)
-        avg_result = torch.mean(x, dim=1, keepdim=True)
+        batch, channel, height, width = x.size()
+        # spatial attention
+        avg_result = F.adaptive_avg_pool2d(input=x, output_size=(self.mask_h, self.mask_w))
+        max_result = F.adaptive_max_pool2d(input=x, output_size=(self.mask_h, self.mask_w))
+        s_in = self.atten_s(torch.cat([max_result, avg_result], 1))  # [N, 1, h, w]
+        # s_in = self.atten_s(avg_result)  # [N, 1, h, w]
+
+        # spatial gate
+        mask_s = self.gate_s(s_in)  # [N, 1, h, w]
+        # norm
+        norm = self.norm(mask_s)
+        norm_t = self.eleNum_s.to(x.device)
+        return mask_s, norm, norm_t
+class SpatialAttention(nn.Module):
+    def __init__(self,h,w, in_channel,kernel_size=7):
+        super().__init__()
+        self.conv = nn.Conv2d(2*in_channel, 1, kernel_size=kernel_size, padding=kernel_size // 2, bias=bias >= 0,)
+        self.sigmoid = nn.Sigmoid()
+        self.mask_h = h
+        self.mask_w = w
+
+    def forward(self, x):
+        # max_result, _ = torch.max(x, dim=1, keepdim=True)
+        # avg_result = torch.mean(x, dim=1, keepdim=True)
+        max_result =  F.adaptive_max_pool2d(input=x, output_size=(self.mask_h, self.mask_w))
+        avg_result = F.adaptive_avg_pool2d(input=x, output_size=(self.mask_h, self.mask_w))
+
         result = torch.cat([max_result, avg_result], 1)
         output = self.conv(result)
-        output = self.sigmoid(output)
+        # output = self.sigmoid(output)
         return output
 class Spatial_Exchange(nn.Module):
     def __init__(self):
