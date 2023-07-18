@@ -19,8 +19,8 @@ class BasicBlock(nn.Module):
 
         self.height = conv2d_out_dim(h, kernel_size=3, stride=stride, padding=1)
         self.width = conv2d_out_dim(w, kernel_size=3, stride=stride, padding=1)
-        self.mask_s1 = Mask_spatial(self.height, self.width, inplanes,tile, tile)#8代表8*8为一个grid
-        self.mask_s2 = Mask_spatial(self.height, self.width, inplanes, tile, tile)
+        self.mask_s1 = Mask_s(self.height, self.width, inplanes,tile, tile)#8代表8*8为一个grid
+        self.mask_s2 = Mask_s(self.height, self.width, inplanes, tile, tile)
         self.upsample = nn.Upsample(size=(self.height, self.width), mode='nearest')
 
         self.conv1 = conv3x3(inplanes, planes, stride)
@@ -146,9 +146,9 @@ class ResNet(nn.Module):
         h = conv2d_out_dim(h, kernel_size=3, stride=2, padding=1)
         w = conv2d_out_dim(w, kernel_size=3, stride=2, padding=1)
 
-        self.layer1,h,w = self._make_layer(block, 64, blocks_num[0], bn_threshold,h,w,8)
-        self.layer2,h,w = self._make_layer(block, 128, blocks_num[1], bn_threshold,h,w,4, stride=2)
-        self.layer3,h,w = self._make_layer(block, 256, blocks_num[2], bn_threshold,h,w,2, stride=2)
+        self.layer1,h,w = self._make_layer(block, 64, blocks_num[0], bn_threshold,h,w,4)
+        self.layer2,h,w = self._make_layer(block, 128, blocks_num[1], bn_threshold,h,w,2, stride=2)
+        self.layer3,h,w = self._make_layer(block, 256, blocks_num[2], bn_threshold,h,w,1, stride=2)
         self.layer4,h,w = self._make_layer(block, 512, blocks_num[3], bn_threshold,h,w,1, stride=2)
 
         # self.dropout = ModuleParallel(nn.Dropout(p=0.5))
