@@ -141,8 +141,8 @@ class ResNet(nn.Module):
         self.firstbn_g = resnet1.bn1
         self.firstrelu_g = resnet1.relu
         self.firstmaxpool_g = resnet1.maxpool
-        h = conv2d_out_dim(512, kernel_size=7, stride=2, padding=3)
-        w = conv2d_out_dim(512, kernel_size=7, stride=2, padding=3)
+        h = conv2d_out_dim(1024, kernel_size=7, stride=2, padding=3)
+        w = conv2d_out_dim(1024, kernel_size=7, stride=2, padding=3)
         h = conv2d_out_dim(h, kernel_size=3, stride=2, padding=1)
         w = conv2d_out_dim(w, kernel_size=3, stride=2, padding=1)
 
