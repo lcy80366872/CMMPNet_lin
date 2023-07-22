@@ -183,8 +183,8 @@ class Solver:
         self.data2cuda(volatile=True)
         # mask = self.resize(self.mask, 512, 512).cuda()
         # direct_mask = self.net_direction.forward(mask)
-        pred = self.net.forward(self.img)
-        loss = self.loss(self.mask, pred)
+        pred,atten = self.net.forward(self.img)
+        loss = self.loss(self.mask, pred,atten)
         # loss += self.loss(self.mask, pred1)
         # loss +=0.2*self.loss_direction(direct_pred,direct_mask)
 
