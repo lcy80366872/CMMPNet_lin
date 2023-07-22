@@ -90,9 +90,41 @@ class BinaryFocalLoss(nn.Module):
         # logits = torch.sigmoid(logits)
         zero_hot_key = 1 - multi_hot_key
         loss = -self.alpha * multi_hot_key * torch.pow((1 - logits), self.gamma) * (logits + self.epsilon).log()
-        # print('loss1',loss.mean())
+        print('loss1',loss.mean())
         loss += -(1 - self.alpha) * zero_hot_key * torch.pow(logits, self.gamma) * (1 - logits + self.epsilon).log()
         return loss.mean()
+
+class Loss_atten(nn.Module):
+    def __init__(self,att_depth=None,out_channels=None,patch_size=None):
+        super().__init__()
+        self.mseloss=nn.MSELoss()
+
+        self.att_depth=att_depth
+        self.patch_size=patch_size
+        self.out_channels=out_channels
+
+        self.unfold = nn.Unfold(kernel_size=(self.patch_size, self.patch_size),
+                    stride=(self.patch_size, self.patch_size))
+
+    def forward(self, y_pr, y_gt, attentions):
+        conv_feamap_size = nn.Conv2d(self.out_channels, self.out_channels, kernel_size=(2 ** self.att_depth, 2 ** self.att_depth),
+                             stride=(2 ** self.att_depth, 2 ** self.att_depth), groups=self.out_channels, bias=False)
+        conv_feamap_size.weight = nn.Parameter(torch.ones((self.out_channels, 1, 2 ** self.att_depth, 2 ** self.att_depth)))
+        conv_feamap_size.to(y_pr.device)
+        for param in conv_feamap_size.parameters():
+            param.requires_grad = False
+
+
+        y_gt_conv=conv_feamap_size(y_gt)/(2 ** self.att_depth*2 ** self.att_depth)
+        unfold_y_gt = self.unfold(y_gt).transpose(-1, -2)
+        unfold_y_gt_conv = self.unfold(y_gt_conv)
+        att=torch.matmul(unfold_y_gt,unfold_y_gt_conv)/(self.patch_size*self.patch_size)
+        att=torch.unsqueeze(att,dim=1)
+
+        loss = self.mseloss(attentions, att)
+
+
+        return loss
 
 
 class dice_bce_loss(nn.Module):
@@ -103,7 +135,8 @@ class dice_bce_loss(nn.Module):
         self.focal_loss = BinaryFocalLoss(gamma=2,alpha=0.75)
         self.ifssim=ssim
         self.ssim=MS_SSIM_L1_LOSS()
-    def FocalLoss(self, logit, target, gamma=2, alpha=0.75):
+        self.attloss=Loss_atten(att_depth=3,out_channels=1,patch_size=8)
+    def FocalLoss(self, logit, target, gamma=2, alpha=0.25):
         n, c, h, w = logit.size()
         criterion = nn.CrossEntropyLoss(weight=self.weight,  # ignore_index=self.ignore_index,
                                         size_average=self.size_average)
@@ -157,7 +190,7 @@ class dice_bce_loss(nn.Module):
 
         return torch.Tensor(y)
 
-    def __call__(self, y_true, y_pred):
+    def __call__(self, y_true, y_pred,atten):
         # the ground_truth map is resized to the resolution of the predicted map during training
         if y_true.shape[2] != y_pred.shape[2] or y_true.shape[3] != y_pred.shape[3]:
             y_true = self.resize(y_true, y_pred.shape[2], y_pred.shape[3]).cuda()
@@ -167,14 +200,13 @@ class dice_bce_loss(nn.Module):
         #
         a = self.bce_loss(y_pred, y_true)
         # print('bce', a)
-        # print('fo',a)
         b = self.soft_dice_loss(y_true, y_pred)
-        # print('dice', b)
+        d= self.attloss(y_pred,y_true,atten)
         if self.ifssim:
             c =  self.ssim(y_pred,y_true )
             return a+b+c
         else:
-            return a + b  
+            return a + b +d
 #
 #
 #
