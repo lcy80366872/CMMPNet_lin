@@ -127,7 +127,7 @@ def randomColor(image, label):
     random_factor = np.random.randint(0, 31) / 10.  # 随机因子
     return ImageEnhance.Sharpness(contrast_image).enhance(random_factor), label  # 调整图像锐度
 
-def randomGaussian(image, label, mean=0.2, sigma=0.3):
+def randomGaussian(image, label, mean=0.2, sigma=0.3,u=0.1):
     """
      对图像进行高斯噪声处理
     :param image:
@@ -146,18 +146,20 @@ def randomGaussian(image, label, mean=0.2, sigma=0.3):
             im[_i] += random.gauss(mean, sigma)
         return im
 
-    # 将图像转化成数组
-    img = np.asarray(image)
-    img.flags.writeable = True  # 将数组改为读写模式
-    width, height = img.shape[:2]
-    img_r = gaussianNoisy(img[:, :, 0].flatten(), mean, sigma)
-    img_g = gaussianNoisy(img[:, :, 1].flatten(), mean, sigma)
-    img_b = gaussianNoisy(img[:, :, 2].flatten(), mean, sigma)
-    img[:, :, 0] = img_r.reshape([width, height])
-    img[:, :, 1] = img_g.reshape([width, height])
-    img[:, :, 2] = img_b.reshape([width, height])
-    return Image.fromarray(np.uint8(img)), label
-
+    # 将 图像转化成数组
+    if np.random.random() < u:
+        img = np.asarray(image)
+        img.flags.writeable = True  # 将数组改为读写模式
+        width, height = img.shape[:2]
+        img_r = gaussianNoisy(img[:, :, 0].flatten(), mean, sigma)
+        img_g = gaussianNoisy(img[:, :, 1].flatten(), mean, sigma)
+        img_b = gaussianNoisy(img[:, :, 2].flatten(), mean, sigma)
+        img[:, :, 0] = img_r.reshape([width, height])
+        img[:, :, 1] = img_g.reshape([width, height])
+        img[:, :, 2] = img_b.reshape([width, height])
+        return img, label
+    else:
+        return image,label
 
 def randomRotate90(image, mask, u=0.5):
     if np.random.random() < u:
