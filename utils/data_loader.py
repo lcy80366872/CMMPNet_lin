@@ -159,8 +159,8 @@ class ImageGPSDataset(data.Dataset):
             img, mask = randomVerticleFlip(img, mask)
             img, mask = randomRotate90(img, mask)
             img, mask = randomcrop(img, mask)
-            # img, mask = randomColor(img,mask)
-            # img, mask = randomGaussian(img,mask)
+            img = random_brightness(img)
+            img,mask =randomRotate(img,mask,1024)
         else:
             img = self._concat_images(sat, gps)
         #             ycb = cv2.cvtColor(sat, cv2.COLOR_BGR2YCrCb)
