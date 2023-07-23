@@ -160,6 +160,16 @@ def randomGaussian(image, label, mean=0.2, sigma=0.3,u=0.1):
         return img, label
     else:
         return image,label
+def random_brightness(img):
+    if random.random() < 0.5:
+        return img
+    shift_value = 10 #取自HRNet
+    img = img.astype(np.float32)
+    shift = random.randint(shift_value, shift_value)
+    img[:, :, :] += shift
+    img = np.around(img)
+    img = np.clip(img, 0, 255).astype(np.uint8)
+    return img
 
 def randomRotate90(image, mask, u=0.5):
     if np.random.random() < u:
@@ -179,6 +189,14 @@ def randomRotate270(image, mask, u=0.5):
         image = np.rot90(np.rot90(np.rot90(image)))
         mask = np.rot90(np.rot90(np.rot90(mask)))
     return image, mask
+def randomRotate(image,label,h):
+    #旋转-30到30
+    w=h
+    angel = np.random.randint(-30, 30)
+    M = cv2.getRotationMatrix2D(((h - 1) / 2., (w - 1) / 2.), angel, 1)
+    image = cv2.warpAffine(image, M, (h, w), flags=cv2.INTER_LINEAR)
+    label = cv2.warpAffine(label, M, (h, w), flags=cv2.INTER_NEAREST)
+    return image,label
 
 def randomcrop(image, mask, u=0.5):
     crop_rate = np.random.uniform(0.7,0.9)
