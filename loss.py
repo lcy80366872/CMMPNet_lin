@@ -147,8 +147,9 @@ def onehot_to_binary_edges(mask, radius, num_classes):
 
     # We need to pad the borders for boundary conditions
     mask_pad = []
-    mask_pad[0] = F.pad(mask[0], (0,0,1,1,1,1), mode='constant', value=0)
-    mask_pad[1] = F.pad(mask[1], (0, 0, 1, 1, 1, 1), mode='constant', value=0)
+    print(mask_pad[0].shape)
+    mask_pad[0] = F.pad(mask[0], ((0,0),(1,1),(1,1)), mode='constant', value=0)
+    mask_pad[1] = F.pad(mask[1], ((0,0),(1,1),(1,1)), mode='constant', value=0)
 
     edgemap = torch.zeros(mask[0].shape)
     for i in range(num_classes):
