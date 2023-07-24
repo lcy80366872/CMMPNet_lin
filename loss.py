@@ -135,7 +135,7 @@ def mask_to_onehot(mask, num_classes):
 
     """
     _mask = [mask == (i) for i in range(num_classes)]
-    print(_mask.shape)
+   
     return _mask
 
 def onehot_to_binary_edges(mask, radius, num_classes):
