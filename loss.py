@@ -135,7 +135,8 @@ def mask_to_onehot(mask, num_classes):
 
     """
     _mask = [mask == (i) for i in range(num_classes)]
-    return np.array(_mask).astype(np.uint8)
+    print(_mask.shape)
+    return _mask
 
 def onehot_to_binary_edges(mask, radius, num_classes):
     """
@@ -145,17 +146,19 @@ def onehot_to_binary_edges(mask, radius, num_classes):
         return mask
 
     # We need to pad the borders for boundary conditions
-    mask_pad = np.pad(mask, ((0, 0), (1, 1), (1, 1)), mode='constant', constant_values=0)
+    mask_pad = []
+    mask_pad[0] = F.pad(mask[0], (0,0,0,0,1,1,1,1), mode='constant', value=0)
+    mask_pad[1] = F.pad(mask[1], (0, 0, 0, 0, 1, 1, 1, 1), mode='constant', value=0)
 
-    edgemap = np.zeros(mask.shape[1:])
+    edgemap = torch.zeros(mask[0].shape)
     for i in range(num_classes):
         # ti qu lun kuo
-        dist = distance_transform_edt(mask_pad[i, :]) + distance_transform_edt(1.0 - mask_pad[i, :])
-        dist = dist[1:-1, 1:-1]
+        dist = distance_transform_edt(mask_pad[i]) + distance_transform_edt(1.0 - mask_pad[i])
+        dist = dist[:,:,1:-1, 1:-1]
         dist[dist > radius] = 0
         edgemap += dist
     # edgemap = np.expand_dims(edgemap, axis=0)
-    edgemap = (edgemap > 0).astype(np.uint8)*255
+    edgemap = (edgemap > 0)*255
     return edgemap
 
 class dice_bce_loss(nn.Module):
@@ -221,7 +224,7 @@ class dice_bce_loss(nn.Module):
 
         return torch.Tensor(y)
 
-    def __call__(self, y_true, y_pred):
+    def __call__(self, y_true, y_pred,atten):
         # the ground_truth map is resized to the resolution of the predicted map during training
         if y_true.shape[2] != y_pred.shape[2] or y_true.shape[3] != y_pred.shape[3]:
             y_true = self.resize(y_true, y_pred.shape[2], y_pred.shape[3]).cuda()
