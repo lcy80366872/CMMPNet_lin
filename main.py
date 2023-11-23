@@ -13,7 +13,7 @@ from framework import Framework
 from utils.datasets import prepare_Beijing_dataset, prepare_TLCGIS_dataset
 from networks.exchange_dlink34net import DinkNet34_CMMPNet
 from networks.deeplabv3plus import DeepLabV3Plus
-from networks.unet import unet
+from networks.unet import Unet
 
 class Logger(object):
     def __init__(self, filename="Default.log"):
