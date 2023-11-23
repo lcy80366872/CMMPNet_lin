@@ -12,6 +12,7 @@ from framework import Framework
 # from utils.datasets_connect import prepare_Beijing_dataset, prepare_TLCGIS_dataset
 from utils.datasets import prepare_Beijing_dataset, prepare_TLCGIS_dataset
 from networks.exchange_dlink34net import DinkNet34_CMMPNet
+from networks.dlinknet import DinkNet34, LinkNet34
 from networks.deeplabv3plus import DeepLabV3Plus
 from networks.unet import Unet
 from networks.resunet import ResUnet, ResUnet1DConv
