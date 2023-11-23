@@ -103,7 +103,7 @@ def train_val_test(args):
     framework.set_test_dl(test_dl)
     framework.set_save_path(WEIGHT_SAVE_DIR)
 
-    framework.fit(epochs=args.epochs,lam=2e-4)
+    framework.fit(epochs=args.epochs)
 
 
 if __name__ == "__main__":
