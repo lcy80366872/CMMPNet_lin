@@ -30,7 +30,7 @@ class Logger(object):
 
 def get_model(model_name):
     if model_name == 'CMMPNet':
-        model = ResUnet(num_channels=4)
+        model = Unet(in_channel=4, conv1d=False)
     else:
         print("[ERROR] can not find model ", model_name)
         assert(False)
