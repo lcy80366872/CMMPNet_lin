@@ -30,7 +30,7 @@ class Logger(object):
 
 def get_model(model_name):
     if model_name == 'CMMPNet':
-        model = Unet(in_channel=4, conv1d=False)
+        model = DeepLabV3Plus(n_classes=1, num_channels=4)
     else:
         print("[ERROR] can not find model ", model_name)
         assert(False)
