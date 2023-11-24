@@ -30,8 +30,7 @@ class Logger(object):
 
 def get_model(model_name):
     if model_name == 'CMMPNet':
-        model = DinkNet34(num_channels=4, encoder_1dconv=0,
-                          decoder_1dconv=4)
+        model = DinkNet34(num_channels=4)
     else:
         print("[ERROR] can not find model ", model_name)
         assert(False)
@@ -141,7 +140,7 @@ if __name__ == "__main__":
     parser.add_argument('--use_gpu',  type=bool, default=True)
     parser.add_argument('--gpu_ids',  type=str, default='0')
     parser.add_argument('--workers',  type=int, default=0)
-    parser.add_argument('--epochs',  type=int, default=30)
+    parser.add_argument('--epochs',  type=int, default=60)
     parser.add_argument('--random_seed', type=int, default=12345)
     parser.add_argument('--dataset', type=str, default='BJRoad')
     parser.add_argument('--down_scale', type=bool, default=False)
