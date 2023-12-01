@@ -11,7 +11,8 @@ from framework import Framework
 # from framework_connect import Framework
 # from utils.datasets_connect import prepare_Beijing_dataset, prepare_TLCGIS_dataset
 from utils.datasets import prepare_Beijing_dataset, prepare_TLCGIS_dataset
-from networks.exchange_dlink34net import DinkNet34_CMMPNet
+#from networks.exchange_dlink34net import DinkNet34_CMMPNet
+from networks.CMMPNet import DinkNet34_CMMPNet
 from networks.dlinknet import DinkNet34, LinkNet34
 from networks.deeplabv3plus import DeepLabV3Plus
 from networks.unet import Unet
@@ -30,8 +31,7 @@ class Logger(object):
 
 def get_model(model_name):
     if model_name == 'CMMPNet':
-        model = DinkNet34(num_channels=4, encoder_1dconv=0,
-                          decoder_1dconv=4)
+        model = DinkNet34_CMMPNet()
     else:
         print("[ERROR] can not find model ", model_name)
         assert(False)
