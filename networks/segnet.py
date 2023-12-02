@@ -101,7 +101,8 @@ class SegNet(BaseModel):
         x = self.unpool(x, indices=indices1, output_size=x1_size)
         x = self.stage5_decoder(x)
 
-        return x
+
+        return torch.sigmoid(x)
 
     def get_backbone_params(self):
         return []
