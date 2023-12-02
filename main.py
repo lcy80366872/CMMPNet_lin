@@ -3,6 +3,7 @@ import numpy as np
 import time
 import torch.nn as nn
 from torch.nn import init
+from networks.segnet import SegNet
 import os
 import sys
 import cv2
@@ -31,7 +32,7 @@ class Logger(object):
 
 def get_model(model_name):
     if model_name == 'CMMPNet':
-        model = DinkNet34_CMMPNet()
+        model = SegNet(1,4)
     else:
         print("[ERROR] can not find model ", model_name)
         assert(False)
