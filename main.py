@@ -32,7 +32,7 @@ class Logger(object):
 
 def get_model(model_name):
     if model_name == 'CMMPNet':
-        model = SegNet(1,4)
+        model = SegNet(1,3)
     else:
         print("[ERROR] can not find model ", model_name)
         assert(False)
