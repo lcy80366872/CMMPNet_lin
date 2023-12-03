@@ -65,6 +65,7 @@ class SegNet(BaseModel):
 
     def forward(self, x):
         # Encoder
+        x = x[:, :3, :, :]
         x = self.stage1_encoder(x)
         x1_size = x.size()
         x, indices1 = self.pool(x)
