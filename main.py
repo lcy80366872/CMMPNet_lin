@@ -14,11 +14,12 @@ from framework import Framework
 from utils.datasets import prepare_Beijing_dataset, prepare_TLCGIS_dataset
 #from networks.exchange_dlink34net import DinkNet34_CMMPNet
 # from networks.CMMPNet import DinkNet34_CMMPNet
-from networks.shared_dlink_otherfuse import DinkNet34_CMMPNet
+#from networks.shared_dlink_otherfuse import DinkNet34_CMMPNet
 from networks.dlinknet import DinkNet34, LinkNet34
 from networks.deeplabv3plus import DeepLabV3Plus
 from networks.unet import Unet
 from networks.resunet import ResUnet, ResUnet1DConv
+from networks.sa_gate_dlinknet import DinkNet34_CMMPNet
 class Logger(object):
     def __init__(self, filename="Default.log"):
         self.terminal = sys.stdout
@@ -33,7 +34,7 @@ class Logger(object):
 
 def get_model(model_name):
     if model_name == 'CMMPNet':
-        model = DinkNet34_CMMPNet(bn=0.02)
+        model = DinkNet34_CMMPNet()
     else:
         print("[ERROR] can not find model ", model_name)
         assert(False)
