@@ -75,20 +75,23 @@ class DinkNet34_CMMPNet(nn.Module):
         x_e1,add_e1=self.frm1(x_e1,add_e1)
         x_fused1 = self.ffm1(x_e1,add_e1)
 
+
         x_e2 = self.encoder2(x_e1)
         add_e2 = self.encoder2_add(add_e1)
         x_e2, add_e2 = self.frm2(x_e2, add_e2)
         x_fused2 = self.ffm2(x_e2, add_e2)
+
 
         x_e3 = self.encoder3(x_e2)
         add_e3 = self.encoder3_add(add_e2)
         x_e3, add_e3 = self.frm3(x_e3, add_e3)
         x_fused3 = self.ffm3(x_e3, add_e3)
 
+
         x_e4 = self.encoder4(x_e3)
         add_e4 = self.encoder4_add(add_e3)
         x_c, add_c = self.frm4(x_e4, add_e4)
-        x_fused4 = self.ffm1(x_e4, add_e4)
+        x_fused4 = self.ffm4(x_c, add_c)
 
 
         # 传递增强信息时还有跳跃连接
