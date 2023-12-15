@@ -19,7 +19,7 @@ from networks.dlinknet import DinkNet34, LinkNet34
 from networks.deeplabv3plus import DeepLabV3Plus
 from networks.unet import Unet
 from networks.resunet import ResUnet, ResUnet1DConv
-from networks.sa_gate_dlinknet import DinkNet34_CMMPNet
+from networks.dlinknet34 import DinkNet34_CMMPNet
 class Logger(object):
     def __init__(self, filename="Default.log"):
         self.terminal = sys.stdout
