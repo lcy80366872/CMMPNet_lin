@@ -44,8 +44,8 @@ class DinkNet34_CMMPNet(nn.Module):
         self.finalconv = nn.Conv2d(filters[0], 1, 3, padding=1)
 
     def forward(self, inputs):
-        x = inputs[:, :3, :, :]  # image
-        add = inputs[:, 3:, :, :]  # gps_map or lidar_map
+       # x = inputs[:, :3, :, :]  # image
+        x = inputs[:, 3:, :, :]  # gps_map or lidar_map
         # 杩涘叆缂栫爜-瑙ｇ爜缁撴瀯鍓嶆湁涓皢鍘熷浘鍍忓仛鍗风Н姝ラ
         x = self.firstconv1(x)
         x = self.firstmaxpool(self.firstrelu(self.firstbn(x)))
