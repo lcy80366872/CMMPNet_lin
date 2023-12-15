@@ -47,7 +47,7 @@ class DinkNet34_CMMPNet(nn.Module):
        # x = inputs[:, :3, :, :]  # image
         x = inputs[:, 3:, :, :]  # gps_map or lidar_map
         # 杩涘叆缂栫爜-瑙ｇ爜缁撴瀯鍓嶆湁涓皢鍘熷浘鍍忓仛鍗风Н姝ラ
-        x = self.firstconv1(x)
+        x = self.firstconv1_add(x)
         x = self.firstmaxpool(self.firstrelu(self.firstbn(x)))
         # 姣忎竴灞傜殑鍥惧儚鍜宎dding鐨勯澶栦俊鎭緥濡俫ps閮借緭鍏EM妯″潡锛岃緭鍑哄寮虹殑鍥惧儚鍜宎dding鐗瑰緛淇℃伅锛岀劧鍚庡啀杈撳叆涓嬩竴灞備互姝ゅ惊鐜�
         x_e1 = self.encoder1(x)
