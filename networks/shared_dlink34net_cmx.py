@@ -1,11 +1,11 @@
 import torch.nn as nn
 import torch
-from networks.CondConv import CondConv, DynamicConv
+
 from .basic_blocks import *
 from torchvision import models
 from networks.attention_block import CBAMBlock,SEAttention
 from networks.basic_blocks import Exchange,ModuleParallel,BatchNorm2dParallel
-from networks.Nonlocal import NLBlockND
+
 from networks.net_utils import *
 def conv3x3(in_planes, out_planes, stride=1, bias=False):
     "3x3 convolution with padding"
@@ -162,7 +162,7 @@ class ResNet(nn.Module):
         self.ffm3 = FeatureFusionModule(filters[2], num_heads=num_heads[2])
         self.ffm4 = FeatureFusionModule(filters[3], num_heads=num_heads[3])
 
-        self.dblock = DBlock_parallel(filters[3],2)
+        self.dblock = DBlock(filters[3])
 
         self.decoder4 = DecoderBlock(filters[3], filters[2])
         self.decoder3 = DecoderBlock(filters[2], filters[1])
